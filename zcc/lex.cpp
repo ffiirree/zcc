@@ -6,14 +6,33 @@
 
 
 Lex::Lex(const std::string &filename):
-	f(filename)
+	f(filename), index(0)
 {
 #define keyword(ty, name, _) keywords.push_back(std::string(name));
 	KEYWORD_MAP
 #undef keyword
+
+		Token t;
+		do {
+			t = readToken();
+			tokens.push_back(t);
+		} while (t.getType() != K_EOF);
 }
 
-Token Lex::next()
+void Lex::scan(const std::string &filename)
+{
+	f.open(filename);
+
+	Token t;
+	do {
+		t = readToken();
+		tokens.push_back(t);
+	} while (t.getType() != K_EOF);
+
+	index = 0;
+}
+
+Token Lex::readToken()
 {
 	char c;
 	do {
@@ -121,87 +140,16 @@ Token Lex::read_string(char fir)
 	return Token(STRING_, s);
 }
 
-int Lex::read_escaped_char() {
-	int c = f.next();
-
-	switch (c) {
-	case '\'': case '"': case '?': case '\\':
-		return c;
-	case 'a': return '\a';
-	case 'b': return '\b';
-	case 'f': return '\f';
-	case 'n': return '\n';
-	case 'r': return '\r';
-	case 't': return '\t';
-	case 'v': return '\v';
-	case 'x': return read_hex_char();
-	case 'u': return read_universal_char(4);
-	case 'U': return read_universal_char(8);
-	case_0_7: return read_octal_char(c);
-	}
-	error("unknown escape character: \\%c", c);
-	return c;
-}
-
-
-// Reads an octal escape sequence.
-int Lex::read_octal_char(int c) {
-	int r = c - '0';
-	if (!nextoct())
-		return r;
-	r = (r << 3) | (f.next() - '0');
-	if (!nextoct())
-		return r;
-	return (r << 3) | (f.next() - '0');
-}
-
-// Reads a \x escape sequence.
-int Lex::read_hex_char() {
-	int c = f.next();
-	if (!isxdigit(c))
-		error("\\x is not followed by a hexadecimal character: %c", c);
-	int r = 0;
-	for (;; c = f.next()) {
-		switch (c) {
-		case_0_9: r = (r << 4) | (c - '0'); continue;
-		case_a_f: r = (r << 4) | (c - 'a' + 10); continue;
-		case_A_F: r = (r << 4) | (c - 'A' + 10); continue;
-		default: f.back(c); return r;
-		}
-	}
-}
-
-bool Lex::nextoct() {
-	int c = f.peek();
-	return '0' <= c && c <= '7';
-}
-
-// Reads \u or \U escape sequences. len is 4 or 8, respecitvely.
-int Lex::read_universal_char(int len) {
-	unsigned int r = 0;
-	for (int i = 0; i < len; i++) {
-		char c = f.next();
-		switch (c) {
-		case_0_9: r = (r << 4) | (c - '0'); continue;
-		case_a_f: r = (r << 4) | (c - 'a' + 10); continue;
-		case_A_F: r = (r << 4) | (c - 'A' + 10); continue;
-		default: error("invalid universal character: %c", c);
-		}
-	}
-	/*if (!is_valid_ucn(r))
-		errorp(p, "invalid universal character: \\%c%0*x", (len == 4) ? 'u' : 'U', len, r);*/
-	return r;
-}
 
 
 Token Lex::read_char()
 {
-	int c = f.next();
+	char c = f.next();
 	int r = (c == '\\') ? read_escaped_char() : c;
 	c = f.next();
 	if (c != '\'')
 		error("unterminated char");
-	
+
 	return Token(CHAR_, c);
 }
 
@@ -217,8 +165,10 @@ Token Lex::read_id(char fir)
 	} while (isalnum(c) && c != '_');
 	f.back(c);
 
-	if ((i = isKeyword(str)) != ID)
+	if ((i = isKeyword(str)) != ID) {
 		return Token(KEYWORD, i);
+	}
+	
 
 	return Token(ID, str);
 }
@@ -294,6 +244,118 @@ Token Lex::read_num(char fir)
 	return Token(type, str);
 }
 
+int Lex::read_escaped_char() {
+	int c = f.next();
+
+	switch (c) {
+	case '\'': case '"': case '?': case '\\':
+		return c;
+	case 'a': return '\a';
+	case 'b': return '\b';
+	case 'f': return '\f';
+	case 'n': return '\n';
+	case 'r': return '\r';
+	case 't': return '\t';
+	case 'v': return '\v';
+	case 'x': return read_hex_char();
+	case 'u': return read_universal_char(4);
+	case 'U': return read_universal_char(8);
+	case_0_7: return read_octal_char(c);
+	}
+	error("unknown escape character: \\%c", c);
+	return c;
+}
+
+
+// Reads an octal escape sequence.
+int Lex::read_octal_char(int c) {
+	int r = c - '0';
+	if (!nextoct())
+		return r;
+	r = (r << 3) | (f.next() - '0');
+	if (!nextoct())
+		return r;
+	return (r << 3) | (f.next() - '0');
+}
+
+// Reads a \x escape sequence.
+int Lex::read_hex_char() {
+	int c = f.next();
+	if (!isxdigit(c))
+		error("\\x is not followed by a hexadecimal character: %c", c);
+	int r = 0;
+	for (;; c = f.next()) {
+		switch (c) {
+		case_0_9: r = (r << 4) | (c - '0'); continue;
+		case_a_f: r = (r << 4) | (c - 'a' + 10); continue;
+		case_A_F: r = (r << 4) | (c - 'A' + 10); continue;
+		default: f.back(c); return r;
+		}
+	}
+}
+
+bool Lex::nextoct() {
+	int c = f.peek();
+	return '0' <= c && c <= '7';
+}
+
+// Reads \u or \U escape sequences. len is 4 or 8, respecitvely.
+int Lex::read_universal_char(int len) {
+	unsigned int r = 0;
+	for (int i = 0; i < len; i++) {
+		char c = f.next();
+		switch (c) {
+		case_0_9: r = (r << 4) | (c - '0'); continue;
+		case_a_f: r = (r << 4) | (c - 'a' + 10); continue;
+		case_A_F: r = (r << 4) | (c - 'A' + 10); continue;
+		default: error("invalid universal character: %c", c);
+		}
+	}
+	/*if (!is_valid_ucn(r))
+		errorp(p, "invalid universal character: \\%c%0*x", (len == 4) ? 'u' : 'U', len, r);*/
+	return r;
+}
+
+
+
+Token Lex::next()
+{
+	return tokens.at(index++);
+}
+
+void Lex::back()
+{
+	index--;
+}
+
+
+Token Lex::peek()
+{
+	Token t = next();
+	back();
+	return t;
+}
+
+void Token::copyUnion(const Token &t)
+{
+	switch (t.getType()) {
+	case KEYWORD: 
+	case K_EOF:
+		id = t.id; 
+		break;
+
+	case CHAR_: 
+		ch = t.ch; 
+		break;
+
+	case ID: 
+	case STRING_:
+	case INTEGER:
+	case FLOAT:
+		new(&sval) std::string(t.sval);
+		break;
+	}
+}
 
 std::ostream &operator<<(std::ostream & os, const Token & t)
 {
@@ -321,3 +383,13 @@ std::ostream &operator<<(std::ostream & os, const Token & t)
 
 	return os;
 }
+bool operator==(const Token &t1, const Token &t2)
+{
+	return (t1.getType() == t2.getType() && t1.getPos() == t2.getPos() && t1.getCounter() == t2.getCounter() &&
+		t1.getCh() == t2.getCh() && t1.getId() == t2.getId() && t1.getSval() == t2.getSval());
+}
+bool operator!=(const Token &t1, const Token &t2)
+{
+	return !(t1 == t2);
+}
+

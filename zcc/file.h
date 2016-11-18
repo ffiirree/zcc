@@ -3,30 +3,31 @@
 
 #include <iostream>
 #include <fstream>
+#include <memory>
 #include "zcc.h"
 
 class File {
 public:
-	File(const std::string &filename);
+	File(const std::string &_filename);
 
-	File(const File &f) = delete;
-	File operator=(const File &f) = delete;
-	~File();
+	File(const File &f) :filename(f.filename), buffer(f.buffer), ptr(f.ptr), pos(f.pos) {  }
+	inline File operator=(const File &f) { filename = f.filename; buffer = f.buffer; ptr = f.ptr; pos = f.pos; return *this; }
+	~File() {}
+
+	File open(const std::string &_file);
 
 	char next();
 	char peek();
 	void back(char c);
 
-
 	Pos getPos() { return pos; }
 
 private:
-	std::fstream in;
-	std::fstream out;
+	void create(const std::string &_filename);
 
-	char* buffer;
+	std::string filename;
+	std::shared_ptr<char> buffer;
 	char* ptr;
-
 	Pos pos;
 };
 

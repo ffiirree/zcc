@@ -2,31 +2,40 @@
 #include "error.h"
 
 using namespace std;
-
-File::File(const std::string &filename):
-	pos(1, 1)
+void File::create(const std::string &_filename)
 {
-	in.open(filename, ios::in | ios::binary | ios::ate);
+	std::fstream in;
+
+	in.open(_filename, ios::in | ios::binary | ios::ate);
 	if (!in.is_open())
 		error("internal error: file open failed!");
 
 	int size = in.tellg();
-	buffer = new char[size + 1];
-	buffer[size] = 0;
+	buffer = std::shared_ptr<char>(new char[size + 1]);
+	buffer.get()[size] = 0;
 	in.seekg(0, ios::beg);
-	in.read(buffer, size);
+	in.read(buffer.get(), size);
 
-	ptr = buffer;
+	ptr = buffer.get();
 
 	in.close();
 }
 
-File::~File()
+
+File::File(const std::string &_filename):
+	filename(_filename), pos(1, 1)
 {
-	if (buffer != nullptr) {
-		delete[]buffer;
-		buffer = nullptr;
-	}
+	create(_filename);
+}
+
+File File::open(const std::string &_file)
+{
+	filename = _file;
+	pos = Pos(1, 1);
+
+	create(_file);
+
+	return *this;
 }
 
 char File::next()

@@ -10,22 +10,17 @@ class Lex {
 public:
 	Lex(const std::string &filename);
 
-	Lex(Lex &lex) = delete;
-	Lex operator=(Lex &lex) = delete;
-
+	Lex(Lex &lex) :f(lex.f), keywords(lex.keywords), tokens(lex.tokens), index(index) {  }
+	inline Lex operator=(Lex &lex) { f = lex.f; keywords = lex.keywords; tokens = lex.tokens; index = lex.index; return *this; }
 
 	Token next();
+	void back();
+	Token peek();
 
-	
+	void scan(const std::string &filename);
 
-	int isKeyword(std::string &word);
-	bool next_is(char e);
-
-	
-
-	
 private:
-
+	Token readToken();
 	Token read_rep(char exp, int _k, char _else);
 	Token read_rep2(char exp1, int _k1, char exp2, int _k2, char _else);
 	Token read_string(char c);
@@ -40,10 +35,15 @@ private:
 	int read_universal_char(int len);
 	bool nextoct();
 
+	int isKeyword(std::string &word);
+	bool next_is(char e);
 
 	File f;
 	std::vector<std::string> keywords;
+	std::vector<Token> tokens;
+	int index;
 };
-std::ostream &operator<<(std::ostream & os, const Token & t);
+
+
 
 #endif // !_ZCC_LEX_H
