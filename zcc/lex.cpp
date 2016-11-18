@@ -47,7 +47,7 @@ Token Lex::next()
 			if (next_is('=')) return Token(KEYWORD, OP_A_SUB);
 			if (next_is('-')) return Token(KEYWORD, OP_DEC);
 			if (next_is('>')) return Token(KEYWORD, OP_ARROW);
-			return Token('-');
+			return Token(KEYWORD, (int)'-');
 
 		case '>':
 			if (next_is('>')) 
@@ -62,28 +62,28 @@ Token Lex::next()
 			if (next_is('.'))
 				if (next_is('.'))
 					return Token(KEYWORD, ELLIPSIS);
-			return Token('.');
+			return Token(KEYWORD, (int)'.');
 
 		case '[': case ']': case '(': case ')': case '{':case '}':
 		case '?': case ':': case ',': case '~': case ';':
-			return Token(c);
+			return Token(KEYWORD, (int)c);
 		}
 	} while (c != 0);
 
-	return Token(K_EOF);
+	return Token(K_EOF, 0);
 }
 
 
 Token Lex::read_rep2(char exp1, int _k1, char exp2, int _k2, char _else)
 {
 	if (next_is(exp1))
-		return Token(_k1);
-	return Token(next_is(exp2) ? _k2 : _else);
+		return Token(KEYWORD, _k1);
+	return Token(KEYWORD, (int)(next_is(exp2) ? _k2 : _else));
 }
 
 Token Lex::read_rep(char exp, int _k, char _else)
 {
-	return Token(next_is(exp) ? _k : _else);
+	return Token(KEYWORD, (int)(next_is(exp) ? _k : _else));
 }
 
 bool Lex::next_is(char e)
@@ -95,14 +95,14 @@ bool Lex::next_is(char e)
 	return false;
 }
 
-bool Lex::isKeyword(std::string &word)
+int Lex::isKeyword(std::string &word)
 {
 	for (int i = 0; i < keywords.size(); ++i) {
 		if (keywords.at(i) == word) {
-			return true;
+			return i + K_AUTO;
 		}
 	}
-	return false;
+	return ID;
 }
 
 Token Lex::read_string(char fir)
@@ -205,13 +205,119 @@ Token Lex::read_char()
 	return Token(CHAR_, c);
 }
 
-Token Lex::read_id(char c)
+Token Lex::read_id(char fir)
 {
+	int i = 0;
+	int c = fir;
+	std::string str;
 
+	do {
+		str.push_back(c);
+		c = f.next();
+	} while (isalnum(c) && c != '_');
+	f.back(c);
+
+	if ((i = isKeyword(str)) != ID)
+		return Token(KEYWORD, i);
+
+	return Token(ID, str);
 }
 
 
-Token Lex::read_num(char c)
+Token Lex::read_num(char fir)
 {
+	char c = fir;
+	int type = INTEGER;
+	int pos = 0;
+	std::string str;
 
+	if (c > '0') {
+		do {
+			str.push_back(c);
+			c = f.next();
+		} while (isdigit(c));
+
+		if (c == 'e' || c == 'E') goto _e;
+
+		if (c == '.') {
+			str.push_back(c);
+			c = f.next();
+			type = FLOAT;
+			if (isdigit(c)) {
+				do {
+					str.push_back(c);
+					c = f.next();
+				} while (isdigit(c));
+			_e:
+				if (c == 'e' || c == 'E') {
+					str.push_back(c);
+					c = f.next();
+
+					if (!(c == '+' || c == '-' || isdigit(c)))
+						error("error number!");
+
+					if (c == '-' || c == '+') {
+						str.push_back(c);
+						c = f.next();
+					}
+
+					if (isdigit(c)) {
+						while (isdigit(c)) {
+							str.push_back(c);
+							c = f.next();
+						}
+					}
+				}
+			}
+		}
+		f.back(c);
+	}
+	else {
+		// 十六进制
+		str.push_back(c);
+		c = f.next();
+		if (c == 'x' || c == 'X') {
+			do {
+				str.push_back(c);
+				c = f.next();
+			} while (isxdigit(c));
+		}
+		// 8进制
+		else {
+			while (c >= '0' && c <= '7') {
+				str.push_back(c);
+				c = f.next();
+			}
+		}
+		f.back(c);
+	}
+	return Token(type, str);
+}
+
+
+std::ostream &operator<<(std::ostream & os, const Token & t)
+{
+	os << t.getType() << "\t";
+
+	if (t.getType() == KEYWORD) {
+		switch (t.getId())
+		{
+#define keyword(ty, name, _) case ty: os << name ;break;
+#define op(ty,name) case ty: os << name;break;
+			KEYWORD_MAP
+				OP_MAP
+#undef keyword
+#undef op
+		default: os << (char)t.getId(); break;
+		}
+		os << std::endl;
+	}
+	else if(t.getType() == ID)
+		os << t.getSval().c_str() << std::endl;
+	else if (t.getType() == CHAR_)
+		os << (char)t.getCh() << std::endl;
+	else if (t.getType() == STRING_ || t.getType() == INTEGER || t.getType() == FLOAT)
+		os << t.getSval().c_str() << std::endl;
+
+	return os;
 }

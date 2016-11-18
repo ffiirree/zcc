@@ -18,9 +18,10 @@ public:
 
 	
 
-	bool isKeyword(std::string &word);
+	int isKeyword(std::string &word);
 	bool next_is(char e);
 
+	
 
 	
 private:
@@ -43,6 +44,6 @@ private:
 	File f;
 	std::vector<std::string> keywords;
 };
-
+std::ostream &operator<<(std::ostream & os, const Token & t);
 
 #endif // !_ZCC_LEX_H
