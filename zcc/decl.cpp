@@ -1,19 +1,72 @@
 #include "parser.h"
 #include "error.h"
 
-void Parser::declaration(Env &env, bool isGlo)
+void Parser::declaration(std::vector<Node> &list, bool isGlo)
+{
+	int sclass = 0;
+	Type baseType = decl_spec_opt(&sclass);               // 声明的基本类型
+	if (next_is(';'))
+		return;
+
+	for (;;) {
+		std::string name;
+		std::vector<Node> params;
+
+		Type ty = declarator(baseType, name, params, DECL_BODY);  // 定义
+		ty.setStatic(sclass == K_STATIC);
+
+		if(sclass == K_TYPEDEF){     //typedef 定义
+
+		}
+		else if (ty.isStatic() && !isGlo) {   // 局部static变量
+
+		}
+		else {
+			Node var;
+			if (isGlo)
+				var = createGLoVarNode(ty, name);
+			else
+				var = createLocVarNode(ty, name);
+
+			if (next_is('=')) {
+				list.push_back(createDeclNode(var, decl_init(ty)));
+			}
+			else if (sclass != K_EXTERN && ty.getType() != FUNC) {
+				list.push_back(createDeclNode(var));
+			}
+		}
+		if (next_is(';'))
+			return;
+		if (!next_is(','))
+			error("';' or ',' are expected, but got not");
+	}
+}
+
+std::vector<Node> Parser::decl_init(Type &ty)
+{
+	std::vector<Node> list;
+	if (is_keyword(lex.peek(), '{') || ty.getType() == STRING_) {
+		init_list(list, ty, 0, false);
+	}
+	else {
+
+	}
+	return list;
+}
+
+
+void  Parser::init_list(std::vector<Node> &r, Type &ty, int off, bool designated)
 {
 
 }
 
-
 Type Parser::declarator(Type &ty, std::string &name, std::vector<Node> params, int deal_type)
 {
-	if (next_is('(')) {
+	if (next_is('*')) {
 
 	}
 
-	if (next_is('*')) {
+	if (next_is('(')) {
 
 	}
 
@@ -28,19 +81,22 @@ Type Parser::declarator(Type &ty, std::string &name, std::vector<Node> params, i
 
 Type Parser::decl_spec_opt(int *sclass)
 {
-	if (is_type(lex.peek().getId()))
+	if (is_type(lex.peek()))
 		return decl_specifiers(sclass);
 
 	error("missing type, defalut 'int'.");
 	return Type(K_INT, 4, false);
 }
 
-Type Parser::direct_decl_tail(Type retty, std::vector<Node> params)
+Type Parser::direct_decl_tail(Type &retty, std::vector<Node> params)
 {
 	if (next_is('['))
 		_log_("no array.");
+
+	// 如果是括号，则为函数
 	if (next_is('('))
-		return func_param_list(retty, params);
+		return func_param_list(&retty, params);
+
 	return retty;
 }
 
@@ -139,5 +195,14 @@ Type Parser::decl_specifiers(int *rsclass)
 		}
 	}
 
+	lex.back();
+
 	return type;
+}
+
+
+std::vector<Node> Parser::initializer(Type &ty)
+{
+	std::vector<Node> list;
+	return list;
 }

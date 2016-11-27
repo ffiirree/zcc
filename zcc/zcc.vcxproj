@@ -118,6 +118,7 @@
     <ClInclude Include="zcc.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="check.cpp" />
     <ClCompile Include="decl.cpp" />
     <ClCompile Include="expr.cpp" />
     <ClCompile Include="file.cpp" />

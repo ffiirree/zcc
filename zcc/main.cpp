@@ -3,13 +3,15 @@
 
 int main(int argc, char *argv[])
 {
-	Lex lex(*++argv);
+	Parser parser(*++argv);
 
-	Token t;
-	do {
-		t = lex.next();
-		std::cout << t;
-	} while (t.getType() != K_EOF);
+	parser.trans_unit();
+
+	//Token t;
+	//do {
+	//	t = lex.next();
+	//	std::cout << t;
+	//} while (t.getType() != K_EOF);
 
 	system("pause");
 	return 0;

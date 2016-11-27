@@ -1,55 +1,133 @@
 #include "parser.h"
+#include "error.h"
 
-
+/**
+ * @berif 每一个句子都是一个节点
+ */
 Node Parser::statement()
 {
+	Token t = lex.next();
+	if (t.getType() == KEYWORD) {
+		switch (t.getId())
+		{
+		case '{': return compound_stmt();
+		case K_IF: return if_stmt();
+		case K_FOR:return for_stmt();
+		case K_WHILE:return while_stmt();
+		case K_DO:return do_stmt();
+		case K_RETURN: return return_stmt();
+		case K_SWITCH: return switch_stmt();
+		case K_CASE: return case_stmt();
+		case K_DEFAULT: return default_stmt();
+		case K_BREAK: return break_stmt();
+		case K_CONTINUE:return continue_stmt();
+		case K_GOTO: return goto_stmt();
+		}
+	}
 
+	// 标签，goto语句的标签
+	if (t.getType() == ID && next_is(':')) {
+		// label
+	}
+	lex.back();
+	Node r = expr_opt();
+	expect(';');
+	return r;
 }
+/**
+ * @berif compound_stmt = '{' {(declaration | statement)} '}' 
+ */
 Node Parser::compound_stmt()
 {
+	__IN_SCOPE__(localenv, localenv);
 
+	std::vector<Node> list;
+
+	for (;;) {
+		if (next_is('}')) break;
+		decl_or_stmt(list);
+	}
+
+	__OUT_SCOPE__(localenv);
+	return createCompoundStmtNode(list);
 }
+
+/**
+ * @berif
+ *
+ * declaration = decl_specifiers [init_decl_list] ';'
+ * statement = labeled_stmt ....
+ */
+void Parser::decl_or_stmt(std::vector<Node> &list)
+{
+	if (lex.peek().getId() == K_EOF)
+		error("premature end of input");
+
+	if (is_type(lex.peek())) {
+		declaration(list, false);
+	}
+	else {
+		list.push_back(statement());
+	}
+}
+
 Node Parser::if_stmt()
 {
-
+	Node r;
+	return r;
 }
 Node Parser::while_stmt()
 {
-
+	Node r;
+	return r;
 }
 Node Parser::switch_stmt()
 {
-
+	Node r;
+	return r;
 }
 Node Parser::for_stmt()
 {
-
+	Node r;
+	return r;
 }
 Node Parser::do_stmt()
 {
-
+	Node r;
+	return r;
 }
 Node Parser::goto_stmt()
 {
-
+	Node r;
+	return r;
 }
 Node Parser::continue_stmt()
 {
-
+	Node r;
+	return r;
 }
 Node Parser::return_stmt()
 {
-
+	Node r;
+	return r;
 }
 Node Parser::case_stmt()
 {
-
+	Node r;
+	return r;
 }
 Node Parser::default_stmt()
 {
-
+	Node r;
+	return r;
 }
 Node Parser::label_stmt()
 {
-
+	Node r;
+	return r;
+}
+Node Parser::break_stmt()
+{
+	Node r;
+	return r;
 }

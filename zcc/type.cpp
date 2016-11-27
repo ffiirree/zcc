@@ -96,7 +96,7 @@ void Node::copyUnion(const Node &n)
 		new(&varName) std::string(n.varName);
 		loc_off = n.loc_off;
 		lvarinit = n.lvarinit;
-		new (&glabel) std::string(n.glabel);
+		new (&glabal) std::string(n.glabal);
 		break;
 
 	case BIN_OP:

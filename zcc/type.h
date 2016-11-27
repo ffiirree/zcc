@@ -92,9 +92,24 @@ enum {
 	FUNC, FUNC_BODY, COMPARISON, SECTION, UNIT_ROOT,
 	VAR, DECL, INIT, BIN_OP, UNARY_OP, STMT, TERN_OP, LABEL, COM_STMT, STRUCT_REF,
 
+	COMPOUND_STMT, 
+	DECL_BODY,
+	GLO_VAR,
+	LOC_VAR,
+	CONV, // 类型转换
+	OP_PRE_INC,
+	OP_PRE_DEC,
+	OP_POST_INC,
+	OP_POST_DEC,
+	CAST,
+
 #define op(ty, _) ty,
 	OP_MAP
 #undef op
+	OP_SHR,
+	OP_SHL,
+	OP_A_SHR,
+	OP_A_SHL,
 };
 
 
@@ -159,6 +174,8 @@ std::ostream &operator<<(std::ostream & os, const Token & t);
 bool operator==(const Token &t1, const Token &t2);
 bool operator!=(const Token &t1, const Token &t2);
 
+class Node;
+
 /**
  * 节点的类型
  */
@@ -166,7 +183,8 @@ class Type {
 public:
 	Type():type(0), size(0){}
 	Type(int ty, int s, bool isunsig) :type(ty), size(s), isUnsig(isunsig) {  }
-	Type(int ty, Type *ret, std::vector<Type> params)
+	Type(int ty, Type *ret, std::vector<Node> _params) : type(ty), retType(ret), params(_params) { }
+
 	Type(const Type &t):type(t.type), size(t.size), isUnsig(t.isUnsig), 
 		isSta(t.isSta), ptr(t.ptr), len(t.len), retType(t.retType), params(t.params){}
 	inline Type operator=(const Type &t) { 
@@ -187,6 +205,8 @@ public:
 	inline bool isSigned() { return !isUnsig; }
 	inline bool isStatic() { return isSta; }
 	inline void setStatic(bool is) { isSta = is; }
+	inline int getSize() const { return size; }
+	inline void setUnsig(bool isunsig) { isUnsig = isunsig; }
 
 private:
 	int type;
@@ -203,7 +223,7 @@ private:
 
 	//function
 	Type *retType;
-	std::vector<Type> params;
+	std::vector<Node> params;
 };
 
 
@@ -213,6 +233,8 @@ private:
 class Node;
 class Node {
 public:
+	Node():Node(K_EOF) {}
+	Node(int k):kind(k){}
 	Node(int k, Type &ty) :kind(k), type(ty) {  }
 	Node(int k, Type &ty, long val) :kind(k), type(ty), int_val(val) {  }
 	Node(int k, Type &ty, double val) :kind(k), type(ty), float_val(val) {  }
@@ -222,7 +244,7 @@ public:
 	~Node() {
 		switch (kind) {
 		case STRING_: sval.~basic_string();break;
-		case VAR: varName.~basic_string(), glabel.~basic_string(); break;
+		case VAR: varName.~basic_string(), glabal.~basic_string(); break;
 		case FUNC: funcName.~basic_string(); break;
 		case LABEL:
 		case K_GOTO:
@@ -233,6 +255,7 @@ public:
 
 	inline int getKind() const { return kind; }
 	inline Type getType() const { return type; }
+	inline void setType(Type &ty) { type = ty; }
 	union {
 		// Char, int, or long
 		long int_val;
@@ -258,7 +281,7 @@ public:
 			std::vector<Node> lvarinit;
 
 			// global
-			std::string glabel;
+			std::string glabal;
 		};
 
 		// Binary operator
@@ -335,8 +358,6 @@ private:
 
 	int kind;
 	Type type;
-
-	
 };
 
 #endif // !_ZCC_TYPE_H
