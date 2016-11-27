@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
-#include "zcc.h"
+#include "type.h"
 
 class File {
 public:

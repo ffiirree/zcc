@@ -1,6 +1,9 @@
 #ifndef _ZCC_TYPE_H
 #define _ZCC_TYPE_H
 
+#include <vector>
+#include <string>
+
 #define _CASE_3(x0,x1,x2) case x0: case x1: case x2
 #define _CASE_6(x0,x1,x2,x3,x4,x5) _CASE_3(x0,x1,x2): _CASE_3(x3,x4,x5)
 #define _CASE_12(x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11) _CASE_6(x0,x1,x2,x3,x4,x5): _CASE_6(x6,x7,x8,x9,x10,x11)
@@ -86,11 +89,254 @@ enum {
 
 enum {
 	ID = 180, CHAR_, STRING_, INTEGER, FLOAT,
-	FUNC, COMPARISON, SECTION, UNIT_ROOT,
+	FUNC, FUNC_BODY, COMPARISON, SECTION, UNIT_ROOT,
+	VAR, DECL, INIT, BIN_OP, UNARY_OP, STMT, TERN_OP, LABEL, COM_STMT, STRUCT_REF,
 
 #define op(ty, _) ty,
 	OP_MAP
 #undef op
+};
+
+
+class Pos {
+public:
+	Pos() :line(1), cols(1) {  }
+	Pos(int _line, int _cols) :line(_line), cols(_cols) {  }
+	Pos(const Pos &p) : line(p.line), cols(p.cols) {  }
+	Pos operator=(const Pos &p) { line = p.line; cols = p.cols; return (*this); }
+
+	int line;
+	int cols;
+};
+inline bool operator==(const Pos &p1, const Pos &p2) { return p1.line == p2.line && p1.cols == p2.cols; }
+
+/**
+ * 词法单元
+ */
+class Token {
+public:
+	Token() :type(K_EOF), pos(), counter(0), id(0) {}
+	Token(int _type, int _id) :type(_type), counter(0), id(_id) {  }
+	Token(int ty, std::string &_sval) : type(ty), counter(0), sval(_sval) {  }
+	Token(int ty, char _c) : type(ty), pos(), counter(0), ch(_c) {  }
+	~Token() {
+		if (type == ID || type == STRING_ || type == INTEGER || type == FLOAT)
+			sval.~basic_string();
+	}
+
+	Token(const Token &t) :type(t.type), pos(t.pos), counter(t.counter) { copyUnion(t); }
+	Token operator=(const Token &t) {
+		type = t.type;
+		pos = t.pos;
+		counter = t.counter;
+		copyUnion(t);
+		return (*this);
+	}
+
+	inline int getType() const { return type; }
+	inline Pos getPos() const { return pos; }
+	inline int getCounter() const { return counter; }
+	inline int getId() const { return id; }
+	inline std::string getSval() const { return sval; }
+	inline int getCh() const { return ch; }
+
+private:
+	void copyUnion(const Token &t);
+
+	int type;
+	Pos pos;
+	int counter;
+
+	union
+	{
+		int id;                  // KEYWORD
+		std::string sval;        // STRING 
+		int ch;                  // CHAR_
+	};
+
+};
+std::ostream &operator<<(std::ostream & os, const Token & t);
+bool operator==(const Token &t1, const Token &t2);
+bool operator!=(const Token &t1, const Token &t2);
+
+/**
+ * 节点的类型
+ */
+class Type {
+public:
+	Type():type(0), size(0){}
+	Type(int ty, int s, bool isunsig) :type(ty), size(s), isUnsig(isunsig) {  }
+	Type(int ty, Type *ret, std::vector<Type> params)
+	Type(const Type &t):type(t.type), size(t.size), isUnsig(t.isUnsig), 
+		isSta(t.isSta), ptr(t.ptr), len(t.len), retType(t.retType), params(t.params){}
+	inline Type operator=(const Type &t) { 
+		type = t.type;
+		size = t.size;
+		isUnsig = t.isUnsig;
+		ptr = t.ptr;
+		len = t.len;
+		retType = t.retType;
+		params = t.params;
+		return *this;
+	}
+
+	inline Type create(int ty, int s, bool isuns) { type = ty, size = s, isUnsig = isuns; return *this; }
+
+
+	inline int getType() const { return type; }
+	inline bool isSigned() { return !isUnsig; }
+	inline bool isStatic() { return isSta; }
+	inline void setStatic(bool is) { isSta = is; }
+
+private:
+	int type;
+	int size;
+
+	bool isUnsig;
+	bool isSta;
+
+	// pointer or array
+	Type *ptr;
+
+	// array length
+	int len;
+
+	//function
+	Type *retType;
+	std::vector<Type> params;
+};
+
+
+/**
+ * AST's Node
+ */
+class Node;
+class Node {
+public:
+	Node(int k, Type &ty) :kind(k), type(ty) {  }
+	Node(int k, Type &ty, long val) :kind(k), type(ty), int_val(val) {  }
+	Node(int k, Type &ty, double val) :kind(k), type(ty), float_val(val) {  }
+
+	Node(const Node &n) :kind(n.kind), type(n.type) { copyUnion(n); }
+	inline Node operator=(const Node &n) { kind = n.kind; type = n.type; copyUnion(n); return *this; }
+	~Node() {
+		switch (kind) {
+		case STRING_: sval.~basic_string();break;
+		case VAR: varName.~basic_string(), glabel.~basic_string(); break;
+		case FUNC: funcName.~basic_string(); break;
+		case LABEL:
+		case K_GOTO:
+			label.~basic_string();
+			break;
+		}
+	}
+
+	inline int getKind() const { return kind; }
+	inline Type getType() const { return type; }
+	union {
+		// Char, int, or long
+		long int_val;
+
+		// Float or double
+		struct {
+			double float_val;
+			//char *flabel;
+		};
+
+		// String
+		struct {
+			std::string sval;
+			//char *slabel;
+		};
+
+		// Local/global variable
+		struct {
+			std::string varName;
+
+			// local
+			int loc_off;
+			std::vector<Node> lvarinit;
+
+			// global
+			std::string glabel;
+		};
+
+		// Binary operator
+		struct {
+			Node *left;        // 左节点
+			Node *right;       // 右节点
+		};
+
+		// Unary operator
+		struct {
+			Node *operand;
+		};
+
+
+		// Function call or function declaration
+		struct {
+			std::string funcName;
+
+			// Function call
+			std::vector<Node> args;
+			Type func_type;
+
+			// Function pointer or function designator
+			Node *func_ptr;
+
+			// Function declaration
+			std::vector<Node> params;
+			std::vector<Node> localvars;
+			Node *body;
+		};
+
+
+		// Declaration
+		struct {
+			Node *decl_var;
+			std::vector<Node> decl_init;
+		};
+
+		// Initializer
+		struct {
+			Node *init_val;
+			int init_off;
+			Type to_type;
+		};
+
+		// If statement or ternary operator
+		struct {
+			Node *cond;
+			Node *then;
+			Node *els;
+		};
+
+		// Goto and label
+		struct {
+			std::string label;
+			std::string newLabel;
+		};
+
+		// Return statement
+		Node *retval;
+
+		// Compound statement
+		std::vector<Node> stmts;
+
+		// Struct reference
+		struct {
+			Node *struc;
+			char *field;
+			Type *fieldtype;
+		};
+	};
+private:
+	void copyUnion(const Node &n);
+
+	int kind;
+	Type type;
+
+	
 };
 
 #endif // !_ZCC_TYPE_H

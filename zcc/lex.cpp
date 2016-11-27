@@ -1,7 +1,5 @@
 #include "lex.h"
-#include "file.h"
 #include "type.h"
-
 #include "error.h"
 
 
@@ -334,62 +332,5 @@ Token Lex::peek()
 	Token t = next();
 	back();
 	return t;
-}
-
-void Token::copyUnion(const Token &t)
-{
-	switch (t.getType()) {
-	case KEYWORD: 
-	case K_EOF:
-		id = t.id; 
-		break;
-
-	case CHAR_: 
-		ch = t.ch; 
-		break;
-
-	case ID: 
-	case STRING_:
-	case INTEGER:
-	case FLOAT:
-		new(&sval) std::string(t.sval);
-		break;
-	}
-}
-
-std::ostream &operator<<(std::ostream & os, const Token & t)
-{
-	os << t.getType() << "\t";
-
-	if (t.getType() == KEYWORD) {
-		switch (t.getId())
-		{
-#define keyword(ty, name, _) case ty: os << name ;break;
-#define op(ty,name) case ty: os << name;break;
-			KEYWORD_MAP
-				OP_MAP
-#undef keyword
-#undef op
-		default: os << (char)t.getId(); break;
-		}
-		os << std::endl;
-	}
-	else if(t.getType() == ID)
-		os << t.getSval().c_str() << std::endl;
-	else if (t.getType() == CHAR_)
-		os << (char)t.getCh() << std::endl;
-	else if (t.getType() == STRING_ || t.getType() == INTEGER || t.getType() == FLOAT)
-		os << t.getSval().c_str() << std::endl;
-
-	return os;
-}
-bool operator==(const Token &t1, const Token &t2)
-{
-	return (t1.getType() == t2.getType() && t1.getPos() == t2.getPos() && t1.getCounter() == t2.getCounter() &&
-		t1.getCh() == t2.getCh() && t1.getId() == t2.getId() && t1.getSval() == t2.getSval());
-}
-bool operator!=(const Token &t1, const Token &t2)
-{
-	return !(t1 == t2);
 }
 

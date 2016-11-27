@@ -2,8 +2,7 @@
 #define _ZCC_LEX_H
 
 #include <iostream>
-#include <vector>
-#include "zcc.h"
+#include <string>
 #include "file.h"
 
 class Lex {

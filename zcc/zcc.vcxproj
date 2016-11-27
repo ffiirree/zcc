@@ -118,10 +118,14 @@
     <ClInclude Include="zcc.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="decl.cpp" />
+    <ClCompile Include="expr.cpp" />
     <ClCompile Include="file.cpp" />
     <ClCompile Include="lex.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="parser.cpp" />
+    <ClCompile Include="stmt.cpp" />
+    <ClCompile Include="type.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

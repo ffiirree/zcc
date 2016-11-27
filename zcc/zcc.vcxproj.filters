@@ -47,5 +47,17 @@
     <ClCompile Include="file.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="type.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="stmt.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="expr.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="decl.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
