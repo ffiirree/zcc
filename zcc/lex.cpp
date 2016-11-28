@@ -160,7 +160,7 @@ Token Lex::read_id(char fir)
 	do {
 		str.push_back(c);
 		c = f.next();
-	} while (isalnum(c) && c != '_');
+	} while (isalnum(c) || c == '_');
 	f.back(c);
 
 	if ((i = isKeyword(str)) != ID) {
