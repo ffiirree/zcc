@@ -29,17 +29,23 @@ std::vector<Node> Parser::trans_unit()
  */
 bool Parser::isFuncDef()
 {
+	
 	int count = 0;
-	while (is_type(lex.next())) {
-		count++;
-	}
-	lex.back();
+	Token t;
 
-	Token t = lex.next();
-	count++;
+	// 返回类型
+	do {
+		t = lex.next();
+		count++;
+	} while (is_type(t));
+	
+	// 函数名
 	if (t.getType() == ID) {
-		if (is_keyword(lex.next(), '(')) {
-			count++;
+
+		// 函数参数
+		t = lex.next();
+		count++;
+		if (is_keyword(t, '(')) {
 			skip_parenthesis(&count);
 			t = lex.next();
 			count++;
@@ -51,7 +57,9 @@ bool Parser::isFuncDef()
 			else return false;
 		}
 	}
-	lex.back();
+	for (int i = 0; i < count; ++i)
+		lex.back();
+	return false;
 }
 
 /**
@@ -185,15 +193,16 @@ Node Parser::createDeclNode(Node &var, std::vector<Node> &init)
 	return node;
 }
 
-Node Parser::createGLoVarNode(Type &ty, std::string name)
+Node Parser::createGLoVarNode(Type &ty, std::string &name)
 {
 	Node r(GLO_VAR, ty);
 	r.varName = name;
 	return r;
 }
-Node Parser::createLocVarNode(Type &ty, std::string name)
+Node Parser::createLocVarNode(Type &ty, std::string &name)
 {
 	Node r;
+	r.varName = name;
 	return r;
 }
 

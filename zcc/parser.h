@@ -45,8 +45,8 @@ private:
 	Node createCompoundStmtNode(std::vector<Node> &stmts);
 	Node createDeclNode(Node &var);
 	Node createDeclNode(Node &var, std::vector<Node> &init);
-	Node createGLoVarNode(Type &ty, std::string name);
-	Node createLocVarNode(Type &ty, std::string name);
+	Node createGLoVarNode(Type &ty, std::string &name);
+	Node createLocVarNode(Type &ty, std::string &name);
 	// Á½Ôª²Ù×÷·û
 	Node createBinOpNode(Type &ty, int kind, Node *left, Node *right);
 	Node createUnaryNode(int kind, Type &ty, Node &node);
