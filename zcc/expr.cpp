@@ -263,6 +263,17 @@ Node Parser::postfix_expr_tail(Node &node)
 		return node;
 	}
 }
+
+Node Parser::var_or_func(Token &t)
+{
+	Node r = localenv->search(t.getSval());
+	if (r.kind == NODE_NULL)
+		error("undefined var : %s！", t.getSval());
+
+	return r;
+}
+
+
 Node Parser::primary_expr()
 {
 	Token tok = lex.next();
@@ -274,16 +285,27 @@ Node Parser::primary_expr()
 	}
 
 	switch (tok.getType()) {
+
+		// 如果是ID， 则可能为变量或函数调用
 	case ID:
-		//return read_var_or_func(tok->sval);
+		return var_or_func(tok);
+		return NULL;
+
 		// 常量
 	case INTEGER:
+		return createIntNode(tok);
+
 	case FLOAT:
-		//return read_number(tok);
+		return NULL;
+
 	case CHAR_:
 		//return ast_inttype(char_type(tok->enc), tok->c);
+		return NULL;
+
 	case STRING_:
 		//return ast_string(tok->enc, tok->sval, tok->slen);
+		return NULL;
+
 	case KEYWORD:
 		lex.back();
 		return NULL;

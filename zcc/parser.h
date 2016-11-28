@@ -10,12 +10,12 @@
 class Env {
 public:
 	Env():Env(nullptr) {}
-	Env(Env *_pre) :pre(_pre), card() { }
-	void push_back(Node &n) { card.push_back(n); }
-	Type search(std::string &key);
+	Env(Env *_pre) :pre(_pre), nodes() { }
+	void push_back(Node &n) { nodes.push_back(n); }
+	Node search(std::string &key);
 
 	Env *pre;
-	std::vector<Node> card;
+	std::vector<Node> nodes;
 };
 
 
@@ -38,15 +38,16 @@ private:
 	bool is_arithtype(Type &ty);
 	Type get_type(std::string key);
 	int get_compound_assign_op(Token &t);
+	
 
 	//
 	Node createFuncNode(Type &ty, std::string & funcName, std::vector<Node> params, Node *body);
-	Node createIntNode(int kind, Type &ty, long val);
+	Node createIntNode(Token &t);
 	Node createCompoundStmtNode(std::vector<Node> &stmts);
 	Node createDeclNode(Node &var);
 	Node createDeclNode(Node &var, std::vector<Node> &init);
-	Node createGLoVarNode(Type &ty, std::string &name);
-	Node createLocVarNode(Type &ty, std::string &name);
+	Node createGLoVarNode(Type &ty, std::string name);
+	Node createLocVarNode(Type &ty, std::string name);
 	// Á½Ôª²Ù×÷·û
 	Node createBinOpNode(Type &ty, int kind, Node *left, Node *right);
 	Node createUnaryNode(int kind, Type &ty, Node &node);
@@ -116,6 +117,8 @@ private:
 	Node postfix_expr();
 	Node postfix_expr_tail(Node &node);
 	Node primary_expr();
+
+	Node var_or_func(Token &t);
 
 
 	Node binop(int op, Node &lhs, Node &rhs);

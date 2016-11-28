@@ -1,14 +1,13 @@
+int global_var;                                      // 2
 
-int global_var;
+int main(void)                                       // 7
+{                                                    // 8
+	int local_gar;                                   // 11
 
-int main(void)
-{
-	int local_gar;
+	global_var = 2;                                  // 15
+	local_gar = 3;                                   // 19
 
-	global_var = 2;
-	local_gar = 3;
-
-	global_var = global_var + local_gar;
+	global_var = global_var + local_gar;             // 25
 
 	printf("Hello World!\n");
 	return 0;

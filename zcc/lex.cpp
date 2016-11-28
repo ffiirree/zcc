@@ -55,7 +55,8 @@ Token Lex::readToken()
 
 		case '/':
 			if (next_is('/')) {
-				while (f.next() != '\n' && f.next() != 0);
+				while (c != '\n' && c != 0)
+					c = f.next();
 				break;
 			}
 			return read_rep('=', OP_A_DIV, '/');
@@ -313,8 +314,6 @@ int Lex::read_universal_char(int len) {
 		errorp(p, "invalid universal character: \\%c%0*x", (len == 4) ? 'u' : 'U', len, r);*/
 	return r;
 }
-
-
 
 Token Lex::next()
 {

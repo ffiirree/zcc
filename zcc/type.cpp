@@ -71,95 +71,62 @@ void Token::copyUnion(const Token &t)
 /**
  * Node
  */
-void Node::copyUnion(const Node &n)
+
+Node::Node(const Node &n)
 {
-	switch (n.getType().getType())
-	{
+	copying(n);
+}
+Node Node::operator=(const Node &n)
+{
+	copying(n);
+	return *this;
+}
 
-	case K_CHAR:
-	case K_INT:
-	case K_SHORT:
-	case K_LONG:
-		int_val = n.int_val;
-		break;
+inline void Node::copying(const Node &n)
+{
+	kind = n.kind;
+	type = n.type;
 
-	case K_FLOAT:
-	case K_DOUBLE:
-		float_val = n.float_val;
-		break;
+	int_val = n.int_val;
 
-	case STRING_:
-		new(&sval) std::string(n.sval);
-		break;
+	float_val = n.float_val;
 
-	case VAR:
-		new(&varName) std::string(n.varName);
-		loc_off = n.loc_off;
-		lvarinit = n.lvarinit;
-		new (&glabal) std::string(n.glabal);
-		break;
-
-	case BIN_OP:
-		left = n.left;
-		right = n.right;
-		break;
-
-	case UNARY_OP:
-		operand = n.operand;
-		break;
-
-	case FUNC:
-		new(&funcName) std::string(funcName);
-		args = n.args;
-		func_type = n.func_type;
-		func_ptr = n.func_ptr;
-		params = n.params;
-		localvars = n.localvars;
-		body = n.body;
-		break;
-
-	case DECL:
-		decl_var = n.decl_var;
-		decl_init = n.decl_init;
-		break;
+	sval = n.sval;
 
 
-	case INIT:
-		init_val = n.init_val;
-		init_off = n.init_off;
-		to_type = n.to_type;
-		break;
+	varName = n.varName;
+	loc_off = n.loc_off;
+	lvarinit = n.lvarinit;
+	glabel = n.glabel;
 
 
-	case STMT:
-	case TERN_OP:
-		cond = n.cond;
-		then = n.then;
-		els = n.els;
-		break;
+	left = n.left;
+	right = n.right;
+	operand = n.operand;
 
-	case K_GOTO:
-	case LABEL:
-		label = n.label;
-		newLabel = n.newLabel;
-		break;
+	funcName = n.funcName;
+	args = n.args;
+	func_type = n.func_type;
+	func_ptr = n.func_ptr;
+	params = n.params;
+	localvars = n.localvars;
+	body = body;
 
-	case K_RETURN:
-		retval = n.retval;
-		break;
+	decl_var = n.decl_var;
+	decl_init = decl_init;
 
-	case COM_STMT:
-		stmts = n.stmts;
-		break;
+	init_val = n.init_val;
+	init_off = n.init_off;
+	to_type = n.to_type;
+	cond = n.cond;
+	then = n.then;
+	els = n.els;
+	label = n.label;
+	newLabel = n.newLabel;
 
-	case STRUCT_REF:
-		struc = n.struc;
-		field = n.field;
-		fieldtype = n.fieldtype;
-		break;
-
-
-	default:
-		break;
-	}
+	retval = n.retval;
+	stmts = n.stmts;
+	struc = n.struc;
+	field = n.field;
+	fieldtype = n.fieldtype;
 }

@@ -31,7 +31,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 			if (next_is('=')) {
 				list.push_back(createDeclNode(var, decl_init(ty)));
 			}
-			else if (sclass != K_EXTERN && ty.getType() != FUNC) {
+			else if (sclass != K_EXTERN && ty.getType() != NODE_FUNC) {
 				list.push_back(createDeclNode(var));
 			}
 		}

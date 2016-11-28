@@ -88,14 +88,11 @@ enum {
 
 
 enum {
-	ID = 180, CHAR_, STRING_, INTEGER, FLOAT,
-	FUNC, FUNC_BODY, COMPARISON, SECTION, UNIT_ROOT,
+	ID = 180, CHAR_, STRING_, INTEGER, FLOAT, FUNC_BODY, COMPARISON, SECTION, UNIT_ROOT,
 	VAR, DECL, INIT, BIN_OP, UNARY_OP, STMT, TERN_OP, LABEL, COM_STMT, STRUCT_REF,
 
 	COMPOUND_STMT, 
 	DECL_BODY,
-	GLO_VAR,
-	LOC_VAR,
 	CONV, // 类型转换
 	OP_PRE_INC,
 	OP_PRE_DEC,
@@ -111,6 +108,8 @@ enum {
 	OP_A_SHR,
 	OP_A_SHL,
 };
+
+
 
 
 class Pos {
@@ -226,6 +225,35 @@ private:
 	std::vector<Node> params;
 };
 
+enum NodeKind{
+	NODE_NULL,
+	NODE_CHAR,
+	NODE_INT,
+	NODE_LONG,
+	NODE_SHORT,
+
+	NODE_FLOAT,
+	NODE_DOUBLE,
+	NODE_STRING,
+
+	NODE_GLO_VAR,
+	NODE_LOC_VAR,
+
+	NODE_BINOP,
+	NODE_UOP,
+	NODE_FUNC,
+	NODE_DECL,
+	NODE_INIT,
+	NODE_IF_STMT,
+	NODE_OR_TOP,
+	NODE_GOTO,
+	NODE_LABEL,
+	NODE_RETURN,
+	NODE_COMP_STMT,
+	NODE_STRUCT_REF,
+
+};
+
 
 /**
  * AST's Node
@@ -233,131 +261,122 @@ private:
 class Node;
 class Node {
 public:
-	Node():Node(K_EOF) {}
-	Node(int k):kind(k){}
-	Node(int k, Type &ty) :kind(k), type(ty) {  }
-	Node(int k, Type &ty, long val) :kind(k), type(ty), int_val(val) {  }
-	Node(int k, Type &ty, double val) :kind(k), type(ty), float_val(val) {  }
+	Node() : Node(NODE_NULL) { }
+	Node(int k) :kind(k) { }
+	Node(int k, Type &ty) :kind(k), type(ty) { }
+	Node(int k, Type &ty, long val) :kind(k), type(ty), int_val(val) { }
+	Node(int k, Type &ty, double val) :kind(k), type(ty), float_val(val) { }
 
-	Node(const Node &n) :kind(n.kind), type(n.type) { copyUnion(n); }
-	inline Node operator=(const Node &n) { kind = n.kind; type = n.type; copyUnion(n); return *this; }
-	~Node() {
-		switch (kind) {
-		case STRING_: sval.~basic_string();break;
-		case VAR: varName.~basic_string(), glabal.~basic_string(); break;
-		case FUNC: funcName.~basic_string(); break;
-		case LABEL:
-		case K_GOTO:
-			label.~basic_string();
-			break;
-		}
-	}
+	Node(const Node &n);
+	Node operator=(const Node &n);
+	~Node() { }
 
 	inline int getKind() const { return kind; }
 	inline Type getType() const { return type; }
 	inline void setType(Type &ty) { type = ty; }
-	union {
-		// Char, int, or long
-		long int_val;
 
-		// Float or double
-		struct {
-			double float_val;
-			//char *flabel;
-		};
-
-		// String
-		struct {
-			std::string sval;
-			//char *slabel;
-		};
-
-		// Local/global variable
-		struct {
-			std::string varName;
-
-			// local
-			int loc_off;
-			std::vector<Node> lvarinit;
-
-			// global
-			std::string glabal;
-		};
-
-		// Binary operator
-		struct {
-			Node *left;        // 左节点
-			Node *right;       // 右节点
-		};
-
-		// Unary operator
-		struct {
-			Node *operand;
-		};
-
-
-		// Function call or function declaration
-		struct {
-			std::string funcName;
-
-			// Function call
-			std::vector<Node> args;
-			Type func_type;
-
-			// Function pointer or function designator
-			Node *func_ptr;
-
-			// Function declaration
-			std::vector<Node> params;
-			std::vector<Node> localvars;
-			Node *body;
-		};
-
-
-		// Declaration
-		struct {
-			Node *decl_var;
-			std::vector<Node> decl_init;
-		};
-
-		// Initializer
-		struct {
-			Node *init_val;
-			int init_off;
-			Type to_type;
-		};
-
-		// If statement or ternary operator
-		struct {
-			Node *cond;
-			Node *then;
-			Node *els;
-		};
-
-		// Goto and label
-		struct {
-			std::string label;
-			std::string newLabel;
-		};
-
-		// Return statement
-		Node *retval;
-
-		// Compound statement
-		std::vector<Node> stmts;
-
-		// Struct reference
-		struct {
-			Node *struc;
-			char *field;
-			Type *fieldtype;
-		};
-	};
-private:
-	void copyUnion(const Node &n);
-
-	int kind;
+public:
+	int kind = NODE_NULL;
 	Type type;
+
+	// Char, int, or long  //常量
+	long int_val = 0;
+
+	// Float or double
+	struct {
+		double float_val = 0.0;
+		//char *flabel;
+	};
+
+	// String
+	struct {
+		std::string sval;
+		//char *slabel;
+	};
+
+	// Local/global variable
+	struct {
+		std::string varName;
+
+		// local
+		int loc_off = 0;
+		std::vector<Node> lvarinit;
+
+		// global
+		std::string glabel;
+	};
+
+	// Binary operator
+	struct {
+		Node *left = nullptr;        // 左节点
+		Node *right = nullptr;       // 右节点
+	};
+
+	// Unary operator
+	struct {
+		Node *operand = nullptr;
+	};
+
+
+	// Function call or function declaration
+	struct {
+		std::string funcName;
+
+		// Function call
+		std::vector<Node> args;
+		Type func_type;
+
+		// Function pointer or function designator
+		Node *func_ptr = nullptr;
+
+		// Function declaration
+		std::vector<Node> params;
+		std::vector<Node> localvars;
+		Node *body = nullptr;
+	};
+
+
+	// Declaration
+	struct {
+		Node *decl_var = nullptr;
+		std::vector<Node> decl_init;
+	};
+
+	// Initializer
+	struct {
+		Node *init_val = nullptr;
+		int init_off = 0;
+		Type to_type;
+	};
+
+	// If statement or ternary operator
+	struct {
+		Node *cond = nullptr;
+		Node *then = nullptr;
+		Node *els = nullptr;
+	};
+
+	// Goto and label
+	struct {
+		std::string label;
+		std::string newLabel;
+	};
+
+	// Return statement
+	Node *retval = nullptr;
+
+	// Compound statement
+	std::vector<Node> stmts;
+
+	// Struct reference
+	struct {
+		Node *struc = nullptr;
+		char *field = nullptr;
+		Type *fieldtype = nullptr;
+	};
+
+private:
+	inline void copying(const Node &n);
 };
 
 #endif // !_ZCC_TYPE_H

@@ -77,7 +77,6 @@ Node Parser::funcDef()
 	Type functype = declarator(retty, funcName, params, FUNC_BODY);         // 函数定义类型，函数描述
 	functype.setStatic(current_class == K_STATIC);                          // 函数是否是static
 	expect('{');
-	lex.next();
 	Node r = func_body(functype, funcName, params);                         // 函数体
 
 	__OUT_SCOPE__(localenv);
@@ -88,7 +87,7 @@ Node Parser::funcDef()
 Type Parser::func_param_list(Type *retty, std::vector<Node> params)
 {
 	if (is_keyword(lex.next(), K_VOID) && next_is(')'))
-		return Type((int)FUNC, retty, params);
+		return Type(NODE_FUNC, retty, params);
 }
 
 
@@ -100,17 +99,18 @@ Node Parser::func_body(Type &functype, std::string name, std::vector<Node> param
 
 
 
-Type Env::search(std::string &key)
+Node Env::search(std::string &key)
 {
 	Env *ptr = this;
 
 	while (ptr) {
-		for (int i = 0; i < ptr->card.size(); ++i) {
-			if (key == ptr->card.at(i).sval)
-				return ptr->card.at(i).getType();
+		for (int i = 0; i < ptr->nodes.size(); ++i) {
+			if (key == ptr->nodes.at(i).varName || key == ptr->nodes.at(i).funcName)
+				return ptr->nodes.at(i);
 		}
+		ptr = ptr->pre;
 	}
-	return Type();
+	return Node(NODE_NULL);
 }
 
 
@@ -122,7 +122,7 @@ Type Parser::get_type(std::string key)
 	Type type;
 
 	while (!localenv) {
-		type = localenv->search(key);
+		type = localenv->search(key).getType();
 	}
 	return type;
 }
@@ -147,17 +147,32 @@ int Parser::get_compound_assign_op(Token &t)
 
 bool Parser::next_is(int id)
 {
-	if (lex.next().getId() == id)
+	if (lex.next().getId() == id) {
+		_log_("%c", static_cast<char>(id));
 		return true;
+	}
 	lex.back();
 	return false;
 }
 
 
 
+Node Parser::createIntNode(Token &t)
+{
+	_log_("Create int node.");
+	Node node(NODE_INT);
+
+
+	node.int_val = atoi(t.getSval().c_str());
+
+	return node;
+}
+
 Node Parser::createFuncNode(Type &ty, std::string & funcName, std::vector<Node> params, Node *body)
 {
-	Node node(FUNC, ty);
+	_log_("Create function node.");
+
+	Node node(NODE_FUNC, ty);
 	node.funcName = funcName;
 	node.params = params;
 	node.body = body;
@@ -165,56 +180,65 @@ Node Parser::createFuncNode(Type &ty, std::string & funcName, std::vector<Node> 
 	return node;
 }
 
-Node Parser::createIntNode(int kind, Type &ty, long val)
-{
-	Node node(kind, ty);
-	node.int_val = val;
 
-	return node;
-}
 
 Node Parser::createCompoundStmtNode(std::vector<Node> &stmts)
 {
-	Node node(COMPOUND_STMT);
+	_log_("Create compound stmt node.");
+
+	Node node(NODE_COMP_STMT);
 	node.stmts = stmts;
 	return node;
 }
 Node Parser::createDeclNode(Node &var)
 {
-	Node node(DECL);
+	_log_("Create decl node.");
+
+	Node node(NODE_DECL);
 	node.decl_var = &var;
 	return node;
 }
 Node Parser::createDeclNode(Node &var, std::vector<Node> &init)
 {
-	Node node(DECL);
+	_log_("Create decl node with init.");
+
+	Node node(NODE_DECL);
 	node.decl_var = &var;
 	node.decl_init = init;
 	return node;
 }
 
-Node Parser::createGLoVarNode(Type &ty, std::string &name)
+Node Parser::createGLoVarNode(Type &ty, std::string name)
 {
-	Node r(GLO_VAR, ty);
+	_log_("Create glo var node.");
+
+	Node r(NODE_GLO_VAR, ty);
 	r.varName = name;
 	return r;
 }
-Node Parser::createLocVarNode(Type &ty, std::string &name)
+Node Parser::createLocVarNode(Type &ty, std::string name)
 {
-	Node r;
+	_log_("Create loc var node.");
+
+	Node r(NODE_LOC_VAR, ty);
 	r.varName = name;
 	return r;
 }
 
 Node Parser::createBinOpNode(Type &ty, int kind, Node *left, Node *right)
 {
+	_log_("Create binop %c node.", static_cast<char>(kind));
+
 	Node r(kind, ty);
 	r.left = left;
 	r.right = right;
 	return r;
 }
+
 Node Parser::createUnaryNode(int kind, Type &ty, Node &node)
 {
+	_log_("Create unary op %c node.", static_cast<char>(kind));
+
 	Node r(kind, ty);
 	r.operand = &node;
 	return r;
@@ -263,8 +287,11 @@ void Parser::skip_parenthesis(int *count)
 }
 void Parser::expect(int id)
 {
-	if (lex.peek().getId() != id)
-		error("expect %c, but not", id);
+	Token t = lex.next();
+	if (t.getId() != id)
+		error("expect '%c', but not is '%c'", id, t.getId());
+
+	_log_("expect '%c'", id);
 }
 
 bool Parser::is_inttype(Type &ty)

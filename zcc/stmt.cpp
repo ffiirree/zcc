@@ -30,6 +30,7 @@ Node Parser::statement()
 		// label
 	}
 	lex.back();
+
 	Node r = expr_opt();
 	expect(';');
 	return r;

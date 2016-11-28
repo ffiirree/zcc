@@ -7,6 +7,7 @@ int main(int argc, char *argv[])
 
 	parser.trans_unit();
 
+	//Lex lex(*++argv);
 	//Token t;
 	//do {
 	//	t = lex.next();
