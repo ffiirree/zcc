@@ -229,7 +229,12 @@ Node Parser::postfix_expr()
 Node Parser::postfix_expr_tail(Node &node)
 {
 	for (;;) {
+		//postfix_expr_tail = '('[argument_expr_list] ')' postfix_expr_tail
 		if (next_is('(')) {
+			
+			_log_("function call, only no args call!");
+			expect(')');
+
 			//Token tok = lex.peek();
 			//node = conv(node);
 			//Type t = node.getType();
@@ -334,8 +339,8 @@ Node Parser::binop(int op, Node &lhs, Node &rhs)
 		return createBinOpNode(rhs.getType(), op, &lhs, &rhs);
 
 	// 检查
-	assert(is_arithtype(lhs.getType()));
-	assert(is_arithtype(rhs.getType()));
+	//assert(is_arithtype(lhs.getType()));
+	//assert(is_arithtype(rhs.getType()));
 	Type r = usual_arith_conv(lhs.getType(), rhs.getType());
 
 	return createBinOpNode(r, op, new Node(wrap(r, lhs)), new Node(wrap(r, rhs)));
@@ -344,8 +349,8 @@ Node Parser::binop(int op, Node &lhs, Node &rhs)
 // 常规算术转换规则
 Type Parser::usual_arith_conv(Type &t, Type &u)
 {
-	assert(is_arithtype(t));
-	assert(is_arithtype(u));
+	//assert(is_arithtype(t));
+	//assert(is_arithtype(u));
 
 	if (t.getType() < u.getType()) {
 		// Make t the larger type
@@ -355,11 +360,11 @@ Type Parser::usual_arith_conv(Type &t, Type &u)
 	}
 	if (is_floattype(t))
 		return t;
-	assert(is_inttype(t) && t.getSize() >= 4);
-	assert(is_inttype(u) && u.getSize() >= 4);
+	//assert(is_inttype(t) && t.getSize() >= 4);
+	//assert(is_inttype(u) && u.getSize() >= 4);
 	if (t.getSize() > u.getSize())
 		return t;
-	assert(t.getSize() == u.getSize());
+	//assert(t.getSize() == u.getSize());
 	if (t.isSigned() == u.isSigned())
 		return t;
 	Type r = t;

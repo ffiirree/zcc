@@ -5,16 +5,19 @@
 
 
 #define __IN_SCOPE__(localEnv, preEnv) do{localEnv = new Env(preEnv);}while(0)
-#define __OUT_SCOPE__(localEnv) do{localEnv = localEnv->pre;}while(0)
+#define __OUT_SCOPE__(localEnv) do{localEnv = localEnv->pre();}while(0)
 
 class Env {
 public:
 	Env():Env(nullptr) {}
-	Env(Env *_pre) :pre(_pre), nodes() { }
-	void push_back(Node &n) { nodes.push_back(n); }
+	Env(Env *p) :_pre(p), nodes() { }
+	void push_back(Node &n);
 	Node search(std::string &key);
 
-	Env *pre;
+	Env * pre() { return _pre; }
+
+private:
+	Env *_pre;
 	std::vector<Node> nodes;
 };
 
@@ -51,6 +54,12 @@ private:
 	// Á½Ôª²Ù×÷·û
 	Node createBinOpNode(Type &ty, int kind, Node *left, Node *right);
 	Node createUnaryNode(int kind, Type &ty, Node &node);
+
+	Node createRetStmtNode(Node *n);
+	Node createJumpNode(std::string label);
+
+	Node createIfStmtNode(Node *cond, Node *then, Node *els);
+
 
 	//
 	
@@ -146,5 +155,7 @@ private:
 	Env *globalenv = nullptr;
 	Env *localenv = nullptr;
 	std::vector<std::string> labels;
+
+	std::string label_break;
 };
 #endif // !_ZCC_PARSER_H

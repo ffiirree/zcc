@@ -6,7 +6,7 @@
 char *print_filename(Token *tok);
 
 #define _log_(fmt,...) do{\
-	printf("[%s](%s): #%d ", __FILE__, __func__, __LINE__);\
+	printf("[%s](%s): #%d \t", __FILE__, __func__, __LINE__);\
 	printf(fmt, __VA_ARGS__);\
 	printf("\n");\
 }while (0)

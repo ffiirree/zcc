@@ -72,16 +72,43 @@ void Parser::decl_or_stmt(std::vector<Node> &list)
 	}
 }
 
+/**
+ * if_stmt = 'if' '(' expression ')' statement
+ *         | 'if' '(' expression ')' statement 'else' statement 
+ */
 Node Parser::if_stmt()
 {
-	Node r;
-	return r;
+	expect('(');
+	Node *cond = new Node(expr());
+	expect(')');
+
+	Node *then = new Node(statement());
+
+	if (next_is(K_ELSE)) {
+		Node *els = new Node(statement());
+		return createIfStmtNode(cond, then, els);
+	}
+
+	return createIfStmtNode(cond, then, nullptr);
 }
+
+
+/**
+ * @berif while_stmt = 'while' '(' expression ')' statement 
+ */
 Node Parser::while_stmt()
 {
-	Node r;
-	return r;
+	expect('(');
+	Node node = expr();
+	expect(')');
+
+	Node body = statement();
+
+	std::vector<Node> list;
+	return createCompoundStmtNode(list);
 }
+
+
 Node Parser::switch_stmt()
 {
 	Node r;
@@ -107,11 +134,19 @@ Node Parser::continue_stmt()
 	Node r;
 	return r;
 }
+
+
+/**
+ * @berif return_stmt = 'return' [expression] ';'
+ */
 Node Parser::return_stmt()
 {
-	Node r;
-	return r;
+	Node *retval = new Node(expr_opt());
+	expect(';');
+	return createRetStmtNode(retval);
 }
+
+
 Node Parser::case_stmt()
 {
 	Node r;
@@ -127,8 +162,12 @@ Node Parser::label_stmt()
 	Node r;
 	return r;
 }
+
+/**
+ * @berif break_stmt = 'break' ';'
+ */
 Node Parser::break_stmt()
 {
-	Node r;
-	return r;
+	expect(';');
+	return createJumpNode(label_break);
 }

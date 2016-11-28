@@ -20,8 +20,22 @@ std::vector<Node> Parser::trans_unit()
 			list.push_back(funcDef());
 		else
 			declaration(list, true);
+
+		std::cout << "\n\n";
 	}
 	return list;
+}
+
+
+void Env::push_back(Node &n) {
+	if (n.kind == NODE_GLO_VAR)
+		_log_("Add glo var : %s.", n.varName.c_str());
+	else if (n.kind == NODE_LOC_VAR)
+		_log_("Add loc var : %s.", n.varName.c_str());
+	else if (n.kind == NODE_FUNC)
+		_log_("Add function name : %s.", n.funcName.c_str());
+
+	nodes.push_back(n);
 }
 
 /**
@@ -29,7 +43,6 @@ std::vector<Node> Parser::trans_unit()
  */
 bool Parser::isFuncDef()
 {
-	
 	int count = 0;
 	Token t;
 
@@ -108,7 +121,7 @@ Node Env::search(std::string &key)
 			if (key == ptr->nodes.at(i).varName || key == ptr->nodes.at(i).funcName)
 				return ptr->nodes.at(i);
 		}
-		ptr = ptr->pre;
+		ptr = ptr->pre();
 	}
 	return Node(NODE_NULL);
 }
@@ -147,10 +160,8 @@ int Parser::get_compound_assign_op(Token &t)
 
 bool Parser::next_is(int id)
 {
-	if (lex.next().getId() == id) {
-		_log_("%c", static_cast<char>(id));
+	if (lex.next().getId() == id) 
 		return true;
-	}
 	lex.back();
 	return false;
 }
@@ -162,9 +173,7 @@ Node Parser::createIntNode(Token &t)
 	_log_("Create int node.");
 	Node node(NODE_INT);
 
-
 	node.int_val = atoi(t.getSval().c_str());
-
 	return node;
 }
 
@@ -176,6 +185,8 @@ Node Parser::createFuncNode(Type &ty, std::string & funcName, std::vector<Node> 
 	node.funcName = funcName;
 	node.params = params;
 	node.body = body;
+
+	globalenv->push_back(node);
 
 	return node;
 }
@@ -214,6 +225,9 @@ Node Parser::createGLoVarNode(Type &ty, std::string name)
 
 	Node r(NODE_GLO_VAR, ty);
 	r.varName = name;
+
+	globalenv->push_back(r);
+
 	return r;
 }
 Node Parser::createLocVarNode(Type &ty, std::string name)
@@ -222,6 +236,9 @@ Node Parser::createLocVarNode(Type &ty, std::string name)
 
 	Node r(NODE_LOC_VAR, ty);
 	r.varName = name;
+
+	localenv->push_back(r);
+
 	return r;
 }
 
@@ -244,6 +261,35 @@ Node Parser::createUnaryNode(int kind, Type &ty, Node &node)
 	return r;
 }
 
+Node Parser::createRetStmtNode(Node *n)
+{
+	_log_("Create return stmt node.");
+
+	Node r(NODE_RETURN);
+	r.retval = n;
+	return r;
+}
+
+Node Parser::createJumpNode(std::string label)
+{
+	_log_("Create Jump node.");
+
+	Node r(NODE_GOTO);
+	r.label = label;
+	r.newLabel = label;
+	return r;
+}
+
+Node Parser::createIfStmtNode(Node *cond, Node *then, Node *els)
+{
+	_log_("Create if stmt.");
+
+	Node r(NODE_IF_STMT);
+	r.cond = cond;
+	r.then = then;
+	r.els = els;
+	return r;
+}
 
 
 bool Parser::is_type(const Token &t)
@@ -290,8 +336,6 @@ void Parser::expect(int id)
 	Token t = lex.next();
 	if (t.getId() != id)
 		error("expect '%c', but not is '%c'", id, t.getId());
-
-	_log_("expect '%c'", id);
 }
 
 bool Parser::is_inttype(Type &ty)

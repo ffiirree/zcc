@@ -1,14 +1,23 @@
-int global_var;                                      // 2
+#include <stdio.h>
 
-int main(void)                                       // 7
-{                                                    // 8
-	int local_gar;                                   // 11
+int global_var;
 
-	global_var = 2;                                  // 15
-	local_gar = 3;                                   // 19
+int foo()
+{
+	int foo_var;
+	foo_var = 6 + 3 * 4;
+	return foo_var;
+}
 
-	global_var = global_var + local_gar;             // 25
+int main(void)
+{
+	int local_gar;
+	local_gar = foo();
 
-	printf("Hello World!\n");
-	return 0;
+	if(local_gar > 1)
+		global_var = 2;
+
+	global_var = global_var + local_gar;
+
+	return global_var;
 }

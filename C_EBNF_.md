@@ -214,23 +214,20 @@ designator = '[' const_expr ']'
 # 6.8 Statements and blocks
 statement = labeled_stmt 
           | compound_stmt 
-		  
-		  | if_stmt
-		  | switch_stmt
-		  
-		  | for_stmt	
-		  | while_stmt
+          | if_stmt
+          | switch_stmt
+          | for_stmt
+          | while_stmt
           | do_while_stmt
-		  
           
           | expr_stmt 
           
           | goto_stmt
-		  | continue_stmt
-		  | return_stmt
-		  | break_stmt
-		  | case_label_stmt
-		  | default_label_stmt
+          | continue_stmt
+          | return_stmt
+          | break_stmt
+          | case_label_stmt
+          | default_label_stmt
 
 ## 6.8.1 Labeled statements
 case_label_stmt = 'case' const_expr ':' statement 
