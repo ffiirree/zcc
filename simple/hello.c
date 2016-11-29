@@ -22,6 +22,16 @@ loop:
 		global_var = local_gar + 4;
 	}while(global_var > 1);
 
+	if(3 > 4){
+		3+3;
+	}
+	else if(4 >5 ){
+		4 + 4;
+	}
+	else {
+		4 + 5;
+	}
+
 	// test if_stmt
 	if(3 != 4){
 		if(5 < 6){
