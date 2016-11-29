@@ -4,7 +4,7 @@
 
 ## 当前效果
 C语言例子：`simple/hello.c`<br>
-中间代码输出:`bin/Debug/hello.qd`
+中间代码输出:`build/hello.qd`
 
 ## 实现方法
 
