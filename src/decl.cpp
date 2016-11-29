@@ -71,6 +71,7 @@ Type Parser::declarator(Type &ty, std::string &name, std::vector<Node> params, i
 	}
 
 	Token t = lex.next();
+
 	if (t.getType() == ID) {
 		name = t.getSval();
 		return direct_decl_tail(ty, params);

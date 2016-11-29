@@ -11,6 +11,12 @@ char *print_filename(Token *tok);
 	printf("\n");\
 }while (0)
 
+#define warning(fmt,...) do{\
+	printf("Warning. %s: #%d ", __FILE__, __LINE__);\
+	printf(fmt, __VA_ARGS__);\
+	printf("\n");\
+}while (0)
+
 #define error(fmt,...) do{\
 	printf("Error. %s: #%d ", __FILE__, __LINE__);\
 	printf(fmt, __VA_ARGS__);\

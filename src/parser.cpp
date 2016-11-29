@@ -99,8 +99,13 @@ Node Parser::funcDef()
 
 Type Parser::func_param_list(Type *retty, std::vector<Node> params)
 {
-	if (is_keyword(lex.next(), K_VOID) && next_is(')'))
+	if (next_is(')')) {
+		warning("Function params is 'void'");
 		return Type(NODE_FUNC, retty, params);
+	}
+	else if (is_keyword(lex.next(), K_VOID) && next_is(')')) {
+		return Type(NODE_FUNC, retty, params);
+	} 
 }
 
 

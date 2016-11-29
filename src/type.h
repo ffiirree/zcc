@@ -180,7 +180,7 @@ class Node;
  */
 class Type {
 public:
-	Type():type(0), size(0){}
+	Type(){}
 	Type(int ty, int s, bool isunsig) :type(ty), size(s), isUnsig(isunsig) {  }
 	Type(int ty, Type *ret, std::vector<Node> _params) : type(ty), retType(ret), params(_params) { }
 
@@ -190,6 +190,7 @@ public:
 		type = t.type;
 		size = t.size;
 		isUnsig = t.isUnsig;
+		isSta = t.isSta;
 		ptr = t.ptr;
 		len = t.len;
 		retType = t.retType;
@@ -208,20 +209,20 @@ public:
 	inline void setUnsig(bool isunsig) { isUnsig = isunsig; }
 
 private:
-	int type;
-	int size;
+	int type = 0;
+	int size = 0;
 
-	bool isUnsig;
-	bool isSta;
+	bool isUnsig = false;
+	bool isSta = false;
 
 	// pointer or array
-	Type *ptr;
+	Type *ptr = nullptr;
 
 	// array length
-	int len;
+	int len = 0;
 
 	//function
-	Type *retType;
+	Type *retType= nullptr;
 	std::vector<Node> params;
 };
 
