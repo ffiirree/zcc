@@ -2,6 +2,10 @@
 > **zcc**是一个用C++写的C99的编译器.
 <br><br>
 
+## 当前效果
+C语言例子：`simple/hello.c`
+中间代码输出:`bin/Debug/hello.qd`
+
 ## 实现方法
 
 ### 预处理器
