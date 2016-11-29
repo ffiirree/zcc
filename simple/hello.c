@@ -24,7 +24,9 @@ loop:
 
 	// test if_stmt
 	if(3 != 4){
-		local_gar = 4 +3;
+		if(5 < 6){
+			local_gar = global_var;
+		}
 	}
 	else {
 		local_gar = 5 * 6;

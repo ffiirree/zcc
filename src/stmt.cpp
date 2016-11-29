@@ -105,7 +105,7 @@ Node Parser::if_stmt()
 
 		return createIfStmtNode(cond, then, els);
 	}
-	out << if_end << ":" << std::endl;
+	out << if_false << ":" << std::endl;
 
 	return createIfStmtNode(cond, then, nullptr);
 }
