@@ -12,7 +12,9 @@ std::vector<Node> Parser::trans_unit()
 		Token t = lex.peek();
 
 		if (t.getType() == K_EOF) {
-			error("unit eof!");
+			_log_("End of file.");
+			out << "LFE0:\n\t.ident\t\"zcc\"";
+			out.close();
 			return list;
 		}
 
@@ -88,11 +90,15 @@ Node Parser::funcDef()
 
 	Type retty = decl_spec_opt(&current_class);                             // 获取函数的返回类型
 	Type functype = declarator(retty, funcName, params, FUNC_BODY);         // 函数定义类型，函数描述
+
+	out << "_" << funcName << ":" << std::endl;
+
 	functype.setStatic(current_class == K_STATIC);                          // 函数是否是static
 	expect('{');
 	Node r = func_body(functype, funcName, params);                         // 函数体
 
 	__OUT_SCOPE__(localenv);
+	out << "leave" << std::endl;
 	return r;
 }
 
@@ -159,6 +165,25 @@ int Parser::get_compound_assign_op(Token &t)
 	case OP_A_XOR: return '^';
 	case OP_A_SAL: return OP_SAL;
 	case OP_A_SAR: return OP_SAR;
+	default: return 0;
+	}
+}
+
+std::string Parser::get_compound_assign_op_signal(Token &t)
+{
+	if (t.getType() != KEYWORD)
+		return 0;
+	switch (t.getId()) {
+	case OP_A_ADD: return "+";
+	case OP_A_SUB: return "-";
+	case OP_A_MUL: return "*";
+	case OP_A_DIV: return "/";
+	case OP_A_MOD: return "%";
+	case OP_A_AND: return "&";
+	case OP_A_OR:  return "|";
+	case OP_A_XOR: return "^";
+	case OP_A_SAL: return "<<";
+	case OP_A_SAR: return ">>";
 	default: return 0;
 	}
 }
@@ -363,7 +388,108 @@ bool Parser::is_floattype(Type &ty)
 	default: return false;
 	}
 }
+
+
 bool Parser::is_arithtype(Type &ty)
 {
 	return is_inttype(ty) || is_floattype(ty);
+}
+
+std::string Parser::setQuadrupleFileName()
+{
+	std::string _fn = lex.getCurrentFile().getFileName();
+	size_t _index_separator = 0;
+	size_t _index_dot = 0;
+	for (size_t i = 0; i < _fn.length(); ++i) {
+		if (_fn.at(i) == '/' || _fn.at(i) == '\\')
+			_index_separator = i + 1;
+		if (_fn.at(i) == '.')
+			_index_dot = i;
+	}
+	if (_index_dot <= _index_separator && _fn.length() > 0) _index_dot = _fn.length() - 1;
+	
+	std::string _rfn;
+	for (int i = _index_separator; i < _index_dot; ++i)
+		_rfn.push_back(_fn.at(i));
+
+	_rfn.push_back('.');
+	_rfn.push_back('q');
+	_rfn.push_back('d');
+	return _rfn;
+}
+
+
+std::string Parser::setQuadrupleFileName(std::string &filename)
+{
+	return filename;
+}
+
+void Parser::createQuadFile()
+{
+	out.open(setQuadrupleFileName(), std::ios::out | std::ios::binary);
+	if (!out.is_open())
+		error("Create file filed!");
+	out << "\t.file\t\"" << lex.getCurrentFile().getFileName() << "\"" << std::endl;
+}
+
+std::string num2str(size_t num)
+{
+	std::string _mstr, _rstr;
+	for (;num > 0;) {
+		size_t m = num - 10 * (num / 10);
+		num /= 10;
+		_mstr.push_back(m + 48);
+	}
+	for (int i = _mstr.length() - 1; i >= 0; --i)
+		_rstr.push_back(_mstr.at(i));
+
+	return _rstr;
+}
+
+std::string Parser::newLabel(const std::string &_l)
+{
+	static size_t counter = 1;
+	std::string _rstr = ".L" + _l + num2str(counter++);
+	return _rstr;
+}
+
+
+void Parser::pushQuadruple(const std::string &name)
+{
+	_stk_quad.push_back(name);
+}
+
+
+void Parser::createQuadruple(const std::string &op)
+{
+	out << op << "\t";
+
+	if (op == "if") {
+		out << _stk_quad.back() << "\t"; _stk_quad.pop_back();
+		out << "goto ";
+	}
+	else if (op == "=") {
+		out << _stk_quad.back() << "\t"; _stk_quad.pop_back();
+		out << _stk_quad.back() << "\t"; _stk_quad.pop_back();
+		out << std::endl;
+	}
+	
+	else {
+		out << _stk_quad.back() << "\t"; _stk_quad.pop_back();
+		out << _stk_quad.back() << "\t"; _stk_quad.pop_back();
+		std::string tempName = newLabel("var");
+		out << tempName << "\t";
+		_stk_quad.push_back(tempName);
+		out << std::endl;
+	}
+
+	
+}
+
+void Parser::createFuncQuad(const Node &fn)
+{
+	for (int i = 0; i < fn.args.size(); ++i) {
+		out << "param " << fn.args.at(i).varName << std::endl;
+	}
+	out << "call(_" << fn.funcName << "," << fn.args.size() << ")" << std::endl;
 }

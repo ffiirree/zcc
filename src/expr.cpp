@@ -22,6 +22,8 @@ Node Parser::comma_expr()
 		Node expr = assignment_expr();
 		node = createBinOpNode(expr.getType(), ',', &node, &expr);
 	}
+
+	out << std::endl;
 	return node;
 }
 /**
@@ -48,11 +50,24 @@ Node Parser::assignment_expr()
 		if (is_keyword(t, '=') || cop) {
 			ensure_lvalue(*node);
 		}
-		Node *right = new Node(cop ? binop(cop, conv(*node), value) : value);
+		Node _temp;
+		if (cop) {
+			_temp = binop(cop, conv(*node), value);
+			pushQuadruple((*node).varName);
+			createQuadruple(get_compound_assign_op_signal(t));
+			createQuadruple("=");
+		}
+		else {
+			_temp = value;
+			createQuadruple("=");
+		}
+		Node *right = new Node(_temp);
 
 		// 数学运算中的隐式类型转换
 		//if(is_arithtype(node->getType() && node->getType().getType() != right->getType().getType()))
 		//	right = ast_conv(node->ty, right);
+
+		
 
 		return createBinOpNode(node->getType(), '=', node, right);
 	}
@@ -76,37 +91,52 @@ Node Parser::conditional_expr(Node *node)
 Node Parser::logical_or_expr()
 {
 	Node *node = new Node(logical_and_expr());
-	while (next_is(OP_LOGOR))
+	while (next_is(OP_LOGOR)) {
 		*node = createBinOpNode(Type(K_INT, 4, false), OP_LOGOR, node, new Node(logical_and_expr()));
+		createQuadruple("||");
+	}
+		
 	return *node;
 }
 
 Node Parser::logical_and_expr()
 {
 	Node *node = new Node(bit_or_expr());
-	while (next_is(OP_LOGAND))
+	while (next_is(OP_LOGAND)) {
 		*node = createBinOpNode(Type(K_INT, 4, false), OP_LOGAND, node, new Node(bit_or_expr()));
+		createQuadruple("&&");
+	}
+		
 	return *node;
 }
 Node Parser::bit_or_expr()
 {
 	Node *node = new Node(bit_xor_expr());
-	while (next_is('|'))
+	while (next_is('|')) {
 		*node = binop('|', conv(*node), conv(bit_xor_expr()));
+		createQuadruple("|");
+	}
+		
 	return *node;
 }
 Node Parser::bit_xor_expr()
 {
 	Node *node = new Node(bit_and_expr());
-	while (next_is('^'))
+	while (next_is('^')) {
 		*node = binop('^', conv(*node), conv(bit_and_expr()));
+		createQuadruple("^");
+	}
+		
 	return *node;
 }
 Node Parser::bit_and_expr()
 {
 	Node *node = new Node(equal_expr());
-	while (next_is('&'))
+	while (next_is('&')) {
 		*node = binop('&', conv(*node), conv(equal_expr()));
+		createQuadruple("&");
+	}
+		
 	return *node;
 }
 Node Parser::equal_expr()
@@ -114,10 +144,13 @@ Node Parser::equal_expr()
 	Node *node = new Node(relational_expr());
 	Node r;
 
-	if (next_is(OP_EQ))
+	if (next_is(OP_EQ)) {
 		r = binop(OP_EQ, conv(*node), conv(equal_expr()));
+		createQuadruple("==");
+	}
 	else if (next_is(OP_NE)) {
 		r = binop(OP_NE, conv(*node), conv(equal_expr()));
+		createQuadruple("!=");
 	}
 	else {
 		return *node;
@@ -134,11 +167,27 @@ Node Parser::relational_expr()
 {
 	Node *node = new Node(shift_expr());
 	for (;;) {
-		if (next_is('<'))   *node = binop('<', conv(*node), conv(shift_expr()));
-		else if (next_is('>'))   *node = binop('<', conv(shift_expr()), conv(*node));
-		else if (next_is(OP_LE)) *node = binop(OP_LE, conv(*node), conv(shift_expr()));
-		else if (next_is(OP_GE)) *node = binop(OP_LE, conv(shift_expr()), conv(*node));
-		else    return *node;
+		if (next_is('<')) {
+			*node = binop('<', conv(*node), conv(shift_expr()));
+			createQuadruple("<");
+		}
+			
+		else if (next_is('>')) {
+			*node = binop('>', conv(*node), conv(shift_expr()));
+			createQuadruple(">");
+		}
+		else if (next_is(OP_LE)) {
+			*node = binop(OP_LE, conv(*node), conv(shift_expr()));
+			createQuadruple("<=");
+		}
+			
+		else if (next_is(OP_GE)) {
+			*node = binop(OP_GE, conv(*node), conv(shift_expr()));
+			createQuadruple(">=");
+		}
+			
+		else   
+			return *node;
 		node->setType(Type(K_INT, 4, false));
 	}
 }
@@ -166,9 +215,16 @@ Node Parser::add_expr()
 {
 	Node *node = new Node(multi_expr());
 	for (;;) {
-		if (next_is('+')) *node = binop('+', conv(*node), conv(multi_expr()));
-		else if (next_is('-')) *node = binop('-', conv(*node), conv(multi_expr()));
-		else    return *node;
+		if (next_is('+')) {
+			*node = binop('+', conv(*node), conv(multi_expr()));
+			createQuadruple("+");
+		}
+		else if (next_is('-')) {
+			*node = binop('-', conv(*node), conv(multi_expr()));
+			createQuadruple("-");
+		}
+		else    
+			return *node;
 	}
 }
 
@@ -176,10 +232,20 @@ Node Parser::multi_expr()
 {
 	Node *node = new Node(cast_expr());
 	for (;;) {
-		if (next_is('*'))      *node = binop('*', conv(*node), conv(cast_expr()));
-		else if (next_is('/')) *node = binop('/', conv(*node), conv(cast_expr()));
-		else if (next_is('%')) *node = binop('%', conv(*node), conv(cast_expr()));
-		else    return *node;
+		if (next_is('*')) {
+			*node = binop('*', conv(*node), conv(cast_expr()));
+			createQuadruple("*");
+		}
+		else if (next_is('/')) {
+			*node = binop('/', conv(*node), conv(cast_expr()));
+			createQuadruple("/");
+		}
+		else if (next_is('%')) {
+			*node = binop('%', conv(*node), conv(cast_expr()));
+			createQuadruple("%");
+		}
+		else    
+			return *node;
 	}
 }
 
@@ -198,6 +264,7 @@ Node Parser::cast_expr()
 	lex.back();
 	return unary_expr();
 }
+
 Node Parser::unary_expr()
 {
 	Token tok = lex.next();
@@ -272,6 +339,13 @@ Node Parser::postfix_expr_tail(Node &node)
 Node Parser::var_or_func(Token &t)
 {
 	Node r = localenv->search(t.getSval());
+
+	if (r.kind == NODE_GLO_VAR || r.kind == NODE_LOC_VAR)
+		pushQuadruple(r.varName);
+	else if (r.kind == NODE_FUNC)
+		createFuncQuad(r);
+		
+
 	if (r.kind == NODE_NULL)
 		error("undefined var : %s！", t.getSval());
 
@@ -294,13 +368,14 @@ Node Parser::primary_expr()
 		// 如果是ID， 则可能为变量或函数调用
 	case ID:
 		return var_or_func(tok);
-		return NULL;
 
 		// 常量
 	case INTEGER:
+		pushQuadruple(tok.getSval());
 		return createIntNode(tok);
 
 	case FLOAT:
+		pushQuadruple(tok.getSval());
 		return NULL;
 
 	case CHAR_:

@@ -18,6 +18,8 @@ public:
 
 	void scan(const std::string &filename);
 
+	inline File getCurrentFile() { return f; }
+
 private:
 	Token readToken();
 	Token read_rep(char exp, int _k, char _else);

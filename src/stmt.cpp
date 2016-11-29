@@ -78,16 +78,32 @@ void Parser::decl_or_stmt(std::vector<Node> &list)
  */
 Node Parser::if_stmt()
 {
+	std::string if_true = newLabel("iftrue");
+	std::string if_false = newLabel("iffalse");
+	std::string if_end = newLabel("ifend");
+
 	expect('(');
 	Node *cond = new Node(expr());
 	expect(')');
 
-	Node *then = new Node(statement());
+	createQuadruple("if");
+	out << if_true << std::endl;
 
+	out << "goto " << if_false << std::endl;
+	
+	out << if_true << ":" << std::endl;
+	Node *then = new Node(statement());
+	
 	if (next_is(K_ELSE)) {
+		out << "goto " << if_end << std::endl;
+		out << if_false << ":" << std::endl;
 		Node *els = new Node(statement());
+
+		out << if_end << ":" << std::endl;
+
 		return createIfStmtNode(cond, then, els);
 	}
+	out << if_end << ":" << std::endl;
 
 	return createIfStmtNode(cond, then, nullptr);
 }
@@ -98,11 +114,24 @@ Node Parser::if_stmt()
  */
 Node Parser::while_stmt()
 {
+	std::string _begin = newLabel("whilebegin");
+	out << _begin << ":" << std::endl;
+
+	std::string _true = newLabel("whiletrue");
+	std::string _false = newLabel("whilefalse");
+
 	expect('(');
 	Node node = expr();
 	expect(')');
 
+	createQuadruple("if");
+	out << _true << std::endl;
+	out << "goto " << _false << std::endl;
+	out << _true << ":" << std::endl;
+
 	Node body = statement();
+	out << "goto " << _begin << std::endl;
+	out << _false << ":" << std::endl;
 
 	std::vector<Node> list;
 	return createCompoundStmtNode(list);
@@ -116,13 +145,25 @@ Node Parser::switch_stmt()
 }
 Node Parser::for_stmt()
 {
+	
+
 	Node r;
 	return r;
 }
 Node Parser::do_stmt()
 {
-	Node r;
-	return r;
+	std::string _begin = newLabel("dobegin");
+
+	out << _begin << ":" << std::endl;
+
+	Node *r = new Node(statement());
+	expect(K_WHILE);
+	expect('(');
+	Node *_b = new Node(expr());
+	createQuadruple("if");
+	out << _begin << std::endl;
+
+	return *r; ////////////////////这里要修改
 }
 Node Parser::goto_stmt()
 {

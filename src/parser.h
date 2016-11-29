@@ -3,7 +3,6 @@
 
 #include "lex.h"
 
-
 #define __IN_SCOPE__(localEnv, preEnv) do{localEnv = new Env(preEnv);}while(0)
 #define __OUT_SCOPE__(localEnv) do{localEnv = localEnv->pre();}while(0)
 
@@ -24,14 +23,30 @@ private:
 
 class Parser {
 public:
-	Parser(const std::string &filename) :lex(filename) { globalenv = new Env(nullptr); }
-	Parser(Lex &l) :lex(l) { globalenv = new Env(nullptr); }
+	Parser(const std::string &filename) :lex(filename) { 
+		globalenv = new Env(nullptr); 
+		createQuadFile();
+	}
+	Parser(Lex &l) :lex(l) { 
+		globalenv = new Env(nullptr); 
+		createQuadFile();
+	}
 	Parser(const Parser &p) = delete;
 	Parser operator=(const Parser &p) = delete;
 
 	std::vector<Node> trans_unit();
 
 private:
+	std::string setQuadrupleFileName();
+	std::string setQuadrupleFileName(std::string &filename);
+	void createQuadFile();
+
+	void pushQuadruple(const std::string &name);
+	void createQuadruple(const std::string &op);
+	void createFuncQuad(const Node &fn);
+
+	std::string newLabel(const std::string &_l);
+
 	bool next_is(int id);
 	void expect(int id);
 	bool is_keyword(Token &t, int id);
@@ -41,7 +56,7 @@ private:
 	bool is_arithtype(Type &ty);
 	Type get_type(std::string key);
 	int get_compound_assign_op(Token &t);
-	
+	std::string get_compound_assign_op_signal(Token &t);
 
 	//
 	Node createFuncNode(Type &ty, std::string & funcName, std::vector<Node> params, Node *body);
@@ -157,5 +172,9 @@ private:
 	std::vector<std::string> labels;
 
 	std::string label_break;
+
+
+	std::ofstream out;
+	std::vector<std::string> _stk_quad;
 };
 #endif // !_ZCC_PARSER_H

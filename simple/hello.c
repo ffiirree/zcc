@@ -2,22 +2,55 @@
 
 int global_var;
 
-int foo()
+void foo()
 {
-	int foo_var;
-	foo_var = 6 + 3 * 4;
-	return foo_var;
+	int a;
 }
 
 int main(void)
 {
 	int local_gar;
-	local_gar = foo();
+	int a, b , c, d;
 
-	if(local_gar > 1)
-		global_var = 2;
+	// test func call
+	foo();
 
-	global_var = global_var + local_gar;
+	// test do_while_stmt
+	do{
+		global_var = local_gar + 4;
+	}while(global_var > 1);
+
+	// test if_stmt
+	if(3 != 4){
+		local_gar = 4 +3;
+	}
+	else {
+		local_gar = 5 * 6;
+	}
+
+	// test while
+	while (3 + 4 > 5)
+	{
+		local_gar +=1;
+	}
+
+	// test + - * / %
+	local_gar = 3 * 5 / 4 + 7 * 8;
+	local_gar += 4 * 5;
+	
+	// test > < >= <=
+	a * b > 5 + c <= 5 / 4 * d;
+
+	// test == !=
+	4 ==5 *7 +9;
+	4 *6 != 9;
+
+	// test ^ | &
+	55 & 45 + 44 ^ 3 | 3;
+
+	// test || &&
+	334 || 26 && 78 || 12;
+
 
 	return global_var;
 }
