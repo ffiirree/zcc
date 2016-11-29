@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "error.h"
 
+#include<iomanip>
 /**
  * @berif 一个翻译单元，一个文件
  * 
@@ -490,26 +491,25 @@ void Parser::pushQuadruple(const std::string &name)
 	_stk_quad.push_back(name);
 }
 
-
 void Parser::createQuadruple(const std::string &op)
 {
-	out << op << "\t";
+	out << std::left << std::setw(10) << op;
 
 	if (op == "if") {
-		out << _stk_quad.back() << "\t"; _stk_quad.pop_back();
-		out << "goto ";
+		out << std::left << std::setw(15) << _stk_quad.back(); _stk_quad.pop_back();
+		out << std::left << std::setw(15) << "goto ";
 	}
 	else if (op == "=") {
-		out << _stk_quad.back() << "\t"; _stk_quad.pop_back();
-		out << _stk_quad.back() << "\t"; _stk_quad.pop_back();
+		out << std::left << std::setw(15) << _stk_quad.back(); _stk_quad.pop_back();
+		out << std::left << std::setw(15) << _stk_quad.back(); _stk_quad.pop_back();
 		out << std::endl;
 	}
 	
 	else {
-		out << _stk_quad.back() << "\t"; _stk_quad.pop_back();
-		out << _stk_quad.back() << "\t"; _stk_quad.pop_back();
+		out << std::left << std::setw(15) << _stk_quad.back(); _stk_quad.pop_back();
+		out << std::left << std::setw(15) << _stk_quad.back(); _stk_quad.pop_back();
 		std::string tempName = newLabel("var");
-		out << tempName << "\t";
+		out << std::left << std::setw(10) << tempName;
 		_stk_quad.push_back(tempName);
 		out << std::endl;
 	}

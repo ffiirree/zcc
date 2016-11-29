@@ -1,3 +1,4 @@
+#include<iomanip>
 #include "parser.h"
 #include "error.h"
 
@@ -92,13 +93,13 @@ Node Parser::if_stmt()
 	createQuadruple("if");
 	out << if_true << std::endl;
 
-	out << "goto " << if_false << std::endl;
+	out << std::left << std::setw(10) << "goto " << if_false << std::endl;
 	
 	out << if_true << ":" << std::endl;
 	Node *then = new Node(statement());
 	
 	if (next_is(K_ELSE)) {
-		out << "goto " << if_end << std::endl;
+		out << std::left << std::setw(10) << "goto " << if_end << std::endl;
 		out << if_false << ":" << std::endl;
 		Node *els = new Node(statement());
 
@@ -129,11 +130,11 @@ Node Parser::while_stmt()
 
 	createQuadruple("if");
 	out << _true << std::endl;
-	out << "goto " << _false << std::endl;
+	out << std::left << std::setw(10) << "goto " << _false << std::endl;
 	out << _true << ":" << std::endl;
 
 	Node body = statement();
-	out << "goto " << _begin << std::endl;
+	out << std::left << std::setw(10) << "goto " << _begin << std::endl;
 	out << _false << ":" << std::endl;
 
 	std::vector<Node> list;
@@ -177,7 +178,7 @@ Node Parser::goto_stmt()
 	labels.push_back_un(t.getSval());
 	expect(';');
 
-	out << "goto " << t.getSval() << std::endl;
+	out << std::left << std::setw(10) << "goto " << t.getSval() << std::endl;
 
 	return Node(); /////////ÐÞ¸Ä
 }
