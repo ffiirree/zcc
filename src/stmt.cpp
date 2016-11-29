@@ -30,6 +30,7 @@ Node Parser::statement()
 		// label
 		labels.push_back(t.getSval());
 		out << t.getSval() << ":" << std::endl;
+		return Node();      ////////////////////////////ÐÞ¸Ä
 	}
 	lex.back();
 
@@ -162,6 +163,8 @@ Node Parser::do_stmt()
 	expect(K_WHILE);
 	expect('(');
 	Node *_b = new Node(expr());
+	expect(')');
+	expect(';');
 	createQuadruple("if");
 	out << _begin << std::endl;
 

@@ -2,6 +2,7 @@
 _foo:
 leave
 _main:
+loop:
 call(_foo,0)
 
 goto loop
@@ -12,66 +13,91 @@ goto loop
 >	1	global_var	.Lvar3	
 
 if	.Lvar3	goto .Ldobegin1
-
-
-!=	4	3	.Lvar7	
+>	4	3	.Lvar7	
 
 if	.Lvar7	goto .Liftrue4
 goto .Liffalse5
 .Liftrue4:
-+	3	4	.Lvar8	
-=	.Lvar8	local_gar	
++	3	3	.Lvar8	
 
 goto .Lifend6
 .Liffalse5:
-*	6	5	.Lvar9	
-=	.Lvar9	local_gar	
+>	5	4	.Lvar12	
 
+if	.Lvar12	goto .Liftrue9
+goto .Liffalse10
+.Liftrue9:
++	4	4	.Lvar13	
+
+goto .Lifend11
+.Liffalse10:
++	5	4	.Lvar14	
+
+.Lifend11:
 .Lifend6:
-.Lwhilebegin10:
-+	4	3	.Lvar13	
->	5	.Lvar13	.Lvar14	
+!=	4	3	.Lvar18	
 
-if	.Lvar14	goto .Lwhiletrue11
-goto .Lwhilefalse12
-.Lwhiletrue11:
-+	local_gar	1	.Lvar15	
-=	.Lvar15	local_gar	
+if	.Lvar18	goto .Liftrue15
+goto .Liffalse16
+.Liftrue15:
+<	6	5	.Lvar22	
 
-goto .Lwhilebegin10
-.Lwhilefalse12:
-*	5	3	.Lvar16	
-/	4	.Lvar16	.Lvar17	
-*	8	7	.Lvar18	
-+	.Lvar18	.Lvar17	.Lvar19	
-=	.Lvar19	local_gar	
+if	.Lvar22	goto .Liftrue19
+goto .Liffalse20
+.Liftrue19:
+=	global_var	local_gar	
 
-*	5	4	.Lvar20	
-+	local_gar	.Lvar20	.Lvar21	
-=	.Lvar21	local_gar	
+.Liffalse20:
+goto .Lifend17
+.Liffalse16:
+*	6	5	.Lvar23	
+=	.Lvar23	local_gar	
 
-*	b	a	.Lvar22	
-+	c	5	.Lvar23	
->	.Lvar23	.Lvar22	.Lvar24	
-/	4	5	.Lvar25	
-*	d	.Lvar25	.Lvar26	
-<=	.Lvar26	.Lvar24	.Lvar27	
+.Lifend17:
+.Lwhilebegin24:
++	4	3	.Lvar27	
+>	5	.Lvar27	.Lvar28	
 
-*	7	5	.Lvar28	
-+	9	.Lvar28	.Lvar29	
-==	.Lvar29	4	.Lvar30	
+if	.Lvar28	goto .Lwhiletrue25
+goto .Lwhilefalse26
+.Lwhiletrue25:
++	local_gar	1	.Lvar29	
+=	.Lvar29	local_gar	
 
-*	6	4	.Lvar31	
-!=	9	.Lvar31	.Lvar32	
+goto .Lwhilebegin24
+.Lwhilefalse26:
+*	5	3	.Lvar30	
+/	4	.Lvar30	.Lvar31	
+*	8	7	.Lvar32	
++	.Lvar32	.Lvar31	.Lvar33	
+=	.Lvar33	local_gar	
 
-+	44	45	.Lvar33	
-&	.Lvar33	55	.Lvar34	
-^	3	.Lvar34	.Lvar35	
-|	3	.Lvar35	.Lvar36	
+*	5	4	.Lvar34	
++	local_gar	.Lvar34	.Lvar35	
+=	.Lvar35	local_gar	
 
-&&	78	26	.Lvar37	
-||	.Lvar37	334	.Lvar38	
-||	12	.Lvar38	.Lvar39	
+*	b	a	.Lvar36	
++	c	5	.Lvar37	
+>	.Lvar37	.Lvar36	.Lvar38	
+/	4	5	.Lvar39	
+*	d	.Lvar39	.Lvar40	
+<=	.Lvar40	.Lvar38	.Lvar41	
+
+*	7	5	.Lvar42	
++	9	.Lvar42	.Lvar43	
+==	.Lvar43	4	.Lvar44	
+
+*	6	4	.Lvar45	
+!=	9	.Lvar45	.Lvar46	
+
++	44	45	.Lvar47	
+&	.Lvar47	55	.Lvar48	
+^	3	.Lvar48	.Lvar49	
+|	3	.Lvar49	.Lvar50	
+
+&&	78	26	.Lvar51	
+||	.Lvar51	334	.Lvar52	
+||	12	.Lvar52	.Lvar53	
 
 
 leave
