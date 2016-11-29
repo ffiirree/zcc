@@ -20,6 +20,32 @@ private:
 	std::vector<Node> nodes;
 };
 
+class Label {
+public:
+	Label() :Label(nullptr) {}
+	Label(Env *p): labels() { }
+	void push_back(const std::string &_l);
+	void push_back_un(const std::string &_l){
+		if (!_exist(_l)) {
+			labels.push_back(_l);
+			enLabels.push_back(false);
+		}
+	}
+	bool cheak();
+
+private:
+	bool _exist(const std::string &_l) {
+		for (int i = 0; i < labels.size(); ++i) {
+			if (_l == labels.at(i))
+				return true;
+		}
+		return false;
+	}
+
+	std::vector<std::string> labels;
+	std::vector<bool> enLabels;
+};
+
 
 class Parser {
 public:
@@ -169,7 +195,7 @@ private:
 	Lex lex;
 	Env *globalenv = nullptr;
 	Env *localenv = nullptr;
-	std::vector<std::string> labels;
+	Label labels;
 
 	std::string label_break;
 

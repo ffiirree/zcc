@@ -12,9 +12,11 @@ int main(void)
 	int local_gar;
 	int a, b , c, d;
 
+loop:
 	// test func call
 	foo();
 
+	goto loop;
 	// test do_while_stmt
 	do{
 		global_var = local_gar + 4;

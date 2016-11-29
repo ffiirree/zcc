@@ -12,6 +12,7 @@ std::vector<Node> Parser::trans_unit()
 		Token t = lex.peek();
 
 		if (t.getType() == K_EOF) {
+			labels.cheak();
 			_log_("End of file.");
 			out << "LFE0:\n\t.ident\t\"zcc\"";
 			out.close();
@@ -39,6 +40,36 @@ void Env::push_back(Node &n) {
 
 	nodes.push_back(n);
 }
+void Label::push_back(const std::string &_l) {
+
+	// 如果添加过了
+	for (int i = 0; i < labels.size(); ++i) {
+		if (_l == labels.at(i)) {
+			if (enLabels.at(i) == false) {
+				enLabels.at(i) = true;
+				return;
+			}
+			else {
+				error("%s is existed.", _l.c_str());
+				return;
+			}
+		}
+	}
+
+	// 从未添加过
+	labels.push_back(_l);
+	enLabels.push_back(true);
+}
+
+bool Label::cheak()
+{
+	for (size_t i = 0; i < labels.size(); ++i) {
+		if (!enLabels.at(i))
+			error("Label '%s' is undefined.", labels.at(i).c_str());
+	}
+	return true;
+}
+
 
 /**
  * @berif 检查是否是函数定义

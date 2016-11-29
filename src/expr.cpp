@@ -67,8 +67,6 @@ Node Parser::assignment_expr()
 		//if(is_arithtype(node->getType() && node->getType().getType() != right->getType().getType()))
 		//	right = ast_conv(node->ty, right);
 
-		
-
 		return createBinOpNode(node->getType(), '=', node, right);
 	}
 	lex.back();

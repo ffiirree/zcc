@@ -28,6 +28,8 @@ Node Parser::statement()
 	// 标签，goto语句的标签
 	if (t.getType() == ID && next_is(':')) {
 		// label
+		labels.push_back(t.getSval());
+		out << t.getSval() << ":" << std::endl;
 	}
 	lex.back();
 
@@ -143,13 +145,13 @@ Node Parser::switch_stmt()
 	Node r;
 	return r;
 }
+
 Node Parser::for_stmt()
 {
-	
-
 	Node r;
 	return r;
 }
+
 Node Parser::do_stmt()
 {
 	std::string _begin = newLabel("dobegin");
@@ -165,11 +167,18 @@ Node Parser::do_stmt()
 
 	return *r; ////////////////////这里要修改
 }
+
 Node Parser::goto_stmt()
 {
-	Node r;
-	return r;
+	Token t = lex.next();
+	labels.push_back_un(t.getSval());
+	expect(';');
+
+	out << "goto " << t.getSval() << std::endl;
+
+	return Node(); /////////修改
 }
+
 Node Parser::continue_stmt()
 {
 	Node r;
