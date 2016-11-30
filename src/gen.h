@@ -16,6 +16,7 @@ public:
 
 class Locvar {
 public:
+	Locvar() :_var() {  }
 	Locvar(const std::string &_r) :_var(_r) {}
 	Locvar(const std::string &_r, int _v) :_var(_r), _size(_v) {  }
 	Locvar(const Locvar& r) :_var(r._var), _size(r._size), _pos(r._pos), _lvalue(r._lvalue), _is_param(r._is_param) { }
@@ -45,6 +46,15 @@ private:
 	void func_decl(Node &n);
 	void getEnvSize(Env *_b, int &_size);
 	int Generate::getFuncLocVarSize(Node &n);
+	Locvar search(const std::string &name)
+	{
+		for (int i = 0; i < locvar.size(); ++i) {
+			if (locvar.at(i)._var == name) {
+				return locvar.at(i);
+			}
+		}
+		return Locvar();
+	}
 
 
 	void glo_var_decl(Node &n);

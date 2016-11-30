@@ -1,4 +1,4 @@
-	.file	hello.qd
+	.file	"hello.qd"
 	.globl	_glo_var
 	.data
 	.align	4
@@ -7,7 +7,7 @@ _glo_var:
 
 	.def	__main;	.scl	2;	.type	32;	.endef
 	.globl	_main
-	.def	_main;	.scl	2;	type	32;	.endf
+	.def	_main;	.scl	2;	.type	32;	.endef
 _main:
 	.cfi_startproc
 	pushl	%ebp
@@ -18,7 +18,7 @@ _main:
 	andl	$ - 16, %esp
 	subl	$16, %esp
 	call	___main
-	movb	$0, 0(%esp)
+	movb	$0, -1(%ebp)
 	leave
 	.cfi_restore 5
 	.cfi_def_cfa 4, 4
@@ -26,7 +26,7 @@ _main:
 	.cfi_endproc
 
 	.globl	_foo
-	.def	_foo;	.scl	2;	type	32;	.endf
+	.def	_foo;	.scl	2;	.type	32;	.endef
 _foo:
 	.cfi_startproc
 	pushl	%ebp
@@ -35,6 +35,8 @@ _foo:
 	movl	%esp, %ebp
 	.cfi_def_cfa_register 5
 	subl	$33, %esp
+	movl	$1, 8(%ebp)
+	movl	$9, 20(%ebp)
 	movb	$0, -1(%ebp)
 	movl	$0, -5(%ebp)
 	movl	$9, -9(%ebp)

@@ -5,6 +5,7 @@
 ## 当前效果
 C语言例子：`simple/hello.c`<br>
 中间代码输出:`build/hello.qd`
+AT&T汇编输出:`build/hello.s`
 
 ## 实现方法
 
@@ -40,3 +41,6 @@ C语言例子：`simple/hello.c`<br>
  goto label
  ```
 <br><br>
+
+### 生成汇编
+部分完成

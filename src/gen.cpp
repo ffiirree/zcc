@@ -16,7 +16,7 @@ Generate::Generate(Parser *p)
 
 	reg_init();
 
-	out << "\t.file\t" << _infilename << std::endl;
+	out << "\t.file\t\"" << _infilename << "\""<< std::endl;
 
 	Env *gloenv = parser->getGloEnv();
 	for (int i = 0; i < gloenv->size(); ++i) {
@@ -73,8 +73,11 @@ void Generate::getEnvSize(Env *_begin, int &_size)
 
 	bool params = false;
 	int pp = 8;
-	if (_size = 0)
+	if (_size == -1) {
 		params = true;
+		_size = 0;
+	}
+		
 
 	for (int i = 0; i < _begin->size(); ++i) {
 		int t = _begin->at(i).type.size;
@@ -90,7 +93,6 @@ void Generate::getEnvSize(Env *_begin, int &_size)
 			locvar.back()._pos = -_size;
 		}
 			
-
 		if (!_begin->at(i).lvarinit.empty()) 
 			locvar.back()._lvalue = _begin->at(i).lvarinit;
 	}
@@ -101,7 +103,7 @@ void Generate::getEnvSize(Env *_begin, int &_size)
 }
 int Generate::getFuncLocVarSize(Node &n)
 {
-	int _rsize = 0;
+	int _rsize = -1;
 	std::vector<Env *> gloEnv = parser->getGloEnv()->getNext();
 	for (int i = 0; i < gloEnv.size(); ++i) {
 		Env * next = gloEnv.at(i);
@@ -123,7 +125,7 @@ void Generate::func_decl(Node &n)
 		out << "\t.def\t__main;\t.scl\t2;\t.type\t32;\t.endef" << std::endl;
 	}
 	out << "\t.globl\t" << "_" << n.funcName << std::endl;
-	out << "\t.def\t" << "_" << n.funcName << ";\t.scl\t2;\ttype\t32;\t.endf" << std::endl;
+	out << "\t.def\t" << "_" << n.funcName << ";\t.scl\t2;\t.type\t32;\t.endef" << std::endl;
 	out << "_" + n.funcName << ":" << std::endl;
 	out << "\t.cfi_startproc" << std::endl;
 	out << "\tpushl	%ebp" << std::endl;
@@ -137,54 +139,20 @@ void Generate::func_decl(Node &n)
 			out << "\tsubl\t$" << (size + 4 > 16 ? size + 4 : 16) << ", %esp" << std::endl;
 		out << "\tcall	___main" << std::endl;
 
-		for (int i = 0; i < locvar.size(); ++i) {
-			if (locvar.at(i)._lvalue.empty())
-				continue;
-
-			switch (locvar.at(i)._size) {
-			case 1:
-				size -= 1;
-				locvar.at(i)._pos = size;
-				out << "\tmovb\t$" << locvar.at(i)._lvalue.at(0).int_val << ", " << locvar.at(i)._pos << "(%esp)" << std::endl;
-				break;
-
-			case 2:
-				size -= 2;
-				locvar.at(i)._pos = size - 1;
-				out << "\tmovw\t$" << locvar.at(i)._lvalue.at(0).int_val << ", " << locvar.at(i)._pos << "(%esp)" << std::endl;
-				break;
-
-			case 4:
-				size -= 3;
-				locvar.at(i)._pos = size - 1;
-				out << "\tmovl\t$" << locvar.at(i)._lvalue.at(0).int_val << ", " << locvar.at(i)._pos << "(%esp)" << std::endl;
-				break;
-			}
-		}
-
 	}
 	else {
 		if (size > 0)
 			out << "\tsubl\t$" << size << ", %esp" << std::endl;
-		for (int i = 0; i < locvar.size(); ++i) {
-			if (locvar.at(i)._lvalue.empty())
-				continue;
-
-			switch (locvar.at(i)._size) {
-			case 1:
-				out << "\tmovb\t$" << locvar.at(i)._lvalue.at(0).int_val << ", " << locvar.at(i)._pos << "(%ebp)" << std::endl;
-				break;
-
-			case 2:
-				out << "\tmovw\t$" << locvar.at(i)._lvalue.at(0).int_val << ", " << locvar.at(i)._pos << "(%ebp)" << std::endl;
-				break;
-
-			case 4:
-				out << "\tmovl\t$" << locvar.at(i)._lvalue.at(0).int_val << ", " << locvar.at(i)._pos << "(%ebp)" << std::endl;
-				break;
-			}
-		}
 	}
+}
+
+bool isNumber(std::string &str)
+{
+	for (int i = 0; i < str.size();++i) {
+		if (!(str.at(i) >= '0' && str.at(i) <= '9'))
+			return false;
+	}
+	return true;
 }
 
 /**
@@ -215,6 +183,20 @@ void Generate::getReg(std::vector<std::string> &_q)
 
 		if (r.kind == NODE_FUNC) {
 			func_decl(r);
+		}
+	}
+	else if (_q_0_is("=")) {
+		Locvar var = search(_q.at(2));
+		if (isNumber(_q.at(1))) {
+			if (var._size == 1) {
+				out << "\tmovb\t$" << _q.at(1) << ", " << var._pos << "(%ebp)" << std::endl;
+			}
+			else if (var._size == 2) {
+				out << "\tmovw\t$" << _q.at(1) << ", " << var._pos << "(%ebp)" << std::endl;
+			}
+			else if (var._size == 4) {
+				out << "\tmovl\t$" << _q.at(1) << ", " << var._pos << "(%ebp)" << std::endl;
+			}
 		}
 	}
 	else if (_q_0_is("if")) {
@@ -336,9 +318,9 @@ std::string Generate::getOutName()
 {
 	std::string _rstr;
 	for (int i = 0; i < _infilename.length(); ++i) {
-		_rstr.push_back(_infilename.at(i));
 		if (_infilename.at(i) == '.') 
 			break;
+		_rstr.push_back(_infilename.at(i));
 	}
 	return _rstr + ".s";
 }

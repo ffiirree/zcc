@@ -1,21 +1,25 @@
 	.file	"D:\zcc\simple\hello.c"
 main:
-param          argc
-param          argv
+=         0              loc_var        
 +         glo_var        loc_var        .Lvar1    
 =         .Lvar1         loc_var        
 
 
 leave
 foo:
-param          c
-param          d
-param          e
-param          f
 =         1              c              
 
 =         9              f              
 
+=         0              a              
+=         0              b              
+=         9              a1             
+=         9              a2             
+=         9              a3             
+=         9              a4             
+=         9              a5             
+=         9              a6             
+=         9              a7             
 
 leave
 LFE0:

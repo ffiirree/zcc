@@ -155,9 +155,6 @@ Node Parser::funcDef()
 	}
 
 	out << funcName << ":" << std::endl;
-	for (int i = 0; i < params.size(); ++i) {
-		out << std::left << std::setw(15) << "param " << params.at(i).varName << std::endl;
-	}
 
 	functype.setStatic(current_class == K_STATIC);                          // º¯ÊýÊÇ·ñÊÇstatic
 	expect('{');

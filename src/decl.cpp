@@ -26,13 +26,19 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 		}
 		else {
 			Node var;
-			if (isGlo)
+			if (isGlo) {
 				var = createGLoVarNode(ty, name);
-			else
+			}
+			else {
 				var = createLocVarNode(ty, name);
+				pushQuadruple(name);
+			}
+				
 
 			if (next_is('=')) {
 				list.push_back(createDeclNode(var, decl_init(ty)));
+				if (!isGlo)
+					createQuadruple("=");
 			}
 			else if (sclass != K_EXTERN && ty.getType() != NODE_FUNC) {
 				list.push_back(createDeclNode(var));
