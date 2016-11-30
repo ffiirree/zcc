@@ -160,10 +160,12 @@ function_specifier = 'inline'
 ## 6.7.5 Declarators
 declarator = [pointer] ID direct_declarator_tail
            | [pointer] '(' declarator ')' direct_declarator_tail 
+// 只支持定长数组,[]和[10]形式
 direct_declarator_tail = '[' [type_qualifier_list] [assignment_expr] ']' direct_declarator_tail          # array
                        | '[' 'static' [type_qualifier_list] assignment_expr ']' direct_declarator_tail   # array
                        | '[' type_qualifier_list 'static' assignment_expr ']' direct_declarator_tail     # array
                        | '[' [type_qualifier_list] '*' ']' direct_declarator_tail                        # array
+
                        | '(' param_type_list ')' direct_declarator_tail                                  # Function declarators (including prototypes)
                        | '(' [ID_list] ')' direct_declarator_tail                                        # Function declarators (including prototypes)
                        | empty

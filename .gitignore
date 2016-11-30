@@ -11,4 +11,4 @@ build/CMakeCache.txt
 *.opendb
 *.user
 *.sln
-!bin/Debug/*
+bin/

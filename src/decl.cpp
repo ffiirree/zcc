@@ -94,8 +94,23 @@ Type Parser::decl_spec_opt(int *sclass)
 
 Type Parser::direct_decl_tail(Type &retty, std::vector<Node> &params)
 {
-	if (next_is('['))
-		_log_("no array.");
+	// 只支持定长数组
+	if (next_is('[')) {
+		int _len = 0;
+		if (next_is(']')) {
+			_len = -1;
+		}
+		else {
+			_len = array_int_expr();
+			expect(']');
+		}
+
+		Token tok = lex.peek();
+		Type t = direct_decl_tail(retty, std::vector<Node>());
+		if (t.getType() == NODE_FUNC)
+			error("array of functions");
+		return Type(ARRAY, _len);
+	}
 
 	// 如果是括号，则为函数
 	if (next_is('('))
@@ -104,6 +119,14 @@ Type Parser::direct_decl_tail(Type &retty, std::vector<Node> &params)
 	return retty;
 }
 
+
+int Parser::array_int_expr()
+{
+	Node r = conditional_expr();
+	if (r.kind == NODE_INT || r.kind == NODE_CHAR || r.kind == NODE_INT) {
+		return r.int_val;
+	}
+}
 
 
 Type Parser::decl_specifiers(int *rsclass)

@@ -54,7 +54,6 @@ char File::next()
 	return c;
 }
 
-
 void File::back(char c)
 {
 	if (c == '\n') {

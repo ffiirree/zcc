@@ -14,7 +14,7 @@
 #define case_A_F    _CASE_6('A','B','C','D','E','F')
 #define case_a_z    _CASE_12('a','b','c','d','e','f','g','h','i','j','k','l'): _CASE_12('m','n','o','p','q','r','s','t','u','v','w','x'): case 'y': case'z'
 #define case_A_Z    _CASE_12('A','B','C','D','E','F','G','H','I','J','K','L'): _CASE_12('M','N','O','P','Q','R','S','T','U','V','W','X'): case 'Y': case'Z'
-
+#define case_op		_CASE_6('=', '+', '-', '*', '/', '%'):_CASE_6('&', '^', '|', '<' ,'>', '!')
 
 #define OP_MAP  op(OP_ARROW, "->")\
 				op(OP_A_ADD, "+=")\
@@ -90,7 +90,7 @@ enum {
 enum {
 	ID = 180, CHAR_, STRING_, INTEGER, FLOAT, FUNC_BODY, COMPARISON, SECTION, UNIT_ROOT,
 	VAR, DECL, INIT, BIN_OP, UNARY_OP, STMT, TERN_OP, LABEL, COM_STMT, STRUCT_REF,
-
+	ARRAY,
 	COMPOUND_STMT, 
 	DECL_BODY,
 	CONV, // ÀàÐÍ×ª»»
@@ -181,6 +181,7 @@ class Node;
 class Type {
 public:
 	Type(){}
+	Type(int ty, int _l) :type(ty), len(_l) {}
 	Type(int ty, int s, bool isunsig) :type(ty), size(s), isUnsig(isunsig) {  }
 	Type(int ty, Type *ret, std::vector<Node> _params) : type(ty), retType(ret), params(_params) { }
 

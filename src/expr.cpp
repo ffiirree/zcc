@@ -79,10 +79,17 @@ Node Parser::assignment_expr()
  * conditional_expr = logical_OR_expr
  *                  | logical_OR_expr '?' expression ':' conditional_expr
  */
-Node Parser::conditional_expr(Node *node)
+Node Parser::conditional_expr()
 {
-	Node r;
-	return r;
+	Node *node = new Node(logical_or_expr());
+	if (next_is('?')) {
+		Node *then = new Node(expr());
+		expect(':');
+		Node *els = new Node(conditional_expr());
+
+		return createIfStmtNode(node, then, els);
+	}
+	return *node;
 }
 
 /**

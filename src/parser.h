@@ -72,7 +72,8 @@ private:
 	void createQuadruple(const std::string &op);
 	void createFuncQuad(std::vector<Node> &params);
 	void createIncDec();
-
+	std::string num2str(size_t num);
+	int str2int(std::string &str);
 	std::string newLabel(const std::string &_l);
 
 	bool next_is(int id);
@@ -122,6 +123,8 @@ private:
 	Type decl_specifiers(int *rsclass);
 	Type direct_decl_tail(Type &retty, std::vector<Node> &params);
 	Type func_param_list(Type *basetype, std::vector<Node> &params);
+	Type decl_array(Type &ty);
+	int array_int_expr();
 	Node func_body(Type &functype, std::string, std::vector<Node> &params);
 	std::vector<Node> initializer(Type &ty);
 	std::vector<Node> decl_init(Type &ty);
@@ -154,7 +157,8 @@ private:
 	Node expr_opt();
 	Node comma_expr();
 	Node assignment_expr();
-	Node conditional_expr(Node *node);
+	Node conditional_expr();
+	Node do_cond_expr();
 	Node logical_or_expr();
 	Node logical_and_expr();
 	Node bit_or_expr();

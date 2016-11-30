@@ -138,6 +138,7 @@ Node Parser::funcDef()
 }
 
 
+
 Type Parser::func_param_list(Type *retty, std::vector<Node> &params)
 {
 	// foo()
@@ -496,7 +497,7 @@ void Parser::createQuadFile()
 	out << "\t.file\t\"" << lex.getCurrentFile().getFileName() << "\"" << std::endl;
 }
 
-std::string num2str(size_t num)
+std::string Parser::num2str(size_t num)
 {
 	std::string _mstr, _rstr;
 	for (;num > 0;) {
@@ -508,6 +509,15 @@ std::string num2str(size_t num)
 		_rstr.push_back(_mstr.at(i));
 
 	return _rstr;
+}
+
+int Parser::str2int(std::string &str)
+{
+	int r = 0;
+	for (int i = 0; i < str.size(); ++i) {
+		r = r * 10 + str.at(i) - 48;
+	}
+	return r;
 }
 
 std::string Parser::newLabel(const std::string &_l)
@@ -571,7 +581,7 @@ void Parser::createFuncQuad(std::vector<Node> &params)
 	if (fn.kind != NODE_FUNC ||(fn.params.size() != params.size()))
 		error("func call parms size error.");
 
-	out << "call(_" << fn.funcName << "," << fn.params.size() << ")" << std::endl;
+	out << std::left << std::setw(15) << "call" << std::left << std::setw(15) << "_" + fn.funcName  << fn.params.size() << std::endl;
 }
 
 void Parser::createIncDec()

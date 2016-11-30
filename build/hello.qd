@@ -1,8 +1,9 @@
 	.file	"D:\zcc\simple\hello.c"
-_foo:
-param          a
-param          b
-=         2              a              
-=         3              c              
-+         a              3              .Lvar1    
-=         .Lvar1         c              
+_main:
++         4              3              .Lvar1    
+=         .Lvar1         local          
+
+
+leave
+LFE0:
+	.ident	"zcc"

@@ -7,6 +7,15 @@ int main(int argc, char *argv[])
 
 	parser.trans_unit();
 
+	Generate gen("hello.qd");
+	for (;;) {
+		std::vector<std::string> quad = gen.getQuad();
+
+		if (quad.empty())
+			break;
+		gen.getReg(quad);
+	}
+
 	//Lex lex(*++argv);
 	//Token t;
 	//do {

@@ -19,7 +19,7 @@ public:
 	char next();
 	char peek();
 	void back(char c);
-
+	
 	Pos getPos() { return pos; }
 	inline std::string getFileName() { return filename; }
 
