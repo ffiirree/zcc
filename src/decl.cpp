@@ -28,8 +28,11 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 			else
 				var = createLocVarNode(ty, name);
 
+			pushQuadruple(name);
+
 			if (next_is('=')) {
 				list.push_back(createDeclNode(var, decl_init(ty)));
+				createQuadruple("=");
 			}
 			else if (sclass != K_EXTERN && ty.getType() != NODE_FUNC) {
 				list.push_back(createDeclNode(var));
@@ -49,7 +52,7 @@ std::vector<Node> Parser::decl_init(Type &ty)
 		init_list(list, ty, 0, false);
 	}
 	else {
-
+		list.push_back(assignment_expr());
 	}
 	return list;
 }
@@ -60,7 +63,7 @@ void  Parser::init_list(std::vector<Node> &r, Type &ty, int off, bool designated
 
 }
 
-Type Parser::declarator(Type &ty, std::string &name, std::vector<Node> params, int deal_type)
+Type Parser::declarator(Type &ty, std::string &name, std::vector<Node> &params, int deal_type)
 {
 	if (next_is('*')) {
 
@@ -89,7 +92,7 @@ Type Parser::decl_spec_opt(int *sclass)
 	return Type(K_INT, 4, false);
 }
 
-Type Parser::direct_decl_tail(Type &retty, std::vector<Node> params)
+Type Parser::direct_decl_tail(Type &retty, std::vector<Node> &params)
 {
 	if (next_is('['))
 		_log_("no array.");

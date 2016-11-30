@@ -124,6 +124,9 @@ Node Parser::funcDef()
 	Type functype = declarator(retty, funcName, params, FUNC_BODY);         // 函数定义类型，函数描述
 
 	out << "_" << funcName << ":" << std::endl;
+	for (int i = 0; i < params.size(); ++i) {
+		out << std::left << std::setw(15) << "param " << params.at(i).varName << std::endl;
+	}
 
 	functype.setStatic(current_class == K_STATIC);                          // 函数是否是static
 	expect('{');
@@ -135,19 +138,48 @@ Node Parser::funcDef()
 }
 
 
-Type Parser::func_param_list(Type *retty, std::vector<Node> params)
+Type Parser::func_param_list(Type *retty, std::vector<Node> &params)
 {
+	// foo()
 	if (next_is(')')) {
 		warning("Function params is 'void'");
 		return Type(NODE_FUNC, retty, params);
 	}
-	else if (is_keyword(lex.next(), K_VOID) && next_is(')')) {
+	// foo(void)
+	else if (is_keyword(lex.peek(), K_VOID)) {
+		lex.next();
+		expect(')');
 		return Type(NODE_FUNC, retty, params);
 	} 
+	// foo(int x, int y)
+	else {
+		params = param_list();
+		expect(';');
+		return Type(NODE_FUNC, retty, params);
+	}
+}
+
+std::vector<Node> Parser::param_list()
+{
+	std::vector<Node> list;
+	list.push_back(param_decl());
+	while (next_is(','))
+		list.push_back(param_decl());
+	return list;
+}
+
+Node Parser::param_decl()
+{
+	int sclass = 0;
+	Type basety = decl_specifiers(&sclass);
+	std::string paramname;
+	std::vector<Node> list;
+	Type type = declarator(basety, paramname, list, NODE_PARAMS);
+	return createLocVarNode(type, paramname);
 }
 
 
-Node Parser::func_body(Type &functype, std::string name, std::vector<Node> params)
+Node Parser::func_body(Type &functype, std::string name, std::vector<Node> &params)
 {
 	Node body = compound_stmt();
 	return  createFuncNode(functype, name, params, &body);
@@ -314,11 +346,11 @@ Node Parser::createBinOpNode(Type &ty, int kind, Node *left, Node *right)
 	return r;
 }
 
-Node Parser::createUnaryNode(int kind, Type &ty, Node &node)
+Node Parser::createUnaryNode(int kind, Node &node)
 {
 	_log_("Create unary op %c node.", static_cast<char>(kind));
 
-	Node r(kind, ty);
+	Node r(kind);
 	r.operand = &node;
 	return r;
 }
@@ -491,6 +523,11 @@ void Parser::pushQuadruple(const std::string &name)
 	_stk_quad.push_back(name);
 }
 
+void Parser::pushIncDec(const std::string &name)
+{
+	_stk_incdec.push_back(name);
+}
+
 void Parser::createQuadruple(const std::string &op)
 {
 	out << std::left << std::setw(10) << op;
@@ -504,7 +541,12 @@ void Parser::createQuadruple(const std::string &op)
 		out << std::left << std::setw(15) << _stk_quad.back(); _stk_quad.pop_back();
 		out << std::endl;
 	}
-	
+	else if (op == "++" || op == "--") {
+		out << std::left << std::setw(15) << _stk_quad.back();_stk_quad.pop_back();
+		out << std::endl;
+
+		//out << std::left << std::setw(15) << _stk_quad.back();
+	}
 	else {
 		out << std::left << std::setw(15) << _stk_quad.back(); _stk_quad.pop_back();
 		out << std::left << std::setw(15) << _stk_quad.back(); _stk_quad.pop_back();
@@ -513,14 +555,51 @@ void Parser::createQuadruple(const std::string &op)
 		_stk_quad.push_back(tempName);
 		out << std::endl;
 	}
-
-	
 }
 
-void Parser::createFuncQuad(const Node &fn)
+void Parser::createFuncQuad(std::vector<Node> &params)
 {
-	for (int i = 0; i < fn.args.size(); ++i) {
-		out << "param " << fn.args.at(i).varName << std::endl;
+	out << std::endl;
+	for (int i = 0; i < params.size(); ++i) {
+		out << "param " << _stk_quad.back() << std::endl; _stk_quad.pop_back();
 	}
-	out << "call(_" << fn.funcName << "," << fn.args.size() << ")" << std::endl;
+
+	Node fn = localenv->search(_stk_quad.back());
+	_stk_quad.pop_back();
+
+	// 检查参数个数
+	if (fn.kind != NODE_FUNC ||(fn.params.size() != params.size()))
+		error("func call parms size error.");
+
+	out << "call(_" << fn.funcName << "," << fn.params.size() << ")" << std::endl;
+}
+
+void Parser::createIncDec()
+{
+	for (;;) {
+		if (_stk_incdec.empty())
+			return;
+
+		std::string op = _stk_incdec.back(); _stk_incdec.pop_back();
+		std::string var = _stk_incdec.back(); _stk_incdec.pop_back();
+		std::string label;
+		if (op == "++") {
+			label = newLabel("inc");
+
+			out << std::left << std::setw(15) << "+";
+			
+		}
+		else {
+			label = newLabel("dec");
+
+			out << std::left << std::setw(15) << "-";
+		}
+
+		out << std::left << std::setw(15) << var;
+		out << std::left << std::setw(15) << "1";
+		out << std::left << std::setw(15) << label << std::endl;
+		out << std::left << std::setw(15) << "=";
+		out << std::left << std::setw(15) << label;
+		out << std::left << std::setw(15) << var << std::endl;
+	}
 }

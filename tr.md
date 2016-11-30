@@ -158,16 +158,14 @@ type_qualifier = 'const' | 'restrict' | 'volatile'
 function_specifier = 'inline'
 
 ## 6.7.5 Declarators
-declarator = [pointer] direct_declarator 
-
-direct_declarator = ID direct_declarator_tail
-                  | '(' declarator ')' direct_declarator_tail 
-direct_declarator_tail = '[' [type_qualifier_list] [assignment_expr] ']' direct_declarator_tail
-                       | '[' 'static' [type_qualifier_list] assignment_expr ']' direct_declarator_tail
-                       | '[' type_qualifier_list 'static' assignment_expr ']' direct_declarator_tail
-                       | '[' [type_qualifier_list] '*' ']' direct_declarator_tail
-                       | '(' param_type_list ')' direct_declarator_tail
-                       | '(' [ID_list] ')' direct_declarator_tail
+declarator = [pointer] ID direct_declarator_tail
+           | [pointer] '(' declarator ')' direct_declarator_tail 
+direct_declarator_tail = '[' [type_qualifier_list] [assignment_expr] ']' direct_declarator_tail          # array
+                       | '[' 'static' [type_qualifier_list] assignment_expr ']' direct_declarator_tail   # array
+                       | '[' type_qualifier_list 'static' assignment_expr ']' direct_declarator_tail     # array
+                       | '[' [type_qualifier_list] '*' ']' direct_declarator_tail                        # array
+                       | '(' param_type_list ')' direct_declarator_tail                                  # Function declarators (including prototypes)
+                       | '(' [ID_list] ')' direct_declarator_tail                                        # Function declarators (including prototypes)
                        | empty
 
 pointer = '*' [type_qualifier_list] 

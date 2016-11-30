@@ -17,9 +17,11 @@ Node Parser::expr_opt()
 Node Parser::comma_expr()
 {
 	Node node = assignment_expr();
+	createIncDec();
 	while (next_is(','))
 	{
 		Node expr = assignment_expr();
+		createIncDec();
 		node = createBinOpNode(expr.getType(), ',', &node, &expr);
 	}
 
@@ -291,15 +293,25 @@ Node Parser::postfix_expr()
 	return postfix_expr_tail(*node);
 }
 
+
+std::vector<Node> Parser::argument_expr_list()
+{
+	std::vector<Node> list;
+	list.push_back(assignment_expr());
+	while (next_is(','))
+		list.push_back(assignment_expr());
+	return list;
+}
+
 Node Parser::postfix_expr_tail(Node &node)
 {
 	for (;;) {
 		//postfix_expr_tail = '('[argument_expr_list] ')' postfix_expr_tail
 		if (next_is('(')) {
-			
-			_log_("function call, only no args call!");
-			expect(')');
 
+			std::vector<Node> parms = argument_expr_list();
+			expect(')');
+			createFuncQuad(parms);
 			//Token tok = lex.peek();
 			//node = conv(node);
 			//Type t = node.getType();
@@ -325,10 +337,18 @@ Node Parser::postfix_expr_tail(Node &node)
 			continue;*/
 		}
 		Token tok = lex.peek();
+		// 后置++/--
 		if (next_is(OP_INC) || next_is(OP_DEC)) {
 			ensure_lvalue(node);
 			int op = is_keyword(tok, OP_INC) ? OP_POST_INC : OP_POST_DEC;
-			return createUnaryNode(op, node.getType(), node);
+
+			pushIncDec(_stk_quad.back());
+			if(op == OP_POST_DEC)
+				pushIncDec("--");
+			else 
+				pushIncDec("++");
+
+			return createUnaryNode(op, node);
 		}
 		return node;
 	}
@@ -341,8 +361,7 @@ Node Parser::var_or_func(Token &t)
 	if (r.kind == NODE_GLO_VAR || r.kind == NODE_LOC_VAR)
 		pushQuadruple(r.varName);
 	else if (r.kind == NODE_FUNC)
-		createFuncQuad(r);
-		
+		pushQuadruple(t.getSval());
 
 	if (r.kind == NODE_NULL)
 		error("undefined var : %s！", t.getSval());
@@ -395,7 +414,7 @@ Node Parser::primary_expr()
 Node Parser::wrap(Type &t, Node &node) {
 	if (t.getType() == node.getType().getType() && t.isSigned() == t.isSigned())
 		return node;
-	return createUnaryNode(CONV, t, node);
+	return createUnaryNode(CONV, node);
 }
 
 Node Parser::binop(int op, Node &lhs, Node &rhs)
@@ -468,7 +487,7 @@ Node Parser::sizeof_operand()
 }
 Node Parser::unary_incdec(int ty)
 {
-	Node r;
+	Node r = createUnaryNode(ty, Node());
 	return r;
 }
 

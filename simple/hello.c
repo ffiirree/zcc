@@ -2,9 +2,11 @@
 
 int global_var;
 
-void foo()
+void foo(int a, int b)
 {
-	int a;
+	int a = 2;
+	int c = 3;
+	c = 3 + a++;
 }
 
 int main(void)
@@ -14,7 +16,7 @@ int main(void)
 
 loop:
 	// test func call
-	foo();
+	foo(a, b);
 
 	goto loop;
 	// test do_while_stmt

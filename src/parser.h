@@ -68,8 +68,10 @@ private:
 	void createQuadFile();
 
 	void pushQuadruple(const std::string &name);
+	void pushIncDec(const std::string &name);
 	void createQuadruple(const std::string &op);
-	void createFuncQuad(const Node &fn);
+	void createFuncQuad(std::vector<Node> &params);
+	void createIncDec();
 
 	std::string newLabel(const std::string &_l);
 
@@ -94,7 +96,7 @@ private:
 	Node createLocVarNode(Type &ty, std::string name);
 	// Á½Ôª²Ù×÷·û
 	Node createBinOpNode(Type &ty, int kind, Node *left, Node *right);
-	Node createUnaryNode(int kind, Type &ty, Node &node);
+	Node createUnaryNode(int kind, Node &node);
 
 	Node createRetStmtNode(Node *n);
 	Node createJumpNode(std::string label);
@@ -107,18 +109,20 @@ private:
 
 	bool isFuncDef();
 	Node funcDef();
+	std::vector<Node> param_list();
+	Node param_decl();
 
 	/**
 	 * decl
 	 */
 	void declaration(std::vector<Node> &list, bool isGlo);
 	void skip_parenthesis(int *count);
-	Type declarator(Type &ty, std::string &name, std::vector<Node> params, int deal_type);
+	Type declarator(Type &ty, std::string &name, std::vector<Node> &params, int deal_type);
 	Type decl_spec_opt(int *sclass);
 	Type decl_specifiers(int *rsclass);
-	Type direct_decl_tail(Type &retty, std::vector<Node> params);
-	Type func_param_list(Type *basetype, std::vector<Node> params);
-	Node func_body(Type &functype, std::string, std::vector<Node> params);
+	Type direct_decl_tail(Type &retty, std::vector<Node> &params);
+	Type func_param_list(Type *basetype, std::vector<Node> &params);
+	Node func_body(Type &functype, std::string, std::vector<Node> &params);
 	std::vector<Node> initializer(Type &ty);
 	std::vector<Node> decl_init(Type &ty);
 	void init_list(std::vector<Node> &r, Type &ty, int off, bool designated);
@@ -166,6 +170,7 @@ private:
 	Node unary_expr();
 	Node postfix_expr();
 	Node postfix_expr_tail(Node &node);
+	std::vector<Node> argument_expr_list();
 	Node primary_expr();
 
 	Node var_or_func(Token &t);
@@ -202,5 +207,6 @@ private:
 
 	std::ofstream out;
 	std::vector<std::string> _stk_quad;
+	std::vector<std::string> _stk_incdec;
 };
 #endif // !_ZCC_PARSER_H

@@ -14,5 +14,6 @@ int main(int argc, char *argv[])
 	//	std::cout << t;
 	//} while (t.getType() != K_EOF);
 
+	system("pause");
 	return 0;
 }

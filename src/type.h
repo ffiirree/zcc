@@ -253,6 +253,7 @@ enum NodeKind{
 	NODE_COMP_STMT,
 	NODE_STRUCT_REF,
 
+	NODE_PARAMS,
 };
 
 

@@ -1,0 +1,16 @@
+	.file	"../../simple/main.c"
+_main:
+=         0              a              
+.Lwhilebegin1:
+<         10             a              .Lvar4    
+
+if        .Lvar4         goto           .Lwhiletrue2
+goto      .Lwhilefalse3
+.Lwhiletrue2:
+
+goto      .Lwhilebegin1
+.Lwhilefalse3:
+
+leave
+LFE0:
+	.ident	"zcc"
