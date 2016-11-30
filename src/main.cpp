@@ -7,7 +7,7 @@ int main(int argc, char *argv[])
 
 	parser.trans_unit();
 
-	Generate gen("hello.qd");
+	Generate gen(&parser);
 	for (;;) {
 		std::vector<std::string> quad = gen.getQuad();
 
@@ -23,6 +23,6 @@ int main(int argc, char *argv[])
 	//	std::cout << t;
 	//} while (t.getType() != K_EOF);
 
-	system("pause");
+	//system("pause");
 	return 0;
 }

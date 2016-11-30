@@ -7,10 +7,11 @@
 
 class Lex {
 public:
+	Lex(){}
 	Lex(const std::string &filename);
 
-	Lex(Lex &lex) :f(lex.f), keywords(lex.keywords), tokens(lex.tokens), index(index) {  }
-	inline Lex operator=(Lex &lex) { f = lex.f; keywords = lex.keywords; tokens = lex.tokens; index = lex.index; return *this; }
+	Lex(const Lex &lex) :f(lex.f), keywords(lex.keywords), tokens(lex.tokens), index(index) {  }
+	inline Lex operator=(const Lex &lex) { f = lex.f; keywords = lex.keywords; tokens = lex.tokens; index = lex.index; return *this; }
 
 	Token next();
 	void back();

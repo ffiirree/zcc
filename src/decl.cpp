@@ -21,6 +21,9 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 		else if (ty.isStatic() && !isGlo) {   // 局部static变量
 
 		}
+		else if (params.size() != 0) {
+			createFuncDecl(baseType, name, params);
+		}
 		else {
 			Node var;
 			if (isGlo)
@@ -28,11 +31,8 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 			else
 				var = createLocVarNode(ty, name);
 
-			pushQuadruple(name);
-
 			if (next_is('=')) {
 				list.push_back(createDeclNode(var, decl_init(ty)));
-				createQuadruple("=");
 			}
 			else if (sclass != K_EXTERN && ty.getType() != NODE_FUNC) {
 				list.push_back(createDeclNode(var));
@@ -63,23 +63,49 @@ void  Parser::init_list(std::vector<Node> &r, Type &ty, int off, bool designated
 
 }
 
+/**
+ * \\ int * var, var2;
+ * \\ int *(*pt)(int a, int b)
+ * declarator = ['*'] ID direct_declarator_tail
+ *            | ['*'] '(' declarator ')' direct_declarator_tail
+ *
+ * \\ 只支持定长数组,[]和[10]形式
+ * direct_declarator_tail = '[' ']' direct_declarator_tail
+                          |'[' conditional_expr ']' direct_declarator_tail
+
+                          | '(' param_type_list ')' direct_declarator_tail                                  # Function declarators (including prototypes)
+                          | '(' [ID_list] ')' direct_declarator_tail                                        # Function declarators (including prototypes)
+                          | empty
+ */
+void conv2ptr(Type *ty)
+{
+	ty->type = PTR;
+	ty->ptr = ty;
+	ty->size = 4;
+}
+
 Type Parser::declarator(Type &ty, std::string &name, std::vector<Node> &params, int deal_type)
 {
+	// 指针变量
 	if (next_is('*')) {
-
+		conv2ptr(&ty);
+		return declarator(ty, name, params, deal_type);
 	}
-
+	// int (*ptr)();
 	if (next_is('(')) {
-
+		Type stub;
+		Type t = declarator(stub, name, params, deal_type);
+		expect(')');
+		stub = direct_decl_tail(ty, params, deal_type);
+		return t;
 	}
 
 	Token t = lex.next();
-
 	if (t.getType() == ID) {
 		name = t.getSval();
-		return direct_decl_tail(ty, params);
+		return direct_decl_tail(ty, params, deal_type);
 	}
-	return direct_decl_tail(ty, params);
+	return direct_decl_tail(ty, params, deal_type);
 }
 
 
@@ -92,7 +118,7 @@ Type Parser::decl_spec_opt(int *sclass)
 	return Type(K_INT, 4, false);
 }
 
-Type Parser::direct_decl_tail(Type &retty, std::vector<Node> &params)
+Type Parser::direct_decl_tail(Type &retty, std::vector<Node> &params, int decl_type)
 {
 	// 只支持定长数组
 	if (next_is('[')) {
@@ -106,15 +132,19 @@ Type Parser::direct_decl_tail(Type &retty, std::vector<Node> &params)
 		}
 
 		Token tok = lex.peek();
-		Type t = direct_decl_tail(retty, std::vector<Node>());
+		Type t = direct_decl_tail(retty, std::vector<Node>(), decl_type);
 		if (t.getType() == NODE_FUNC)
 			error("array of functions");
 		return Type(ARRAY, _len);
 	}
 
 	// 如果是括号，则为函数
-	if (next_is('('))
-		return func_param_list(&retty, params);
+	if (next_is('(')) {
+		if (decl_type == DECL_BODY)
+			decl_type = NODE_FUNC_DECL;
+		return func_param_list(&retty, params, decl_type);
+	}
+		
 
 	return retty;
 }
@@ -194,10 +224,12 @@ Type Parser::decl_specifiers(int *rsclass)
 			// Function specifiers
 		case K_INLINE: _log_("no inline."); break;
 
-		default: break;
+		default: 
+			goto _end;
+			break;
 		}
 	}
-
+_end:
 	if (current_class)
 		*rsclass = current_class;
 

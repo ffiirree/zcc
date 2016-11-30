@@ -8,6 +8,7 @@
 
 class File {
 public:
+	File(){}
 	File(const std::string &_filename);
 
 	File(const File &f) :filename(f.filename), buffer(f.buffer), ptr(f.ptr), pos(f.pos) {  }

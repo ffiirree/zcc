@@ -3,20 +3,38 @@
 
 #include "lex.h"
 
-#define __IN_SCOPE__(localEnv, preEnv) do{localEnv = new Env(preEnv);}while(0)
-#define __OUT_SCOPE__(localEnv) do{localEnv = localEnv->pre();}while(0)
+#define __IN_SCOPE__(localEnv, preEnv) do{ Env *old = preEnv; localEnv = new Env(old); old->setNext(localEnv);}while(0)
+#define __OUT_SCOPE__(localEnv, _name) do{localEnv->setName(_name); localEnv = localEnv->pre(); }while(0)
 
 class Env {
 public:
 	Env():Env(nullptr) {}
 	Env(Env *p) :_pre(p), nodes() { }
 	void push_back(Node &n);
-	Node search(std::string &key);
+	void pop_back() { nodes.pop_back(); }
+	Node &back() { return nodes.back(); }
+	Node &search(std::string &key);
+	void set(std::string &_name, int ty, Node *_body);
 
-	Env * pre() { return _pre; }
+	inline Env *pre() { return _pre; }
+	inline std::vector<Env *> getNext() { return _next; }
+	inline void setNext(Env *_n) { _next.push_back(_n); }
+	inline void setName(const std::string &_n) { _name = _n; }
+	inline std::string getName() { return _name; }
+	inline int getNodesSize() {
+		int r = 0;
+		for (int i = 0; i < nodes.size(); ++i) {
+			r += nodes.at(i).type.size;
+		}
+		return r;
+	}
+	size_t size() { return nodes.size(); }
+	Node &at(size_t i) { return nodes.at(i); }
 
 private:
+	std::string _name;
 	Env *_pre;
+	std::vector<Env *> _next;
 	std::vector<Node> nodes;
 };
 
@@ -49,8 +67,10 @@ private:
 
 class Parser {
 public:
+	Parser(){}
 	Parser(const std::string &filename) :lex(filename) { 
 		globalenv = new Env(nullptr); 
+		globalenv->setName(filename);
 		createQuadFile();
 	}
 	Parser(Lex &l) :lex(l) { 
@@ -61,10 +81,13 @@ public:
 	Parser operator=(const Parser &p) = delete;
 
 	std::vector<Node> trans_unit();
+	std::string getQuadrupleFileName();
+	Env *getGloEnv() { return globalenv; }
+	Env *getLocEnv() { return localenv; }
 
 private:
-	std::string setQuadrupleFileName();
-	std::string setQuadrupleFileName(std::string &filename);
+	
+	std::string getQuadrupleFileName(std::string &filename);
 	void createQuadFile();
 
 	void pushQuadruple(const std::string &name);
@@ -95,6 +118,8 @@ private:
 	Node createDeclNode(Node &var, std::vector<Node> &init);
 	Node createGLoVarNode(Type &ty, std::string name);
 	Node createLocVarNode(Type &ty, std::string name);
+	Node createFuncDeclParams(Type &ty);
+	Node createFuncDecl(Type &ty, std::string & funcName, std::vector<Node> params);
 	// Á½Ôª²Ù×÷·û
 	Node createBinOpNode(Type &ty, int kind, Node *left, Node *right);
 	Node createUnaryNode(int kind, Node &node);
@@ -110,8 +135,8 @@ private:
 
 	bool isFuncDef();
 	Node funcDef();
-	std::vector<Node> param_list();
-	Node param_decl();
+	std::vector<Node> param_list(int deal_type);
+	Node param_decl(int deal_type);
 
 	/**
 	 * decl
@@ -121,8 +146,8 @@ private:
 	Type declarator(Type &ty, std::string &name, std::vector<Node> &params, int deal_type);
 	Type decl_spec_opt(int *sclass);
 	Type decl_specifiers(int *rsclass);
-	Type direct_decl_tail(Type &retty, std::vector<Node> &params);
-	Type func_param_list(Type *basetype, std::vector<Node> &params);
+	Type direct_decl_tail(Type &retty, std::vector<Node> &params, int deal_type);
+	Type func_param_list(Type *basetype, std::vector<Node> &params, int deal_type);
 	Type decl_array(Type &ty);
 	int array_int_expr();
 	Node func_body(Type &functype, std::string, std::vector<Node> &params);

@@ -30,7 +30,6 @@ std::vector<Node> Parser::trans_unit()
 	return list;
 }
 
-
 void Env::push_back(Node &n) {
 	if (n.kind == NODE_GLO_VAR)
 		_log_("Add glo var : %s.", n.varName.c_str());
@@ -38,6 +37,24 @@ void Env::push_back(Node &n) {
 		_log_("Add loc var : %s.", n.varName.c_str());
 	else if (n.kind == NODE_FUNC)
 		_log_("Add function name : %s.", n.funcName.c_str());
+
+
+	if (n.kind == NODE_FUNC) {
+		Node r = search(n.funcName);
+		if (r.kind == NODE_FUNC_DECL) {
+			set(n.funcName, NODE_FUNC, n.body);
+			return;
+		}
+		else if (r.kind != 0) {
+			error("function redefined.");
+		}
+	}
+
+	if (n.kind == NODE_GLO_VAR) {
+		Node r = search(n.varName);
+		if (r.kind != 0)
+			error("redefined var.");
+	}
 
 	nodes.push_back(n);
 }
@@ -84,29 +101,40 @@ bool Parser::isFuncDef()
 	do {
 		t = lex.next();
 		count++;
-	} while (is_type(t));
-	
-	// 函数名
-	if (t.getType() == ID) {
+	} while (is_type(t) || t.getId() == '*');
+	lex.back(); count--;
 
-		// 函数参数
+	for (;;) {
 		t = lex.next();
 		count++;
 		if (is_keyword(t, '(')) {
 			skip_parenthesis(&count);
-			t = lex.next();
-			count++;
+			if (next_is('{')) {
+				count++;
+				goto _end;
+			}
+		}
+		else if (t.getType() == ID) {
+			if (next_is('(')) {
+				count++;
+				skip_parenthesis(&count);
+				if (next_is('{')) {
+					count++;
+					goto _end;
+				}
+			}
+		}
+		else {
 			for (int i = 0; i < count; ++i)
 				lex.back();
-
-			if (is_keyword(t, '{'))
-				return true;
-			else return false;
+			return false;
 		}
 	}
+
+_end:
 	for (int i = 0; i < count; ++i)
 		lex.back();
-	return false;
+	return true;
 }
 
 /**
@@ -122,8 +150,11 @@ Node Parser::funcDef()
 
 	Type retty = decl_spec_opt(&current_class);                             // 获取函数的返回类型
 	Type functype = declarator(retty, funcName, params, FUNC_BODY);         // 函数定义类型，函数描述
+	if (functype.type == PTR) {
+		error("Ptr not can be function.");
+	}
 
-	out << "_" << funcName << ":" << std::endl;
+	out << funcName << ":" << std::endl;
 	for (int i = 0; i < params.size(); ++i) {
 		out << std::left << std::setw(15) << "param " << params.at(i).varName << std::endl;
 	}
@@ -132,18 +163,17 @@ Node Parser::funcDef()
 	expect('{');
 	Node r = func_body(functype, funcName, params);                         // 函数体
 
-	__OUT_SCOPE__(localenv);
+	__OUT_SCOPE__(localenv, funcName);
 	out << "leave" << std::endl;
 	return r;
 }
 
 
 
-Type Parser::func_param_list(Type *retty, std::vector<Node> &params)
+Type Parser::func_param_list(Type *retty, std::vector<Node> &params, int deal_type)
 {
 	// foo()
 	if (next_is(')')) {
-		warning("Function params is 'void'");
 		return Type(NODE_FUNC, retty, params);
 	}
 	// foo(void)
@@ -154,28 +184,33 @@ Type Parser::func_param_list(Type *retty, std::vector<Node> &params)
 	} 
 	// foo(int x, int y)
 	else {
-		params = param_list();
+		params = param_list(deal_type);
 		expect(';');
 		return Type(NODE_FUNC, retty, params);
 	}
 }
 
-std::vector<Node> Parser::param_list()
+std::vector<Node> Parser::param_list(int decl_type)
 {
 	std::vector<Node> list;
-	list.push_back(param_decl());
+	list.push_back(param_decl(decl_type));
+
 	while (next_is(','))
-		list.push_back(param_decl());
+		list.push_back(param_decl(decl_type));
 	return list;
 }
 
-Node Parser::param_decl()
+Node Parser::param_decl(int decl_type)
 {
 	int sclass = 0;
 	Type basety = decl_specifiers(&sclass);
 	std::string paramname;
 	std::vector<Node> list;
 	Type type = declarator(basety, paramname, list, NODE_PARAMS);
+
+	if (decl_type == NODE_FUNC_DECL)
+		return createFuncDeclParams(type);
+
 	return createLocVarNode(type, paramname);
 }
 
@@ -188,7 +223,7 @@ Node Parser::func_body(Type &functype, std::string name, std::vector<Node> &para
 
 
 
-Node Env::search(std::string &key)
+Node &Env::search(std::string &key)
 {
 	Env *ptr = this;
 
@@ -199,9 +234,26 @@ Node Env::search(std::string &key)
 		}
 		ptr = ptr->pre();
 	}
-	return Node(NODE_NULL);
+
+	Node *r = new Node(NODE_NULL);
+
+	return *r;
 }
 
+void Env::set(std::string &_name, int ty, Node *_body)
+{
+	Env *ptr = this;
+
+	while (ptr) {
+		for (int i = 0; i < ptr->nodes.size(); ++i) {
+			if (_name == ptr->nodes.at(i).varName || _name == ptr->nodes.at(i).funcName) {
+				ptr->nodes.at(i).kind = ty;
+				ptr->nodes.at(i).body = _body;
+			}
+		}
+		ptr = ptr->pre();
+	}
+}
 
 /**
 * 从当前作用域开始查找标识符
@@ -286,6 +338,19 @@ Node Parser::createFuncNode(Type &ty, std::string & funcName, std::vector<Node> 
 	return node;
 }
 
+Node Parser::createFuncDecl(Type &ty, std::string & funcName, std::vector<Node> params)
+{
+	_log_("Create function decl node.");
+
+	Node node(NODE_FUNC_DECL, ty);
+	node.funcName = funcName;
+	node.params = params;
+
+	globalenv->push_back(node);
+
+	return node;
+}
+
 
 
 Node Parser::createCompoundStmtNode(std::vector<Node> &stmts)
@@ -311,6 +376,14 @@ Node Parser::createDeclNode(Node &var, std::vector<Node> &init)
 	Node node(NODE_DECL);
 	node.decl_var = &var;
 	node.decl_init = init;
+
+	if (var.kind == NODE_GLO_VAR) {
+		globalenv->back().lvarinit = init;
+	}
+	else if (var.kind == NODE_LOC_VAR) {
+		localenv->back().lvarinit = init;
+	}
+
 	return node;
 }
 
@@ -331,8 +404,16 @@ Node Parser::createLocVarNode(Type &ty, std::string name)
 
 	Node r(NODE_LOC_VAR, ty);
 	r.varName = name;
-
 	localenv->push_back(r);
+
+	return r;
+}
+
+Node Parser::createFuncDeclParams(Type &ty)
+{
+	_log_("Create func dec param node.");
+
+	Node r(NODE_DECL_PARAM, ty);
 
 	return r;
 }
@@ -460,7 +541,7 @@ bool Parser::is_arithtype(Type &ty)
 	return is_inttype(ty) || is_floattype(ty);
 }
 
-std::string Parser::setQuadrupleFileName()
+std::string Parser::getQuadrupleFileName()
 {
 	std::string _fn = lex.getCurrentFile().getFileName();
 	size_t _index_separator = 0;
@@ -484,14 +565,14 @@ std::string Parser::setQuadrupleFileName()
 }
 
 
-std::string Parser::setQuadrupleFileName(std::string &filename)
+std::string Parser::getQuadrupleFileName(std::string &filename)
 {
 	return filename;
 }
 
 void Parser::createQuadFile()
 {
-	out.open(setQuadrupleFileName(), std::ios::out | std::ios::binary);
+	out.open(getQuadrupleFileName(), std::ios::out | std::ios::binary);
 	if (!out.is_open())
 		error("Create file filed!");
 	out << "\t.file\t\"" << lex.getCurrentFile().getFileName() << "\"" << std::endl;
@@ -581,7 +662,7 @@ void Parser::createFuncQuad(std::vector<Node> &params)
 	if (fn.kind != NODE_FUNC ||(fn.params.size() != params.size()))
 		error("func call parms size error.");
 
-	out << std::left << std::setw(15) << "call" << std::left << std::setw(15) << "_" + fn.funcName  << fn.params.size() << std::endl;
+	out << std::left << std::setw(15) << "call" << std::left << std::setw(15) << fn.funcName  << fn.params.size() << std::endl;
 }
 
 void Parser::createIncDec()

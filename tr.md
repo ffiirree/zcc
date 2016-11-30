@@ -12,22 +12,18 @@ postfix_expr = primary_expr postfix_expr_tail
 
 postfix_expr_tail = '[' expression ']' postfix_expr_tail
                   | '(' [argument_expr_list] ')' postfix_expr_tail
-                  | '.' ID postfix_expr_tail
-                  | '->' ID postfix_expr_tail
-                  | '++' postfix_expr_tail
-                  | '--' postfix_expr_tail
+                  | ('.' | '->') ID postfix_expr_tail
+                  | ('++' | '--') postfix_expr_tail
                   | empty
 
 argument_expr_list = assignment_expr {',' assignment_expr}
 
 ## 6.5.03 Unary operators // 一元运算符
 unary_expr = postfix_expr
-           | '++' unary_expr
-           | '--' unary_expr
+           | ('++' | '--') unary_expr
            | unary_operator cast_expr
            | 'sizeof' unary_expr
            | 'sizeof' '(' type ')'
-
 unary_operator = '&' | '*' | '+' | '-' | '˜' | '!'
 
 ## 6.5.04 Cast operators // 强制类型转换
@@ -35,38 +31,20 @@ cast_expr = unary_expr
           | '(' type ')' cast_expr
 
 ## 6.5.05 Multiplicative operators // 乘除模运算符
-multi_expr = cast_expr multi_expr_tail
-multi_expr_tail = '*' {GEQ()} cast_expr multi_expr_tail
-                | '/' {GEQ()} cast_expr multi_expr_tail
-                | '%' {GEQ()} cast_expr multi_expr_tail
-                | empty
+multi_expr = cast_expr {('*' | '/' | '%') {GEQ()} cast_expr}
 
 ## 6.5.06 Additive operators // 加减运算
-add_expr = multi_expr add_expr_tail
-add_expr_tail = '+' {GEQ()} multi_expr add_expr_tail
-              | '-' {GEQ()} multi_expr add_expr_tail
-              | empty
+add_expr = multi_expr {('+' | '-') {GEQ()} multi_expr}
 
 ## 6.5.07 Bitwise shift operators // 移位运算
-shift_expr = add_expr shift_expr_tail
-shift_expr_tail = '<<' add_expr shift_expr_tail
-                | '>>' add_expr shift_expr_tail
-                | empty
+shift_expr = add_expr {('<<' | '>>') add_expr}
 
 ## 6.5.08 Relational operators // 比较运算
-relational_expr = shift_expr relational_expr_tail
-relational_expr_tail = '<' {GEQ()} shift_expr relational_expr_tail
-                     | '>' {GEQ()} shift_expr relational_expr_tail
-                     | '<=' {GEQ()} shift_expr relational_expr_tail
-                     | '>=' {GEQ()} shift_expr relational_expr_tail
-                     | empty
+relational_expr = shift_expr {relational_op {GEQ()} shift_expr}
+relational_op = '<' | '>' | '<=' | '>='
 
 ## 6.5.09 Equality operators // 相等运算
-equal_expr = relational_expr equal_expr_tail
-equal_expr_tail = '==' {GEQ()} relational_expr equal_expr_tail
-                | '!=' {GEQ()} relational_expr equal_expr_tail
-                | empty
-
+equal_expr = relational_expr {('==' | '!=') {GEQ()} relational_expr}
 
 ## 6.5.10 Bitwise AND operator // 位&运算
 bit_and_expr = equal_expr {'&'{GEQ()} equal_expr}
@@ -98,18 +76,18 @@ expression = assignment_expr {',' assignment_expr}
 # 6.6 Constant expressions // 常量表达式
 const_expr = conditional_expr
 
+# 6.9 External definitions  // 外部定义
+translation_unit = { func_definition | declaration }
+
+## 6.9.1  // 函数定义
+func_definition = decl_specifiers declarator [declaration {declaration}] compound_stmt
+
 # 6.7 Declarations // 声明
-declaration = decl_specifiers [init_decl_list] ';'
+declaration = decl_specifiers [declarator ['=' initializer] {',' declarator ['=' initializer]}] ';'
 decl_specifiers = storage_class_specifier [decl_specifiers]
                 | type_specifier [decl_specifiers]
                 | type_qualifier [decl_specifiers]
                 | function_specifier [decl_specifiers]
-
-init_decl_list = init_declarator {',' init_declarator}
-
-// 初始化说明符
-init_declarator = declarator
-                | declarator '=' initializer
 
 ## 6.7.1 Storage-class specifiers // 
 storage_class_specifier = 'typedef' | 'extern' | 'static' | 'auto' | 'register'
@@ -158,13 +136,13 @@ type_qualifier = 'const' | 'restrict' | 'volatile'
 function_specifier = 'inline'
 
 ## 6.7.5 Declarators
+// int * var, var2;
+// int * (*pt)()
 declarator = [pointer] ID direct_declarator_tail
            | [pointer] '(' declarator ')' direct_declarator_tail 
 // 只支持定长数组,[]和[10]形式
-direct_declarator_tail = '[' [type_qualifier_list] [assignment_expr] ']' direct_declarator_tail          # array
-                       | '[' 'static' [type_qualifier_list] assignment_expr ']' direct_declarator_tail   # array
-                       | '[' type_qualifier_list 'static' assignment_expr ']' direct_declarator_tail     # array
-                       | '[' [type_qualifier_list] '*' ']' direct_declarator_tail                        # array
+direct_declarator_tail = '[' ']' direct_declarator_tail
+                       |'[' conditional_expr ']' direct_declarator_tail
 
                        | '(' param_type_list ')' direct_declarator_tail                                  # Function declarators (including prototypes)
                        | '(' [ID_list] ')' direct_declarator_tail                                        # Function declarators (including prototypes)
@@ -219,9 +197,7 @@ statement = labeled_stmt
           | for_stmt
           | while_stmt
           | do_while_stmt
-          
           | expr_stmt 
-          
           | goto_stmt
           | continue_stmt
           | return_stmt
@@ -256,77 +232,3 @@ goto_stmt = 'goto' ID ';'
 return_stmt = 'return' [expression] ';'
 continue_stmt = 'continue' ';'
 break_stmt = 'break' ';'
-
-# 6.9 External definitions  // 外部定义
-translation_unit = { func_definition | declaration }
-
-## 6.9.1  // 函数声明
-func_definition = decl_specifiers declarator [decl_list] compound_stmt
-
-decl_list = declaration {declaration}
-
-# 6.10 Preprocessing directives  // 预处理
-preprocessing_file = [group]
-
-group = group_part {group_part}
-
-group_part = if_section | control_line | text_line | '#' non_directive
-
-if_section = if_group [elif_groups] [else_group] endif_line
-
-if_group = '#' 'if' const_expr new_line groupopt
-         | '#' 'ifdef' ID new_line groupopt
-         | '#' 'ifndef' ID new_line groupopt
-
-elif_groups = elif_group | elif_groups elif_group
-
-elif_group = '#' 'elif' const_expr new_line groupopt
-
-else_group = '#' 'else' new_line [group]
-
-endif_line = '#' 'endif' new_line
-
-control_line = '#' 'include' pp_tokens new_line
-             | '#' 'define' ID replacement_list new_line
-             | '#' 'define' ID lparen [ID_list] ) replacement_list new_line
-             | '#' 'define' ID lparen ... ) replacement_list new_line
-             | '#' 'define' ID lparen ID_list , ... ) replacement_list new_line
-             | '#' 'undef' ID new_line
-             | '#' 'line' pp_tokens new_line
-             | '#' 'error' [pp_tokens] new_line
-             | '#' 'pragma' [pp_tokens] new_line
-             | '#' new_line
-
-text_line = [pp_tokens] new_line
-
-non_directive = pp_tokens new_line
-
-lparen = a ( character not immediately preceded by white_space
-
-replacement_list = [pp_tokens]
-
-pp_tokens = preprocessing_token {preprocessing_token}
-
-new_line = the new_line character
-
-preprocessing_token = header_name 
-                    | ID 
-                    | pp_number 
-                    | character_constant 
-                    | string_literal 
-                    | punctuator
-
-## 6.4.7 Header names
-header_name = '<' h_char_sequence '>' 
-            | '"' q_char_sequence '"'
-
-## 6.4.8 Preprocessing numbers
-pp_number = digit 
-          | '.' digit 
-          | pp_number digit 
-          | pp_number identifier_nondigit
-          | pp_number 'e' sign 
-          | pp_number 'E' sign
-          | pp_number 'p' sign 
-          | pp_number 'P' sign 
-          | pp_number '.'

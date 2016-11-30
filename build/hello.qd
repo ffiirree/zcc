@@ -1,7 +1,20 @@
 	.file	"D:\zcc\simple\hello.c"
-_main:
-+         4              3              .Lvar1    
-=         .Lvar1         local          
+main:
+param          argc
+param          argv
++         glo_var        loc_var        .Lvar1    
+=         .Lvar1         loc_var        
+
+
+leave
+foo:
+param          c
+param          d
+param          e
+param          f
+=         1              c              
+
+=         9              f              
 
 
 leave

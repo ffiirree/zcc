@@ -53,7 +53,7 @@ Node Parser::compound_stmt()
 		decl_or_stmt(list);
 	}
 
-	__OUT_SCOPE__(localenv);
+	__OUT_SCOPE__(localenv, newLabel("Env"));
 	return createCompoundStmtNode(list);
 }
 

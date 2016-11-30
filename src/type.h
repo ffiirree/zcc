@@ -91,8 +91,10 @@ enum {
 	ID = 180, CHAR_, STRING_, INTEGER, FLOAT, FUNC_BODY, COMPARISON, SECTION, UNIT_ROOT,
 	VAR, DECL, INIT, BIN_OP, UNARY_OP, STMT, TERN_OP, LABEL, COM_STMT, STRUCT_REF,
 	ARRAY,
+	PTR,
 	COMPOUND_STMT, 
 	DECL_BODY,
+	FUNC_DECL,
 	CONV, // ÀàÐÍ×ª»»
 	OP_PRE_INC,
 	OP_PRE_DEC,
@@ -209,7 +211,6 @@ public:
 	inline int getSize() const { return size; }
 	inline void setUnsig(bool isunsig) { isUnsig = isunsig; }
 
-private:
 	int type = 0;
 	int size = 0;
 
@@ -255,6 +256,8 @@ enum NodeKind{
 	NODE_STRUCT_REF,
 
 	NODE_PARAMS,
+	NODE_FUNC_DECL,
+	NODE_DECL_PARAM
 };
 
 
