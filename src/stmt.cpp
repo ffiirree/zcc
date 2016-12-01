@@ -120,6 +120,10 @@ Node Parser::while_stmt()
 	std::string _begin = newLabel("wb");   // begin = newLabel
 	std::string _snext = newLabel("sn");   
 
+	// break 和 continue
+	_stk_ctl_bg_l.push_back(_begin);
+	_stk_ctl_end_l.push_back(_snext);
+
 	_while._true = newLabel("wt");         // B.true = newLabel
 	_while._false = _snext;                // B.false = S.next
 
@@ -140,6 +144,9 @@ Node Parser::while_stmt()
 
 	out << _snext << ":" << std::endl;
 
+	_stk_ctl_bg_l.pop_back();
+	_stk_ctl_end_l.pop_back();
+
 	std::vector<Node> list;
 	return createCompoundStmtNode(list);
 }
@@ -150,6 +157,9 @@ Node Parser::do_stmt()
 	BoolLabel _do;
 	std::string _begin = newLabel("db");   // begin = newLabel
 	std::string _snext = newLabel("sn");
+
+	_stk_ctl_bg_l.push_back(_begin);
+	_stk_ctl_end_l.push_back(_snext);
 
 	_do._true = _begin;
 	_do._false = _snext;
@@ -167,19 +177,109 @@ Node Parser::do_stmt()
 
 	out << _snext << ":" << std::endl;
 
+	_stk_ctl_bg_l.pop_back();
+	_stk_ctl_end_l.pop_back();
+
 	return *r; ////////////////////这里要修改
 }
 
 Node Parser::switch_stmt()
 {
-	Node r;
-	return r;
-}
+	std::string _next = newLabel("swn");
 
+	_stk_ctl_end_l.push_back(_next);
+
+	expect('(');
+	Node r = expr();
+	if (r.type.getType() != K_INT && r.type.getType() != K_CHAR
+		&& r.type.getType() != K_SHORT && r.type.getType() != K_LONG)
+		error("Switch only integer!");
+
+	if (r.kind == NODE_INT || r.kind == NODE_CHAR || r.kind == NODE_SHORT || r.kind == NODE_LONG)
+		switch_expr = r.int_val;
+	else if (r.kind == NODE_LOC_VAR || NODE_GLO_VAR)
+		switch_expr = r.varName;
+	else 
+		switch_expr = _stk_quad.back();
+	expect(')');
+	
+	expect('{');
+	compound_stmt();
+
+	out << _next << ":" << std::endl;
+	_stk_ctl_end_l.pop_back();
+	return Node();
+}
+/**
+ * for_stmt = 'for' '(' [expression] ';' [expression] ';' [expression] ')' statement 
+ *          | 'for' '(' declaration ';' [expression] ';' [expression] ')' statement
+ */
 Node Parser::for_stmt()
 {
-	Node r;
-	return r;
+	std::string _next = newLabel("forn");
+	std::string _begin = newLabel("forb");
+	std::string _exp3 = newLabel("fe3");
+
+
+	BoolLabel _for;
+
+	_stk_ctl_bg_l.push_back(_begin);
+	_stk_ctl_end_l.push_back(_next);
+
+	_for._false = _next;
+	_for._true = newLabel("fort");
+
+	expect('(');
+
+	if (is_type(lex.peek())) {
+		std::vector<Node> list;
+		declaration(list,false);
+	}
+	else if (is_keyword(lex.peek(), ';')) {
+		expect(';');
+	}
+	else {
+		expr();
+		expect(';');
+	}
+
+	out << _begin << ":" << std::endl;
+
+	if (is_keyword(lex.peek(), ';')) {
+		expect(';');
+	}
+	else {
+		expr();
+		expect(';');
+	}
+
+	// bool判断部分
+	boolLabel.push_back(_for);
+	generateIfGoto();
+
+	// 后循环部分
+	out << _exp3 << ":" << std::endl;
+	if (is_keyword(lex.peek(), ')')) {
+		expect(')');
+	}
+	else {
+		expr();
+		expect(')');
+	}
+
+	out << "goto " << _begin << std::endl;
+	out << _for._true << ":" << std::endl;
+
+	// 循环体
+	statement();
+
+	out << "goto " << _exp3 << std::endl;
+	out << _next << std::endl;
+
+	_stk_ctl_bg_l.pop_back();
+	_stk_ctl_end_l.pop_back();
+
+	return Node();
 }
 
 
@@ -196,8 +296,8 @@ Node Parser::goto_stmt()
 
 Node Parser::continue_stmt()
 {
-	Node r;
-	return r;
+	out << "goto " << _stk_ctl_bg_l.back() << std::endl;
+	return  Node();
 }
 
 
@@ -227,18 +327,22 @@ Node Parser::return_stmt()
 
 Node Parser::case_stmt()
 {
-	Node r;
-	return r;
+	int val = conditional_expr().int_val;
+	expect(':');
+
+	out << "if " << switch_expr << " != " << val << " goto " << switch_case_label << std::endl;
+	statement();
+
+	out << switch_case_label << ":" << std::endl;
+	switch_case_label = newLabel("case");
+
+	return Node();
 }
 Node Parser::default_stmt()
 {
-	Node r;
-	return r;
-}
-Node Parser::label_stmt()
-{
-	Node r;
-	return r;
+	expect(':');
+	statement();
+	return Node();
 }
 
 /**
@@ -246,6 +350,7 @@ Node Parser::label_stmt()
  */
 Node Parser::break_stmt()
 {
+	out << "goto " << _stk_ctl_end_l.back() << std::endl;
 	expect(';');
 	return createJumpNode(label_break);
 }

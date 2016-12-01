@@ -1,12 +1,101 @@
 main:
-=         0              loc_var        
-.Ldb1:
-if	3 > 4	goto .Lift4
-goto .Liff5
-.Lift4:
-=         5              loc_var        
-.Liff5:
-if	loc_var != 6	goto .Ldb1
-goto .Lsn2
-.Lsn2:
-ret            0
+=         0              sum            
+=         0              i              
+.Lforb3:
+if	i < 100	goto .Lfort5
+goto .Lforn2
+.Lfe34:
++         i              1              .Lvar6    
+=         .Lvar6         i              
+goto .Lforb3
+.Lfort5:
++         sum            i              .Lvar7    
+=         .Lvar7         sum            
+goto .Lfe34
+.Lforn2
+
+param 2016
+param 4
+param 2
+call           whichDayofYear 3
+ret            sum
+whichDayofYear:
+if mouth != 1 goto .Lcase1
+=         0              sum            
+.Lcase1:
+goto .Lswn10
+if mouth != 2 goto .Lcase11
+=         31             sum            
+.Lcase11:
+goto .Lswn10
+if mouth != 3 goto .Lcase12
+=         59             sum            
+.Lcase12:
+goto .Lswn10
+if mouth != 4 goto .Lcase13
+=         90             sum            
+.Lcase13:
+goto .Lswn10
+if mouth != 5 goto .Lcase14
+=         120            sum            
+.Lcase14:
+goto .Lswn10
+if mouth != 6 goto .Lcase15
+=         151            sum            
+.Lcase15:
+goto .Lswn10
+if mouth != 7 goto .Lcase16
+=         181            sum            
+.Lcase16:
+goto .Lswn10
+if mouth != 8 goto .Lcase17
+=         212            sum            
+.Lcase17:
+goto .Lswn10
+if mouth != 9 goto .Lcase18
+=         243            sum            
+.Lcase18:
+goto .Lswn10
+if mouth != 10 goto .Lcase19
+=         273            sum            
+.Lcase19:
+goto .Lswn10
+if mouth != 11 goto .Lcase20
+=         304            sum            
+.Lcase20:
+goto .Lswn10
+if mouth != 12 goto .Lcase21
+=         334            sum            
+.Lcase21:
+goto .Lswn10
+goto .Lswn10
+.Lswn10:
++         day            sum            .Lvar24   
+=         .Lvar24        sum            
+%         4              year           .Lvar26   
+%         100            year           .Lvar27   
+%         400            year           .Lvar28   
+if	.Lvar26 == 0	goto .Landt32
+goto .Lorf31
+.Landt32:
+if	.Lvar27 != 0	goto .Lift29
+goto .Lorf31
+.Lorf31:
+if	.Lvar28 == 0	goto .Lift29
+goto .Liff30
+.Lift29:
+=         1              leap           
+goto	.Lsn25
+.Liff30:
+=         0              leap           
+.Lsn25:
+if	leap == 1	goto .Landt36
+goto .Liff35
+.Landt36:
+if	12 > 2	goto .Lift34
+goto .Liff35
+.Lift34:
++         sum            1              .Lvar37   
+=         .Lvar37        sum            
+.Liff35:
+ret            sum

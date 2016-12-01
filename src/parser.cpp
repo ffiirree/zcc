@@ -178,7 +178,7 @@ Type Parser::func_param_list(Type *retty, std::vector<Node> &params, int deal_ty
 	// foo(int x, int y)
 	else {
 		params = param_list(deal_type);
-		expect(';');
+		expect(')');
 		return Type(NODE_FUNC, retty, params);
 	}
 }
@@ -772,7 +772,7 @@ void Parser::createFuncQuad(std::vector<Node> &params)
 	_stk_quad.pop_back();
 
 	// 检查参数个数
-	if (fn.kind != NODE_FUNC ||(fn.params.size() != params.size()))
+	if ((fn.kind != NODE_FUNC && fn.kind != NODE_FUNC_DECL) || (fn.params.size() != params.size()))
 		error("func call parms size error.");
 
 	out << std::left << std::setw(15) << "call" << std::left << std::setw(15) << fn.funcName  << fn.params.size() << std::endl;

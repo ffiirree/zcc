@@ -59,6 +59,11 @@ Token Lex::readToken()
 					c = f.next();
 				break;
 			}
+			else if (next_is('*')) {
+				while ((!(c == '*' && next_is('/'))) && c != 0)
+					c = f.next();
+				break;
+			}
 			return read_rep('=', OP_A_DIV, '/');
 
 		case '-':

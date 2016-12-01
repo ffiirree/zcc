@@ -84,10 +84,12 @@ public:
 		globalenv = new Env(nullptr); 
 		globalenv->setName(filename);
 		createQuadFile();
+		switch_case_label = newLabel("case");
 	}
 	Parser(Lex &l) :lex(l) { 
 		globalenv = new Env(nullptr); 
 		createQuadFile();
+		switch_case_label = newLabel("case");
 	}
 	Parser(const Parser &p) = delete;
 	Parser operator=(const Parser &p) = delete;
@@ -251,6 +253,11 @@ private:
 	std::vector<std::string> _stk_if_goto;
 	std::vector<std::string> _stk_if_goto_op;
 	std::vector<std::string> _stk_if_goto_out;
+	std::vector<std::string> _stk_ctl_bg_l;       // break ..con..
+	std::vector<std::string> _stk_ctl_end_l;
+
+	std::string switch_case_label;
+	std::string switch_expr;
 
 	std::ofstream out;
 	std::vector<std::string> _stk_quad;

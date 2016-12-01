@@ -358,22 +358,6 @@ Node Parser::postfix_expr_tail(Node &node)
 	}
 }
 
-Node Parser::var_or_func(Token &t)
-{
-	Node r = localenv->search(t.getSval());
-
-	if (r.kind == NODE_GLO_VAR || r.kind == NODE_LOC_VAR)
-		pushQuadruple(r.varName);
-	else if (r.kind == NODE_FUNC || r.kind == NODE_FUNC_DECL)
-		pushQuadruple(t.getSval());
-
-	if (r.kind == NODE_NULL)
-		error("undefined var : %s！", t.getSval());
-
-	return r;
-}
-
-
 Node Parser::primary_expr()
 {
 	Token tok = lex.next();
@@ -414,6 +398,22 @@ Node Parser::primary_expr()
 		error("internal error: unknown token kind");
 	}
 }
+
+Node Parser::var_or_func(Token &t)
+{
+	Node r = localenv->search(t.getSval());
+
+	if (r.kind == NODE_GLO_VAR || r.kind == NODE_LOC_VAR)
+		pushQuadruple(r.varName);
+	else if (r.kind == NODE_FUNC || r.kind == NODE_FUNC_DECL)
+		pushQuadruple(t.getSval());
+
+	if (r.kind == NODE_NULL)
+		error("undefined var : %s！", t.getSval());
+
+	return r;
+}
+
 
 Node Parser::wrap(Type &t, Node &node) {
 	if (t.getType() == node.type.getType() && t.isSigned() == t.isSigned())
