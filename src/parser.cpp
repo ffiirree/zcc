@@ -15,7 +15,6 @@ std::vector<Node> Parser::trans_unit()
 		if (t.getType() == K_EOF) {
 			labels.cheak();
 			_log_("End of file.");
-			out << "LFE0:\n\t.ident\t\"zcc\"";
 			out.close();
 			return list;
 		}
@@ -24,8 +23,6 @@ std::vector<Node> Parser::trans_unit()
 			list.push_back(funcDef());
 		else
 			declaration(list, true);
-
-		std::cout << "\n\n";
 	}
 	return list;
 }
@@ -161,7 +158,6 @@ Node Parser::funcDef()
 	Node r = func_body(functype, funcName, params);                         // єЇКэМе
 
 	__OUT_SCOPE__(localenv, funcName);
-	out << "leave" << std::endl;
 	return r;
 }
 
@@ -318,6 +314,17 @@ Node Parser::createIntNode(Token &t)
 	Node node(NODE_INT);
 
 	node.int_val = atoi(t.getSval().c_str());
+	node.type = Type(K_INT, 4, false);
+	return node;
+}
+
+Node Parser::createFloatNode(Token &t)
+{
+	_log_("Create float node.");
+	Node node(NODE_INT);
+
+	node.sval = t.getSval();
+	node.type = Type(K_FLOAT, 4, false);
 	return node;
 }
 
@@ -572,7 +579,6 @@ void Parser::createQuadFile()
 	out.open(getQuadrupleFileName(), std::ios::out | std::ios::binary);
 	if (!out.is_open())
 		error("Create file filed!");
-	out << "\t.file\t\"" << lex.getCurrentFile().getFileName() << "\"" << std::endl;
 }
 
 std::string Parser::num2str(size_t num)
@@ -616,6 +622,116 @@ void Parser::pushIncDec(const std::string &name)
 	_stk_incdec.push_back(name);
 }
 
+void Parser::gotoLabel(const std::string &op)
+{
+	BoolLabel _b = boolLabel.back(); boolLabel.pop_back();
+	if(op == "||")
+		out << _b._false << ":" << std::endl;  // label(b1.false)
+	else if(op == "&&")
+		out << _b._true << ":" << std::endl;  // label(b1.false)
+	else if(op == "if")
+		out << _b._true << ":" << std::endl;  // label(b1.false)
+}
+
+void Parser::generateIfGoto()
+{
+	BoolLabel b, b1, b2;
+
+	if (_stk_if_goto.size() == 1) {
+		b = boolLabel.back();boolLabel.pop_back();
+		_stk_if_goto_out.push_back("goto " + b._false);
+		_stk_if_goto_out.push_back(_stk_if_goto.back() + b._true);
+		_stk_if_goto.pop_back();
+	}
+	for (int i = _stk_if_goto_op.size(); i > 0; --i) {
+		std::string op = _stk_if_goto_op.back(); _stk_if_goto_op.pop_back();
+		b = boolLabel.back();boolLabel.pop_back();
+		b2 = boolLabel.back();boolLabel.pop_back();
+		b1 = boolLabel.back();boolLabel.pop_back();
+		if (op == "||") {
+			b1._true = b._true;
+			b1._false = newLabel("orf");
+			b2._true = b._true;
+			b2._false = b._false;
+		}
+		else if (op == "&&") {
+			b1._true = newLabel("andt");
+			b1._false = b._false;
+			b2._true = b._true;
+			b2._false = b._false;
+		}
+
+		if (b2._leaf) {
+			_stk_if_goto_out.push_back("goto " + b2._false);
+			_stk_if_goto_out.push_back(_stk_if_goto.back() + b2._true);
+			_stk_if_goto.pop_back();
+
+			if (op == "||")
+				_stk_if_goto_out.push_back(b1._false + ":");
+			else if (op == "&&")
+				_stk_if_goto_out.push_back(b1._true + ":");
+		}
+
+		if (b1._leaf) {
+			_stk_if_goto_out.push_back("goto " + b1._false);
+			_stk_if_goto_out.push_back(_stk_if_goto.back() + b1._true);
+			_stk_if_goto.pop_back();
+		}
+
+		if(!b2._leaf)
+			boolLabel.push_back(b2);
+
+		if (!b1._leaf)
+			boolLabel.push_back(b1);
+	}
+
+	for (int i = _stk_if_goto_out.size(); i > 0; --i) {
+		out << _stk_if_goto_out.back() << std::endl; _stk_if_goto_out.pop_back();
+	}
+}
+
+void Parser::createBoolGenQuadruple(const std::string &op)
+{
+	BoolLabel _b;
+	_b._leaf = true;
+	//_b._true = newLabel("true");
+	//_b._false = newLabel("false");
+	boolLabel.push_back(_b);
+
+
+	std::string str;
+	std::string var1 = _stk_quad.back(); _stk_quad.pop_back();
+	std::string var2 = _stk_quad.back(); _stk_quad.pop_back();
+
+	str = "if\t" + var2 + " " + op + " " + var1 + "\tgoto ";
+	_stk_if_goto.push_back(str);
+}
+
+void Parser::createBoolQuadruple(const std::string &op)
+{
+	BoolLabel b1, b2;
+	if (boolLabel.empty())
+		return;
+
+	if (op == "||") {
+		b1._true = boolLabel.back()._true;
+		b1._false = newLabel("orf");
+		b2._true = boolLabel.back()._true;
+		b2._false = boolLabel.back()._false;
+
+		boolLabel.push_back(b2);
+		boolLabel.push_back(b1);
+	}
+	else if (op == "&&") {
+		b1._true = newLabel("andt");
+		b1._false = boolLabel.back()._false;
+		b2._true = boolLabel.back()._true;
+		b2._false = boolLabel.back()._false;
+
+		boolLabel.push_back(b2);
+		boolLabel.push_back(b1);
+	}
+}
 void Parser::createQuadruple(const std::string &op)
 {
 	out << std::left << std::setw(10) << op;

@@ -51,6 +51,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 	}
 }
 
+//initializer
 std::vector<Node> Parser::decl_init(Type &ty)
 {
 	std::vector<Node> list;
@@ -66,8 +67,39 @@ std::vector<Node> Parser::decl_init(Type &ty)
 
 void  Parser::init_list(std::vector<Node> &r, Type &ty, int off, bool designated)
 {
-
+	expect('{');
+	std::vector<Node> list;
+	do {
+		if (is_keyword(lex.peek(), '[') || is_keyword(lex.peek(), '.')) {
+			r.push_back(designator_list());
+			expect('=');
+		}
+		list = decl_init(ty);
+		for (int i = 0; i < list.size(); ++i) {
+			r.push_back(list.at(i));
+		}
+	} while (next_is(','));
+	expect('}');
 }
+
+Node Parser::designator_list()
+{
+	if (next_is('[')) {
+		Node r = conditional_expr();
+		expect(']');
+		return r;
+	}
+	else if (next_is('.')) {
+		Node r;
+		Token t = lex.next();
+		if (t.getId() == ID)
+			r = localenv->search(t.getSval());
+		if (r.getKind() == 0)
+			error("init list error");
+		return r;
+	}
+}
+
 
 /**
  * \\ int * var, var2;
@@ -139,9 +171,12 @@ Type Parser::direct_decl_tail(Type &retty, std::vector<Node> &params, int decl_t
 
 		Token tok = lex.peek();
 		Type t = direct_decl_tail(retty, std::vector<Node>(), decl_type);
+		if(t.len != 0)
+			_len = _len * t.len;
+
 		if (t.getType() == NODE_FUNC)
 			error("array of functions");
-		return Type(ARRAY, _len);
+		return Type(ARRAY, retty.size, _len);
 	}
 
 	// 如果是括号，则为函数
@@ -150,7 +185,6 @@ Type Parser::direct_decl_tail(Type &retty, std::vector<Node> &params, int decl_t
 			decl_type = NODE_FUNC_DECL;
 		return func_param_list(&retty, params, decl_type);
 	}
-		
 
 	return retty;
 }

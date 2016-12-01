@@ -1,26 +1,12 @@
-	.file	"D:\zcc\simple\hello.c"
 main:
 =         0              loc_var        
-+         glo_var        loc_var        .Lvar1    
-=         .Lvar1         loc_var        
-
-
-leave
-foo:
-=         1              c              
-
-=         9              f              
-
-=         0              a              
-=         0              b              
-=         9              a1             
-=         9              a2             
-=         9              a3             
-=         9              a4             
-=         9              a5             
-=         9              a6             
-=         9              a7             
-
-leave
-LFE0:
-	.ident	"zcc"
+.Ldb1:
+if	3 > 4	goto .Lift4
+goto .Liff5
+.Lift4:
+=         5              loc_var        
+.Liff5:
+if	loc_var != 6	goto .Ldb1
+goto .Lsn2
+.Lsn2:
+ret            0

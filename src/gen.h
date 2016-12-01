@@ -45,7 +45,8 @@ private:
 	void var_decl(Node &n);
 	void func_decl(Node &n);
 	void getEnvSize(Env *_b, int &_size);
-	int Generate::getFuncLocVarSize(Node &n);
+	int getFuncLocVarSize(Node &n);
+	int getFuncCallSize(Node &n);
 	Locvar search(const std::string &name)
 	{
 		for (int i = 0; i < locvar.size(); ++i) {

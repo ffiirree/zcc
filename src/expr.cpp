@@ -24,8 +24,6 @@ Node Parser::comma_expr()
 		createIncDec();
 		node = createBinOpNode(expr.getType(), ',', &node, &expr);
 	}
-
-	out << std::endl;
 	return node;
 }
 /**
@@ -99,10 +97,10 @@ Node Parser::logical_or_expr()
 {
 	Node *node = new Node(logical_and_expr());
 	while (next_is(OP_LOGOR)) {
-		*node = createBinOpNode(Type(K_INT, 4, false), OP_LOGOR, node, new Node(logical_and_expr()));
-		createQuadruple("||");
+		node = new Node(createBinOpNode(Type(K_INT, 4, false), OP_LOGOR, node, new Node(logical_and_expr())));
+		boolLabel.push_back(BoolLabel());
+		_stk_if_goto_op.push_back("||");
 	}
-		
 	return *node;
 }
 
@@ -110,17 +108,17 @@ Node Parser::logical_and_expr()
 {
 	Node *node = new Node(bit_or_expr());
 	while (next_is(OP_LOGAND)) {
-		*node = createBinOpNode(Type(K_INT, 4, false), OP_LOGAND, node, new Node(bit_or_expr()));
-		createQuadruple("&&");
+		node = new Node(createBinOpNode(Type(K_INT, 4, false), OP_LOGAND, node, new Node(bit_or_expr())));
+		boolLabel.push_back(BoolLabel());
+		_stk_if_goto_op.push_back("&&");
 	}
-		
 	return *node;
 }
 Node Parser::bit_or_expr()
 {
 	Node *node = new Node(bit_xor_expr());
 	while (next_is('|')) {
-		*node = binop('|', conv(*node), conv(bit_xor_expr()));
+		node = new Node(binop('|', conv(*node), conv(bit_xor_expr())));
 		createQuadruple("|");
 	}
 		
@@ -130,7 +128,7 @@ Node Parser::bit_xor_expr()
 {
 	Node *node = new Node(bit_and_expr());
 	while (next_is('^')) {
-		*node = binop('^', conv(*node), conv(bit_and_expr()));
+		node = new Node(binop('^', conv(*node), conv(bit_and_expr())));
 		createQuadruple("^");
 	}
 		
@@ -140,7 +138,7 @@ Node Parser::bit_and_expr()
 {
 	Node *node = new Node(equal_expr());
 	while (next_is('&')) {
-		*node = binop('&', conv(*node), conv(equal_expr()));
+		node = new Node(binop('&', conv(*node), conv(equal_expr())));
 		createQuadruple("&");
 	}
 		
@@ -153,11 +151,11 @@ Node Parser::equal_expr()
 
 	if (next_is(OP_EQ)) {
 		r = binop(OP_EQ, conv(*node), conv(equal_expr()));
-		createQuadruple("==");
+		createBoolGenQuadruple("==");
 	}
 	else if (next_is(OP_NE)) {
 		r = binop(OP_NE, conv(*node), conv(equal_expr()));
-		createQuadruple("!=");
+		createBoolGenQuadruple("!=");
 	}
 	else {
 		return *node;
@@ -175,24 +173,23 @@ Node Parser::relational_expr()
 	Node *node = new Node(shift_expr());
 	for (;;) {
 		if (next_is('<')) {
-			*node = binop('<', conv(*node), conv(shift_expr()));
-			createQuadruple("<");
+			node = new Node(binop('<', conv(*node), conv(shift_expr())));
+			createBoolGenQuadruple("<");
 		}
 			
 		else if (next_is('>')) {
-			*node = binop('>', conv(*node), conv(shift_expr()));
-			createQuadruple(">");
+			node = new Node(binop('>', conv(*node), conv(shift_expr())));
+			createBoolGenQuadruple(">");
 		}
 		else if (next_is(OP_LE)) {
-			*node = binop(OP_LE, conv(*node), conv(shift_expr()));
-			createQuadruple("<=");
+			node = new Node(binop(OP_LE, conv(*node), conv(shift_expr())));
+			createBoolGenQuadruple("<=");
 		}
 			
 		else if (next_is(OP_GE)) {
-			*node = binop(OP_GE, conv(*node), conv(shift_expr()));
-			createQuadruple(">=");
+			node = new Node(binop(OP_GE, conv(*node), conv(shift_expr())));
+			createBoolGenQuadruple(">=");
 		}
-			
 		else   
 			return *node;
 		node->setType(Type(K_INT, 4, false));
@@ -213,7 +210,7 @@ Node Parser::shift_expr()
 		Node *right = new Node(add_expr());
 		ensure_inttype(*node);
 		ensure_inttype(*right);
-		*node = createBinOpNode(node->getType(), op, new Node(conv(*node)), new Node(conv(*right)));
+		node = new Node(createBinOpNode(node->getType(), op, new Node(conv(*node)), new Node(conv(*right))));
 	}
 	return *node;
 }
@@ -223,11 +220,11 @@ Node Parser::add_expr()
 	Node *node = new Node(multi_expr());
 	for (;;) {
 		if (next_is('+')) {
-			*node = binop('+', conv(*node), conv(multi_expr()));
+			node = new Node(binop('+', conv(*node), conv(multi_expr())));
 			createQuadruple("+");
 		}
 		else if (next_is('-')) {
-			*node = binop('-', conv(*node), conv(multi_expr()));
+			node = new Node(binop('-', conv(*node), conv(multi_expr())));
 			createQuadruple("-");
 		}
 		else    
@@ -240,15 +237,15 @@ Node Parser::multi_expr()
 	Node *node = new Node(cast_expr());
 	for (;;) {
 		if (next_is('*')) {
-			*node = binop('*', conv(*node), conv(cast_expr()));
+			node = new Node(binop('*', conv(*node), conv(cast_expr())));
 			createQuadruple("*");
 		}
 		else if (next_is('/')) {
-			*node = binop('/', conv(*node), conv(cast_expr()));
+			node = new Node(binop('/', conv(*node), conv(cast_expr())));
 			createQuadruple("/");
 		}
 		else if (next_is('%')) {
-			*node = binop('%', conv(*node), conv(cast_expr()));
+			node = new Node(binop('%', conv(*node), conv(cast_expr())));
 			createQuadruple("%");
 		}
 		else    
@@ -367,7 +364,7 @@ Node Parser::var_or_func(Token &t)
 
 	if (r.kind == NODE_GLO_VAR || r.kind == NODE_LOC_VAR)
 		pushQuadruple(r.varName);
-	else if (r.kind == NODE_FUNC)
+	else if (r.kind == NODE_FUNC || r.kind == NODE_FUNC_DECL)
 		pushQuadruple(t.getSval());
 
 	if (r.kind == NODE_NULL)
@@ -400,7 +397,7 @@ Node Parser::primary_expr()
 
 	case FLOAT:
 		pushQuadruple(tok.getSval());
-		return NULL;
+		return createFloatNode(tok);
 
 	case CHAR_:
 		//return ast_inttype(char_type(tok->enc), tok->c);
@@ -419,28 +416,28 @@ Node Parser::primary_expr()
 }
 
 Node Parser::wrap(Type &t, Node &node) {
-	if (t.getType() == node.getType().getType() && t.isSigned() == t.isSigned())
+	if (t.getType() == node.type.getType() && t.isSigned() == t.isSigned())
 		return node;
 	return createUnaryNode(CONV, node);
 }
 
 Node Parser::binop(int op, Node &lhs, Node &rhs)
 {
-	if (lhs.getType().getType() == '*' && rhs.getType().getType() == '*') {
+	if (lhs.type.getType() == '*' && rhs.type.getType() == '*') {
 		if (op == '-')
 			return createBinOpNode(Type(K_LONG, 8, false), '-', &lhs, &rhs);
 		return createBinOpNode(Type(K_INT, 4, false), '-', &lhs, &rhs);
 	}
 
-	if(lhs.getType().getType() == '*')
-		return createBinOpNode(lhs.getType(), op, &lhs, &rhs);
-	if(rhs.getType().getType() == '*')
-		return createBinOpNode(rhs.getType(), op, &lhs, &rhs);
+	if(lhs.type.getType() == '*')
+		return createBinOpNode(lhs.type, op, &lhs, &rhs);
+	if(rhs.type.getType() == '*')
+		return createBinOpNode(rhs.type, op, &lhs, &rhs);
 
 	// 检查
-	//assert(is_arithtype(lhs.getType()));
-	//assert(is_arithtype(rhs.getType()));
-	Type r = usual_arith_conv(lhs.getType(), rhs.getType());
+	//assert(is_arithtype(lhs.type));
+	//assert(is_arithtype(rhs.type));
+	Type r = usual_arith_conv(lhs.type, rhs.type);
 
 	return createBinOpNode(r, op, new Node(wrap(r, lhs)), new Node(wrap(r, rhs)));
 }
@@ -476,8 +473,7 @@ Type Parser::usual_arith_conv(Type &t, Type &u)
  */
 Node Parser::conv(Node &node)
 {
-	Node r;
-	return r;
+	return node;
 }
 
 void Parser::ensure_inttype(Node &node) 

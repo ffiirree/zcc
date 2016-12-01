@@ -64,6 +64,18 @@ private:
 	std::vector<bool> enLabels;
 };
 
+class BoolLabel{
+public:
+	BoolLabel() :_begin(), _true(), _false(), _next(){}
+	BoolLabel(const BoolLabel &bl):_begin(bl._begin), _true(bl._true), _false(bl._false), _next(bl._next), _leaf(bl._leaf){}
+	BoolLabel operator=(const BoolLabel &bl) { _begin = bl._begin; _true = bl._true, _false = bl._false; _next = bl._next;_leaf = bl._leaf; return *this; }
+
+	std::string _begin;
+	std::string _true;
+	std::string _false;
+	std::string _next;
+	bool _leaf = false;
+};
 
 class Parser {
 public:
@@ -89,10 +101,13 @@ private:
 	
 	std::string getQuadrupleFileName(std::string &filename);
 	void createQuadFile();
-
+	void generateIfGoto();
 	void pushQuadruple(const std::string &name);
 	void pushIncDec(const std::string &name);
 	void createQuadruple(const std::string &op);
+	void createBoolQuadruple(const std::string &op);
+	void createBoolGenQuadruple(const std::string &op);
+	void gotoLabel(const std::string &op);
 	void createFuncQuad(std::vector<Node> &params);
 	void createIncDec();
 	std::string num2str(size_t num);
@@ -113,6 +128,7 @@ private:
 	//
 	Node createFuncNode(Type &ty, std::string & funcName, std::vector<Node> params, Node *body);
 	Node createIntNode(Token &t);
+	Node Parser::createFloatNode(Token &t);
 	Node createCompoundStmtNode(std::vector<Node> &stmts);
 	Node createDeclNode(Node &var);
 	Node createDeclNode(Node &var, std::vector<Node> &init);
@@ -131,8 +147,6 @@ private:
 
 
 	//
-	
-
 	bool isFuncDef();
 	Node funcDef();
 	std::vector<Node> param_list(int deal_type);
@@ -154,6 +168,7 @@ private:
 	std::vector<Node> initializer(Type &ty);
 	std::vector<Node> decl_init(Type &ty);
 	void init_list(std::vector<Node> &r, Type &ty, int off, bool designated);
+	Node Parser::designator_list();
 
 	void decl_or_stmt(std::vector<Node> &list);
 
@@ -227,15 +242,19 @@ private:
 
 
 	Lex lex;
-	Env *globalenv = nullptr;
-	Env *localenv = nullptr;
+	Env *globalenv = nullptr;           // 全局
+	Env *localenv = nullptr;            // 临时
+	Env *funcCall = nullptr;            // 记录函数调用
 	Label labels;
 
 	std::string label_break;
-
+	std::vector<std::string> _stk_if_goto;
+	std::vector<std::string> _stk_if_goto_op;
+	std::vector<std::string> _stk_if_goto_out;
 
 	std::ofstream out;
 	std::vector<std::string> _stk_quad;
 	std::vector<std::string> _stk_incdec;
+	std::vector<BoolLabel> boolLabel;
 };
 #endif // !_ZCC_PARSER_H

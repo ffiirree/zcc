@@ -183,7 +183,7 @@ class Node;
 class Type {
 public:
 	Type(){}
-	Type(int ty, int _l) :type(ty), len(_l) {}
+	Type(int ty, int _s, int _l) :type(ty), size(_s), len(_l) {}
 	Type(int ty, int s, bool isunsig) :type(ty), size(s), isUnsig(isunsig) {  }
 	Type(int ty, Type *ret, std::vector<Node> _params) : type(ty), retType(ret), params(_params) { }
 

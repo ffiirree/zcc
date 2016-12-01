@@ -41,14 +41,38 @@ void Generate::glo_var_decl(Node &n)
 	out << "\t.comm\t" << "_" + n.varName << ", " << n.type.size << ", " << n.type.size/2 <<std::endl << std::endl;
 }
 
+std::string getTypeString(Node &n)
+{
+	switch (n.kind) {
+	case NODE_CHAR:
+		return "\t.byte\t";
+	case NODE_SHORT:
+		return "\t.word\t";
+	case NODE_LONG:
+		return "\t.long\t";
+	default:
+		return "\t.long\t";
+	}
+}
 
 void Generate::glo_var_define(Node &n)
 {
 	out << "\t.globl\t" << "_" + n.varName << std::endl;
 	out << "\t.data" << std::endl;
-	out << "\t.align\t" << n.type.getSize() << std::endl;
+	if(n.type.getType() == ARRAY)
+		out << "\t.align\t" << n.type.len * 4 << std::endl;
+	else 
+		out << "\t.align\t" << n.type.size << std::endl;
 	out << "_" + n.varName << ":" << std::endl;
-	out << "\t.long\t" << n.lvarinit.at(0).int_val << std::endl << std::endl;
+	if (n.type.getType() == ARRAY) {
+		int i = 0;
+		for (; i < n.lvarinit.size(); ++i) {
+			out << getTypeString(n) << n.lvarinit.at(i).int_val << std::endl;
+		}
+		out << "\t.space\t" << (n.type.len - i) * n.type.size << std::endl;
+	}
+	else
+		out << getTypeString(n) << n.lvarinit.at(0).int_val << std::endl << std::endl;
 
 }
 
@@ -113,13 +137,17 @@ int Generate::getFuncLocVarSize(Node &n)
 	}
 	return _rsize;
 }
-
+int Generate::getFuncCallSize(Node &n)
+{
+	return 0;
+}
 
 
 void Generate::func_decl(Node &n)
 {
 	locvar.clear();
-	int size = getFuncLocVarSize(n);
+	int size = getFuncLocVarSize(n);            // 获取临时变量的 大小
+	size += getFuncCallSize(n);
 
 	if (n.funcName == "main") {
 		out << "\t.def\t__main;\t.scl\t2;\t.type\t32;\t.endef" << std::endl;
@@ -208,7 +236,7 @@ void Generate::getReg(std::vector<std::string> &_q)
 	else if (_q_0_is("call")) {
 
 	}
-	else if (_q_0_is("leave")) {
+	else if (_q_0_is("ret")) {
 		out << "\tleave" << std::endl;
 		out << "\t.cfi_restore 5" << std::endl;
 		out << "\t.cfi_def_cfa 4, 4" << std::endl;

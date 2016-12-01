@@ -110,10 +110,10 @@ inline void Node::copying(const Node &n)
 	func_ptr = n.func_ptr;
 	params = n.params;
 	localvars = n.localvars;
-	body = body;
+	body = n.body;
 
 	decl_var = n.decl_var;
-	decl_init = decl_init;
+	decl_init = n.decl_init;
 
 	init_val = n.init_val;
 	init_off = n.init_off;

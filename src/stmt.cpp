@@ -82,33 +82,31 @@ void Parser::decl_or_stmt(std::vector<Node> &list)
  */
 Node Parser::if_stmt()
 {
-	std::string if_true = newLabel("iftrue");
-	std::string if_false = newLabel("iffalse");
-	std::string if_end = newLabel("ifend");
+	BoolLabel _if;
+	std::string snext = newLabel("sn");
 
 	expect('(');
-	Node *cond = new Node(expr());
+	Node *cond = new Node(expr());          // B.code
 	expect(')');
 
-	createQuadruple("if");
-	out << if_true << std::endl;
+	_if._true = newLabel("ift");
+	_if._false = newLabel("iff");
+	boolLabel.back() = _if;
+	generateIfGoto();
+	out << _if._true << ":" << std::endl;   
 
-	out << std::left << std::setw(10) << "goto " << if_false << std::endl;
-	
-	out << if_true << ":" << std::endl;
-	Node *then = new Node(statement());
-	
+	Node *then = new Node(statement());     // S1.code
+
 	if (next_is(K_ELSE)) {
-		out << std::left << std::setw(10) << "goto " << if_end << std::endl;
-		out << if_false << ":" << std::endl;
+		out << "goto\t" << snext << std::endl;
+		out << _if._false << ":" << std::endl;
 		Node *els = new Node(statement());
-
-		out << if_end << ":" << std::endl;
-
+		out << snext << ":" << std::endl;
 		return createIfStmtNode(cond, then, els);
 	}
-	out << if_false << ":" << std::endl;
-
+	else {
+		out << _if._false << ":" << std::endl;          // S1.next
+	}
 	return createIfStmtNode(cond, then, nullptr);
 }
 
@@ -118,29 +116,59 @@ Node Parser::if_stmt()
  */
 Node Parser::while_stmt()
 {
-	std::string _begin = newLabel("whilebegin");
-	out << _begin << ":" << std::endl;
+	BoolLabel _while;
+	std::string _begin = newLabel("wb");   // begin = newLabel
+	std::string _snext = newLabel("sn");   
 
-	std::string _true = newLabel("whiletrue");
-	std::string _false = newLabel("whilefalse");
+	_while._true = newLabel("wt");         // B.true = newLabel
+	_while._false = _snext;                // B.false = S.next
+
+	std::string _s1next = _begin;          // S1.next = begin
+
+	out << _begin << ":" << std::endl;     // Label(begin)
 
 	expect('(');
-	Node node = expr();
+	Node node = expr();                    
 	expect(')');
 
-	createQuadruple("if");
-	out << _true << std::endl;
-	out << std::left << std::setw(10) << "goto " << _false << std::endl;
-	out << _true << ":" << std::endl;
+	boolLabel.back() = _while;             
+	generateIfGoto();                      // B.code
+	out << _while._true << ":" << std::endl;           // Label(B.true)
 
-	Node body = statement();
-	out << std::left << std::setw(10) << "goto " << _begin << std::endl;
-	out << _false << ":" << std::endl;
+	Node body = statement();               // S1.code
+	out << "goto " << _begin << std::endl; // gen(goto begin)
+
+	out << _snext << ":" << std::endl;
 
 	std::vector<Node> list;
 	return createCompoundStmtNode(list);
 }
 
+
+Node Parser::do_stmt()
+{
+	BoolLabel _do;
+	std::string _begin = newLabel("db");   // begin = newLabel
+	std::string _snext = newLabel("sn");
+
+	_do._true = _begin;
+	_do._false = _snext;
+
+	out << _begin << ":" << std::endl;
+	Node *r = new Node(statement());
+	expect(K_WHILE);
+	expect('(');
+	Node *_b = new Node(expr());
+	expect(')');
+	expect(';');
+
+	boolLabel.back() = _do;
+	generateIfGoto();                      // B.code
+
+	out << _snext << ":" << std::endl;
+
+	return *r; ////////////////////这里要修改
+}
 
 Node Parser::switch_stmt()
 {
@@ -154,23 +182,6 @@ Node Parser::for_stmt()
 	return r;
 }
 
-Node Parser::do_stmt()
-{
-	std::string _begin = newLabel("dobegin");
-
-	out << _begin << ":" << std::endl;
-
-	Node *r = new Node(statement());
-	expect(K_WHILE);
-	expect('(');
-	Node *_b = new Node(expr());
-	expect(')');
-	expect(';');
-	createQuadruple("if");
-	out << _begin << std::endl;
-
-	return *r; ////////////////////这里要修改
-}
 
 Node Parser::goto_stmt()
 {
@@ -197,6 +208,19 @@ Node Parser::return_stmt()
 {
 	Node *retval = new Node(expr_opt());
 	expect(';');
+
+	out << std::left << std::setw(15) << "ret";
+
+	if (retval->kind == NODE_INT || retval->kind == NODE_LONG
+		|| retval->kind == NODE_CHAR || retval->kind == NODE_SHORT)
+		out << retval->int_val;
+	else if (retval->kind == NODE_FLOAT || retval->kind == NODE_DOUBLE)
+		out << retval->float_val;
+	else if (retval->kind == NODE_GLO_VAR || retval->kind == NODE_LOC_VAR)
+		out << retval->varName;
+
+	out << std::endl;
+
 	return createRetStmtNode(retval);
 }
 
