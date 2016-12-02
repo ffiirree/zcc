@@ -279,7 +279,7 @@ private:
 };
 
 
-inline bool isNumber(std::string &str)
+inline bool isNumber(const std::string &str)
 {
 	for (size_t i = 0; i < str.size();++i) {
 		if (!(str.at(i) >= '0' && str.at(i) <= '9'))

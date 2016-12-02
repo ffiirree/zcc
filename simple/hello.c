@@ -1,15 +1,11 @@
-int printf(char *s);
+int printf(char *s, int n);
 
 int main(int argc, char *argv[])
 {
-    for(int i = 0; i < 10; i += 1){
-        for(int j = 0; j < 15; j+= 1){
-            if(j < i || j > 10){
-                printf("*");
-            }
-        }
-        printf("\n");
-    }
+    int a = 9, b = 6;
+
+    a = 89 * b + b * 4 - 6;
+    printf("%d", a);
 
     return argc;
 }

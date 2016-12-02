@@ -351,25 +351,41 @@ _ass_end:
 
 		Node func = parser->getGloEnv()->search(funcName);
 
+		int pos = 0;
 		for (size_t i = 0; i < func.params.size(); ++i) {
-			int pos = 0;
 			size_t param_size = func.params.at(i).type.size;
 
+			std::string _out_str;
+			Locvar _loc = searchLocvar(params.back());
+			if (!_loc._var.empty()) {
+				getReg(std::string("%eax"));
+				out << "\tmovl\t" + std::to_string(_loc._pos) + "(%ebp), %eax" << std::endl;
+				_out_str = "%eax";
+			}
+			else if(isNumber(params.back())){
+				_out_str = "$" + params.back();
+			}
+			else if(isTempVar(params.back())){
+				Locvar _te = searchTempvar(params.back());
+				_out_str = _te._reg;
+			}
+
 			if (param_size == 1) {
-				out << "\tmovb\t" << params.back() << ", " << pos<< "(%esp)" << std::endl;
+				out << "\tmovb\t" << _out_str << ", " << pos<< "(%esp)" << std::endl;
 				pos += 1;
 			}
 			else if(param_size == 2){
-				out << "\tmovw\t" << params.back() << ", " << pos << "(%esp)" << std::endl;
+				out << "\tmovw\t" << _out_str << ", " << pos << "(%esp)" << std::endl;
 				pos += 2;
 			}
 			else if (param_size == 4) {
 				if(func.params.at(i).getType().getType() == PTR)
 					out << "\tmovl\t$" << params.back() << ", " << pos << "(%esp)" << std::endl;
 				else 
-					out << "\tmovl\t" << params.back() << ", " << pos << "(%esp)" << std::endl;
+					out << "\tmovl\t" << _out_str << ", " << pos << "(%esp)" << std::endl;
 				pos += 4;
 			}
+			params.pop_back();
 		}
 
 		out << "\tcall\t" << "_" + _q.at(1) << std::endl;
@@ -432,30 +448,6 @@ _ass_end:
 	}
 }
 
-/**
- * @ 临时变量进栈，并绑定寄存器
- */
-inline void Generate::push_back_temp_stk(Locvar & tv, std::string &reg)
-{
-	setReg(reg, tv._var);
-	_stk_temp_var.push_back(tv);
-}
-
-/**
- * 临时变量出栈，并解绑寄存器
- */
-inline void Generate::pop_back_temp_stk(std::string &var)
-{
-	clearRegTemp(var);
-
-	if (isNumber(var))
-		return;
-	if (_stk_temp_var.empty())
-		return;
-	
-	if (_stk_temp_var.back()._var == var) 
-		_stk_temp_var.pop_back();
-}
 
 /**
  * @berif 寄存器分配
@@ -463,8 +455,8 @@ inline void Generate::pop_back_temp_stk(std::string &var)
 void Generate::getReg(std::vector<std::string> &_q)
 {
 	// 注意出栈和入栈的顺序
-	std::string _q1 = _q.at(2);
-	std::string _q2 = _q.at(1);
+	std::string _q1 = _q.at(1);
+	std::string _q2 = _q.at(2);
 	std::string _q3 = _q.at(3);
 
 	std::string _q1_reg;
@@ -477,6 +469,8 @@ void Generate::getReg(std::vector<std::string> &_q)
 	// 
 	// 临时变量保存在寄存器中
 	// 局部变量参与运算后弹出
+	// addl S,D D = D + S
+
 	if (_q_0_is("+")) {
 		_q1_reg = getQuadReg(_q1);
 		_q2_reg = getQuadReg(_q2);
@@ -488,6 +482,7 @@ void Generate::getReg(std::vector<std::string> &_q)
 		// 先将临时变量和常数出栈
 		pop_back_temp_stk(_q1);
 		pop_back_temp_stk(_q2);
+		pop_back_temp_stk(_q1);
 
 		Locvar _var = searchLocvar(_q3);
 		if (!_var._var.empty()) {
@@ -501,6 +496,7 @@ void Generate::getReg(std::vector<std::string> &_q)
 			push_back_temp_stk(_temp, _q2_reg);
 		}
 	}
+	//subl S,D D = D – S
 	else if (_q_0_is("-")) {
 		_q1_reg = getQuadReg(_q1);
 		_q2_reg = getQuadReg(_q2);
@@ -512,12 +508,14 @@ void Generate::getReg(std::vector<std::string> &_q)
 		// 先将临时变量和常数出栈
 		pop_back_temp_stk(_q1);
 		pop_back_temp_stk(_q2);
+		pop_back_temp_stk(_q1);
 
 		Locvar _var = searchLocvar(_q3);
 		if (!_var._var.empty()) {
 			out << "\tmovl\t" + _q2_reg + ", " + std::to_string(_var._pos) + "(%ebp)" << std::endl;
 		}
 		else {
+			// 出现在结果的都是第一次
 			Locvar _temp;
 			_temp._var = _q3;
 			_temp._is_temp = true;
@@ -525,27 +523,99 @@ void Generate::getReg(std::vector<std::string> &_q)
 			push_back_temp_stk(_temp, _q2_reg);
 		}
 	}
-}
+	else if (_q_0_is("*")) {
+		char _q1_ty = getVarType(_q1), _q2_ty= getVarType(_q2);
 
-void Generate::clearRegConst()
-{
-	for (size_t i = 0; i < universReg.size(); ++i) {
-		if (isNumber(universReg.at(i)._var))
-			universReg.at(i)._var.clear();
-	}
-}
+		// 保证eax为空
+		getReg(std::string("%eax"));
 
-void Generate::clearRegTemp(std::string &var)
-{
-	for (size_t i = 0; i < universReg.size(); ++i) {
-		if (universReg.at(i)._var == var) {
-			universReg.at(i)._var.clear();
+		if (_q1_ty == 'l') {
+			/*setReg(_q1_reg, _q1);因为是临时，不需要*/ 
+			Locvar _loc = searchLocvar(_q1);
+			out << "\tmovl\t" + std::to_string(_loc._pos) + "(%ebp), %eax" << std::endl;
+
+			if (_q2_ty == 'n')  // imull n, eax, eax
+				out << "\timull\t$" + _q2 + ", %eax, %eax" << std::endl;
+			else if (_q2_ty == 'l') { // imull (%ebp), eax
+				Locvar _q2_v = searchLocvar(_q2);
+				out << "\timull\t" + std::to_string(_q2_v._pos) + "(%ebp), %eax" << std::endl;
+			}
+			else if (_q2_ty == 't') { // imull ebx, eax
+				Locvar _t = searchTempvar(_q2);
+				out << "\timull\t" << _t._reg << ", %eax" << std::endl;
+				pop_back_temp_stk(_q2);
+			}
+		}
+		else if (_q1_ty == 'n') {
+			if (_q2_ty == 'l') {
+				Locvar _loc = searchLocvar(_q2);
+				out << "\tmovl\t" + std::to_string(_loc._pos) + "(%ebp), %eax" << std::endl;
+				out << "\timull\t$" + _q1 + ", %eax, %eax" << std::endl;
+			}
+			else if (_q2_ty == 't') {
+				Locvar _t = searchTempvar(_q2);
+				out << "\timull\t$" + _q1 + "," + _t._reg + ", %eax" << std::endl;
+				pop_back_temp_stk(_q2);
+			}
+		}
+		else if (_q1_ty == 't') {
+			Locvar _q1_t = searchTempvar(_q1);
+			if (_q2_ty == 'n')
+				out << "\timull\t$" + _q2 + "," + _q1_t._reg + ", %eax" << std::endl;
+			else if (_q2_ty == 'l') { // imull ebx, eax
+				Locvar _l = searchLocvar(_q2);
+				out << "\tmovl\t" + std::to_string(_l._pos) + "(%ebp), %eax" << std::endl;
+
+				out << "\timull\t" + _q1_t._reg + ", %eax" << std::endl;
+			}
+			else if (_q2_ty == 't') {
+				Locvar q2_t = searchTempvar(_q2);
+
+				out << "\tmovl\t" << q2_t._reg << ", %eax" << std::endl;
+				out << "\timull\t" << _q1_t._reg << ", %eax" << std::endl;
+			}
+			pop_back_temp_stk(_q2);
+			pop_back_temp_stk(_q1);
+			pop_back_temp_stk(_q2);
+		}
+		// 结果在eax
+		if (isLocVar(_q3)) {
+			Locvar _loc = searchLocvar(_q3);
+			out << "\tmovl\teax, " + std::to_string(_loc._pos) + "(%ebp)" << std::endl;
+		}
+		else {
+			Locvar _t;
+			_t._var = _q3;
+			_t._reg = "%eax";
+			_t._is_temp = true;
+			push_back_temp_stk(_t, _t._reg);
 		}
 	}
+	else if (_q_0_is("/")) {
+		getReg(_q);
+	}
+	else if (_q_0_is("%")) {
+		getReg(_q);
+	}
+	else if (_q_0_is("&")) {
+		getReg(_q);
+	}
+	else if (_q_0_is("|")) {
+		getReg(_q);
+	}
+	else if (_q_0_is("^")) {
+		getReg(_q);
+	}
+	else if (_q_0_is(">>")) {
+		getReg(_q);
+	}
+	else if (_q_0_is("<<")) {
+		getReg(_q);
+	}
 }
 
 
-std::string Generate::getQuadReg(std::string &_q)
+std::string Generate::getQuadReg(const std::string &_q)
 {
 	std::string _reg;
 
@@ -583,7 +653,33 @@ std::string Generate::getQuadReg(std::string &_q)
 	}
 }
 
+/**
+ * 如果寄存器里存储的是常量，删除
+ */
+void Generate::clearRegConst()
+{
+	for (size_t i = 0; i < universReg.size(); ++i) {
+		if (isNumber(universReg.at(i)._var))
+			universReg.at(i)._var.clear();
+	}
+}
 
+/**
+ * var删除
+ */
+void Generate::clearRegTemp(std::string &var)
+{
+	for (size_t i = 0; i < universReg.size(); ++i) {
+		if (universReg.at(i)._var == var) {
+			universReg.at(i)._var.clear();
+		}
+	}
+}
+
+
+/**
+ * 标记寄存器存的是立即数
+ */
 void Generate::setRegConst(std::string &_reg)
 {
 	for (size_t i = 0; i < universReg.size(); ++i) {
@@ -592,6 +688,9 @@ void Generate::setRegConst(std::string &_reg)
 		}
 	}
 }
+/**
+ * 将寄存器_reg设置为_var
+ */
 void Generate::setReg(std::string &_reg, std::string &_var)
 {
 	for (size_t i = 0; i < universReg.size(); ++i) {
@@ -600,6 +699,93 @@ void Generate::setReg(std::string &_reg, std::string &_var)
 		}
 	}
 }
+
+/**
+ * 获取_reg寄存器，此时寄存器为空
+ */
+std::string Generate::getReg(std::string &_reg)
+{
+	std::string _var;
+	for (int i = 0; i < universReg.size(); ++i) {
+		if (_reg == universReg.at(i)._reg) {
+			if (universReg.at(i)._var.empty())
+				return _reg;
+			else {
+				_var = universReg.at(i)._var;
+				universReg.at(i)._var.clear();
+				break;
+			}
+		}
+	}
+
+	// 如果指定寄存器不为空, 调整寄存器
+	Locvar _tem = searchTempvar(_var);
+	for (int i = 0; i < universReg.size(); ++i) {
+		if (_reg != universReg.at(i)._reg && universReg.at(i)._var.empty()) {
+			universReg.at(i)._var = _var;
+			_tem._reg = universReg.at(i)._reg;
+			Locvar _pus = _tem;
+			_stk_temp_var.pop_back();
+			_stk_temp_var.push_back(_pus);
+			out << "\tmovl\t" + _reg + ", " + _tem._reg << std::endl;
+			return _reg;
+		}
+	}
+
+	// 调整失败
+	return std::string();
+}
+
+
+/**
+* @ 临时变量进栈，并绑定寄存器
+*/
+inline void Generate::push_back_temp_stk(Locvar & tv, std::string &reg)
+{
+	setReg(reg, tv._var);
+	_stk_temp_var.push_back(tv);
+}
+
+/**
+* 临时变量出栈，并解绑寄存器
+*/
+inline void Generate::pop_back_temp_stk(std::string &var)
+{
+	clearRegTemp(var);
+
+	if (isNumber(var))
+		return;
+	if (_stk_temp_var.empty())
+		return;
+
+	if (_stk_temp_var.back()._var == var)
+		_stk_temp_var.pop_back();
+}
+
+bool Generate::isTempVar(std::string &_t)
+{
+	Locvar _var = searchTempvar(_t);
+	if (!_var._var.empty()) {
+		return true;
+	}
+	return false;
+}
+bool Generate::isLocVar(std::string &_l)
+{
+	Locvar _var = searchLocvar(_l);
+	if (!_var._var.empty()) {
+		return true;
+	}
+	return false;
+}
+
+char Generate::getVarType(std::string &_v)
+{
+	if (isNumber(_v)) return 'n';
+	else if (isLocVar(_v)) return 'l';
+	else if (isTempVar(_v)) return 't';
+}
+
 
 std::vector<std::string> Generate::getQuad()
 {

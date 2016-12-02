@@ -82,8 +82,8 @@ private:
 		Locvar *var = new Locvar();
 		return *var;
 	}
-	std::string Generate::getQuadReg(std::string &_q1);
-	std::string Generate::getReg();
+	std::string Generate::getQuadReg(const std::string &_q1);
+	std::string Generate::getReg(std::string &_reg);
 	void Generate::setReg(std::string &_reg, std::string &_var);
 	void setRegConst(std::string &_reg);
 	void getReg(std::vector<std::string> &_q);
@@ -110,6 +110,10 @@ private:
 	std::vector<Locvar> _stk_temp_var;
 	inline void push_back_temp_stk(Locvar & tv, std::string &reg);
 	inline void pop_back_temp_stk(std::string &var);
+
+	bool isTempVar(std::string &_t);
+	bool isLocVar(std::string &_l);
+	char getVarType(std::string &_v);
 };
 
 #endif // !__ZCC_GEN_H
