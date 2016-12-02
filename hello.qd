@@ -1,7 +1,0 @@
-main:
-
-param .LLSTR2
-call           pr             1
-ret            0
-pr:
-ret            0
