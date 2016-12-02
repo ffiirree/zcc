@@ -3,6 +3,7 @@
 #include "type.h"
 #include "error.h"
 
+
 Generate::Generate(Parser *p)
 {
 	parser = p;
@@ -18,30 +19,114 @@ Generate::Generate(Parser *p)
 
 	out << "\t.file\t\"" << _infilename << "\""<< std::endl;
 
+
+	const_str();
 	Env *gloenv = parser->getGloEnv();
-	for (int i = 0; i < gloenv->size(); ++i) {
+	for (size_t i = 0; i < gloenv->size(); ++i) {
 		Node n = gloenv->at(i);
 		if (n.kind == NODE_GLO_VAR && n.params.empty())
 			var_decl(n);
 	}
 }
 
+/**
+ * @berif 寄存器初始化
+ */
+void Generate::reg_init()
+{
+	// 通用寄存器 //32bits
+	universReg.push_back(Reg("%eax"));
+	universReg.push_back(Reg("%ebx"));
+	universReg.push_back(Reg("%ecx"));
+	universReg.push_back(Reg("%edx"));
+
+	// 段寄存器 // 16bits
+	segReg.push_back(Reg("%ecs"));
+	segReg.push_back(Reg("%eds"));
+	segReg.push_back(Reg("%ees"));
+	segReg.push_back(Reg("%ess"));
+}
+
+/**
+ * @berif 生成汇编代码
+ */
+void Generate::run()
+{
+	for (;;) {
+		std::vector<std::string> quad = getQuad();
+
+		if (quad.empty())
+			break;
+		generate(quad);
+	}
+	out << parser->newLabel("FE") << ":" << std::endl; // file end
+	out << "\t.ident \"zcc 0.0.1\"" << std::endl;
+}
+
+/**
+ * @berif 处理字符串常量
+ */
+void Generate::const_str()
+{
+	out << "\t.section  .rdata,\"dr\"" << std::endl;
+	std::vector<StrCard> strTbl = parser->getStrTbl();
+	for (size_t i = strTbl.size(); i > 0; --i) {
+		out << strTbl.back()._label << ":" << std::endl;
+		out << "\t.ascii \"" << strTbl.back()._str << "\\0\"" << std::endl;
+		strTbl.pop_back();
+	}
+}
+
+/**
+ * @berif 处理全局变量
+ */
 void Generate::var_decl(Node &n)
 {
+	// 如果初始化为0，则为声明
 	if (n.lvarinit.empty()) {
 		glo_var_decl(n);
 	}
+	// 否则为定义
 	else {
 		glo_var_define(n);
 	}
 }
 
+/**
+ * @breif 处理声明的全局变量
+ */
 void Generate::glo_var_decl(Node &n)
 {
 	out << "\t.comm\t" << "_" + n.varName << ", " << n.type.size << ", " << n.type.size/2 <<std::endl << std::endl;
 }
 
-std::string getTypeString(Node &n)
+/**
+ * @berif 全局变量定义
+ */
+void Generate::glo_var_define(Node &n)
+{
+	out << "\t.globl\t" << "_" + n.varName << std::endl;
+	out << "\t.data" << std::endl;
+	if (n.type.getType() == ARRAY)
+		out << "\t.align\t" << n.type.len * 4 << std::endl;
+	else
+		out << "\t.align\t" << n.type.size << std::endl;
+	out << "_" + n.varName << ":" << std::endl;
+	if (n.type.getType() == ARRAY) {
+		size_t i = 0;
+		for (; i < n.lvarinit.size(); ++i) {
+			out << getTypeString(n) << n.lvarinit.at(i).int_val << std::endl;
+		}
+		out << "\t.space\t" << (n.type.len - i) * n.type.size << std::endl;
+	}
+	else
+		out << getTypeString(n) << n.lvarinit.at(0).int_val << std::endl << std::endl;
+}
+
+/**
+ * @获取节点的数据类型
+ */
+std::string Generate::getTypeString(Node &n)
 {
 	switch (n.kind) {
 	case NODE_CHAR:
@@ -55,81 +140,14 @@ std::string getTypeString(Node &n)
 	}
 }
 
-void Generate::glo_var_define(Node &n)
-{
-	out << "\t.globl\t" << "_" + n.varName << std::endl;
-	out << "\t.data" << std::endl;
-	if(n.type.getType() == ARRAY)
-		out << "\t.align\t" << n.type.len * 4 << std::endl;
-	else 
-		out << "\t.align\t" << n.type.size << std::endl;
-	out << "_" + n.varName << ":" << std::endl;
-	if (n.type.getType() == ARRAY) {
-		int i = 0;
-		for (; i < n.lvarinit.size(); ++i) {
-			out << getTypeString(n) << n.lvarinit.at(i).int_val << std::endl;
-		}
-		out << "\t.space\t" << (n.type.len - i) * n.type.size << std::endl;
-	}
-	else
-		out << getTypeString(n) << n.lvarinit.at(0).int_val << std::endl << std::endl;
-
-}
-
-void Generate::reg_init()
-{
-	// 通用寄存器
-	universReg.push_back(Reg("AX"));
-	universReg.push_back(Reg("BX"));
-	universReg.push_back(Reg("CX"));
-	universReg.push_back(Reg("DX"));
-
-	// 段寄存器
-	segReg.push_back(Reg("CS"));
-	segReg.push_back(Reg("DS"));
-	segReg.push_back(Reg("ES"));
-	segReg.push_back(Reg("SS"));
-}
-void Generate::getEnvSize(Env *_begin, int &_size)
-{
-	if (_begin == nullptr)
-		return;
-
-	bool params = false;
-	int pp = 8;
-	if (_size == -1) {
-		params = true;
-		_size = 0;
-	}
-		
-
-	for (int i = 0; i < _begin->size(); ++i) {
-		int t = _begin->at(i).type.size;
-		
-		locvar.push_back(Locvar(_begin->at(i).varName, t));
-
-		if (params) {
-			locvar.back()._pos = pp;
-			pp += 4;
-		}
-		else {
-			_size += t;
-			locvar.back()._pos = -_size;
-		}
-			
-		if (!_begin->at(i).lvarinit.empty()) 
-			locvar.back()._lvalue = _begin->at(i).lvarinit;
-	}
-	std::vector<Env *> node = _begin->getNext();
-	for (int i = 0; i < node.size(); ++i) {
-		getEnvSize(node.at(i), _size);
-	}
-}
+/**
+ * @berif 获取函数局部变量的大小，以此来分配栈空间的大小
+ */
 int Generate::getFuncLocVarSize(Node &n)
 {
-	int _rsize = -1;
+	int _rsize = 0;
 	std::vector<Env *> gloEnv = parser->getGloEnv()->getNext();
-	for (int i = 0; i < gloEnv.size(); ++i) {
+	for (size_t i = 0; i < gloEnv.size(); ++i) {
 		Env * next = gloEnv.at(i);
 		if (n.funcName == next->getName()) {
 			getEnvSize(next, _rsize);
@@ -137,10 +155,62 @@ int Generate::getFuncLocVarSize(Node &n)
 	}
 	return _rsize;
 }
+/**
+ * @berif 获取该作用域中的局部变量的大小，并建立局部变量在栈中的位置关系
+ */
+void Generate::getEnvSize(Env *_begin, int &_size)
+{
+	if (_begin == nullptr)
+		return;
+
+	for (size_t i = 0; i < _begin->size(); ++i) {
+		int t = _begin->at(i).type.size;
+		
+		// 保存局部变量
+		locvar.push_back(Locvar(_begin->at(i).varName, t));
+
+		// 处理参数在栈中的位置，栈底ebp
+		_size += t;
+		locvar.back()._pos = -_size;
+
+		// 变量的初值
+		if (!_begin->at(i).lvarinit.empty()) 
+			locvar.back()._lvalue = _begin->at(i).lvarinit;
+	}
+	std::vector<Env *> node = _begin->getNext();
+	for (size_t i = 0; i < node.size(); ++i) {
+		getEnvSize(node.at(i), _size);
+	}
+}
+
+void getEnvCallSize(Env * _begin, int *size)
+{
+	if (_begin == nullptr)
+		return;
+	*size += _begin->_call_size;
+	std::vector<Env *> node = _begin->getNext();
+	for (size_t i = 0; i < node.size(); ++i) {
+		getEnvCallSize(node.at(i), size);
+	}
+}
+
 int Generate::getFuncCallSize(Node &n)
 {
+	int _rsize = 0;
+	
+	std::vector<Env *> gloEnv = parser->getGloEnv()->getNext();
+	for (size_t i = 0; i < gloEnv.size(); ++i) {
+		Env * next = gloEnv.at(i);
+		// 找到该函数
+		if (n.funcName == next->getName()) {
+			getEnvCallSize(next, &_rsize);
+			return _rsize;
+		}
+	}
 	return 0;
 }
+
+
 
 
 void Generate::func_decl(Node &n)
@@ -151,7 +221,9 @@ void Generate::func_decl(Node &n)
 
 	if (n.funcName == "main") {
 		out << "\t.def\t__main;\t.scl\t2;\t.type\t32;\t.endef" << std::endl;
+		is_main = true;
 	}
+	out << "\t.text" << std::endl;
 	out << "\t.globl\t" << "_" << n.funcName << std::endl;
 	out << "\t.def\t" << "_" << n.funcName << ";\t.scl\t2;\t.type\t32;\t.endef" << std::endl;
 	out << "_" + n.funcName << ":" << std::endl;
@@ -161,26 +233,12 @@ void Generate::func_decl(Node &n)
 	out << "\t.cfi_offset 5, -8" << std::endl;
 	out << "\tmovl	%esp, %ebp" << std::endl;
 	out << "\t.cfi_def_cfa_register 5" << std::endl;
-	if (n.funcName == "main") {
-		out << "\tandl	$ - 16, %esp" << std::endl;
-		if (size > 0)
-			out << "\tsubl\t$" << (size + 4 > 16 ? size + 4 : 16) << ", %esp" << std::endl;
+	if (size > 0)
+		out << "\tsubl\t$" << (size >= 16 ? size : 16) << ", %esp" << std::endl;
+	if (is_main) {
+		//out << "\tandl	$ - 16, %esp" << std::endl;  // 对齐，可以不要
 		out << "\tcall	___main" << std::endl;
-
 	}
-	else {
-		if (size > 0)
-			out << "\tsubl\t$" << size << ", %esp" << std::endl;
-	}
-}
-
-bool isNumber(std::string &str)
-{
-	for (int i = 0; i < str.size();++i) {
-		if (!(str.at(i) >= '0' && str.at(i) <= '9'))
-			return false;
-	}
-	return true;
 }
 
 /**
@@ -202,7 +260,7 @@ bool isNumber(std::string &str)
  * \ movw 2B
  * \ movb 1B
  */
-void Generate::getReg(std::vector<std::string> &_q)
+void Generate::generate(std::vector<std::string> &_q)
 {
 #define _q_0_is(str) (_q.at(0) == str)
 	// 标签直接输出
@@ -210,33 +268,132 @@ void Generate::getReg(std::vector<std::string> &_q)
 		Node r = parser->getGloEnv()->search(_q.at(0));
 
 		if (r.kind == NODE_FUNC) {
+			currentFunc = r;
 			func_decl(r);
+			return;
 		}
+
+		out << _q.at(0) << ":" << std::endl;
 	}
 	else if (_q_0_is("=")) {
-		Locvar var = search(_q.at(2));
+		// 赋值中第二个一般为局部变量或全局变量
+		Locvar var = searchLocvar(_q.at(2));
+		Locvar tvar = searchTempvar(_q.at(1));
+
+		std::string _out;
+
+		// 第一个参数为数字
 		if (isNumber(_q.at(1))) {
-			if (var._size == 1) {
-				out << "\tmovb\t$" << _q.at(1) << ", " << var._pos << "(%ebp)" << std::endl;
-			}
-			else if (var._size == 2) {
-				out << "\tmovw\t$" << _q.at(1) << ", " << var._pos << "(%ebp)" << std::endl;
-			}
-			else if (var._size == 4) {
-				out << "\tmovl\t$" << _q.at(1) << ", " << var._pos << "(%ebp)" << std::endl;
-			}
+			_out = "$" + _q.at(1);
+			goto _ass_end;
+		}
+		// 或为临时变量
+		
+		if (!tvar._var.empty()) {
+			_out = tvar._reg;
+		}
+
+_ass_end:
+		if (var._size == 1) {
+			out << "\tmovb\t" << _out + ", "  + std::to_string(var._pos) << "(%ebp)" << std::endl;
+			return;
+		}
+		else if (var._size == 2) {
+			out << "\tmovw\t" << _out + ", "  + std::to_string(var._pos) << "(%ebp)" << std::endl;
+			return;
+		}
+		else if (var._size == 4) {
+			out << "\tmovl\t" << _out + ", "  + std::to_string(var._pos) << "(%ebp)" << std::endl;
+			return;
 		}
 	}
 	else if (_q_0_is("if")) {
+		// 注意出栈和入栈的顺序
+		std::string _q1 = _q.at(3);
+		std::string _q2 = _q.at(1);
 
+		std::string _q1_reg;
+		std::string _q2_reg;
+
+		_q1_reg = getQuadReg(_q1);
+		_q2_reg = getQuadReg(_q2);
+
+		out << "\tcmpl\t" << _q1_reg + ", " + _q2_reg << std::endl;
+
+		if (_q.at(2) == ">")
+			out << "\tjg\t" << _q.at(5) << std::endl;
+		else if(_q.at(2) == "<")
+			out << "\tjl\t" << _q.at(5) << std::endl;
+		else if (_q.at(2) == ">=")
+			out << "\tjge\t" << _q.at(5) << std::endl;
+		else if (_q.at(2) == "<=")
+			out << "\tjle\t" << _q.at(5) << std::endl;
+		else if (_q.at(2) == "==")
+			out << "\tje\t" << _q.at(5) << std::endl;
+		else if (_q.at(2) == "!=")
+			out << "\tjne\t" << _q.at(5) << std::endl;
+
+		// 清理立即数
+		clearRegConst();
+
+		// 先将临时变量和常数出栈
+		pop_back_temp_stk(_q1);
+		pop_back_temp_stk(_q2);
 	}
 	else if (_q_0_is("goto")) {
-
+		out << "\tjmp\t" << _q.at(1) << std::endl;
+	}
+	else if (_q_0_is("param")) {
+		params.push_back(_q.at(1));
 	}
 	else if (_q_0_is("call")) {
+		std::string funcName = _q.at(1);
 
+		Node func = parser->getGloEnv()->search(funcName);
+
+		for (size_t i = 0; i < func.params.size(); ++i) {
+			int pos = 0;
+			size_t param_size = func.params.at(i).type.size;
+
+			if (param_size == 1) {
+				out << "\tmovb\t" << params.back() << ", " << pos<< "(%esp)" << std::endl;
+				pos += 1;
+			}
+			else if(param_size == 2){
+				out << "\tmovw\t" << params.back() << ", " << pos << "(%esp)" << std::endl;
+				pos += 2;
+			}
+			else if (param_size == 4) {
+				if(func.params.at(i).getType().getType() == PTR)
+					out << "\tmovl\t$" << params.back() << ", " << pos << "(%esp)" << std::endl;
+				else 
+					out << "\tmovl\t" << params.back() << ", " << pos << "(%esp)" << std::endl;
+				pos += 4;
+			}
+		}
+
+		out << "\tcall\t" << "_" + _q.at(1) << std::endl;
 	}
 	else if (_q_0_is("ret")) {
+		if (is_main) is_main = false;
+		std::string _out;
+		// 获取函数返回类型
+		int size = currentFunc.type.retType->getSize();
+
+		// 查找变量
+		// !ERROR 还有可能是全局变量
+		Locvar ret = searchLocvar(_q.at(1));
+
+		if (ret._var.empty())
+			_out = "$" + _q.at(1);
+		else
+			_out = std::to_string(ret._pos) + "(%ebp)";
+		switch (size) {
+		case 1: out << "\tmovb\t" << _out << ", %eax" << std::endl; break;
+		case 2: out << "\tmovw\t" << _out << ", %eax" << std::endl; break;
+		case 4: out << "\tmovl\t" << _out << ", %eax" << std::endl; break;
+		}
+
 		out << "\tleave" << std::endl;
 		out << "\t.cfi_restore 5" << std::endl;
 		out << "\t.cfi_def_cfa 4, 4" << std::endl;
@@ -244,52 +401,203 @@ void Generate::getReg(std::vector<std::string> &_q)
 		out << "\t.cfi_endproc" << std::endl << std::endl;
 	}
 	else if(_q_0_is("+")){
-		
+		getReg(_q);
 	}
 	else if (_q_0_is("-")) {
-
+		getReg(_q);
 	}
 	else if (_q_0_is("*")) {
-
+		getReg(_q);
 	}
 	else if (_q_0_is("/")) {
-
+		getReg(_q);
 	}
 	else if (_q_0_is("%")) {
-
+		getReg(_q);
 	}
 	else if (_q_0_is("&")) {
-
+		getReg(_q);
 	}
 	else if (_q_0_is("|")) {
-
+		getReg(_q);
 	}
 	else if (_q_0_is("^")) {
-
+		getReg(_q);
 	}
-	else if (_q_0_is("||")) {
-
+	else if (_q_0_is(">>")) {
+		getReg(_q);
 	}
-	else if (_q_0_is("&&")) {
-
+	else if (_q_0_is("<<")) {
+		getReg(_q);
 	}
-	else if (_q_0_is(">")) {
+}
 
+/**
+ * @ 临时变量进栈，并绑定寄存器
+ */
+inline void Generate::push_back_temp_stk(Locvar & tv, std::string &reg)
+{
+	setReg(reg, tv._var);
+	_stk_temp_var.push_back(tv);
+}
+
+/**
+ * 临时变量出栈，并解绑寄存器
+ */
+inline void Generate::pop_back_temp_stk(std::string &var)
+{
+	clearRegTemp(var);
+
+	if (isNumber(var))
+		return;
+	if (_stk_temp_var.empty())
+		return;
+	
+	if (_stk_temp_var.back()._var == var) 
+		_stk_temp_var.pop_back();
+}
+
+/**
+ * @berif 寄存器分配
+ */
+void Generate::getReg(std::vector<std::string> &_q)
+{
+	// 注意出栈和入栈的顺序
+	std::string _q1 = _q.at(2);
+	std::string _q2 = _q.at(1);
+	std::string _q3 = _q.at(3);
+
+	std::string _q1_reg;
+	std::string _q2_reg;
+	std::string _q3_reg;
+
+	// 加载前两个量到寄存器中，计算出结果
+	//   1.如果第三个是局部变量或全局变量，movl->
+	//   2.否则，第三个为当前结果寄存器
+	// 
+	// 临时变量保存在寄存器中
+	// 局部变量参与运算后弹出
+	if (_q_0_is("+")) {
+		_q1_reg = getQuadReg(_q1);
+		_q2_reg = getQuadReg(_q2);
+		out << "\taddl\t" << _q1_reg + ", " + _q2_reg << std::endl;
+
+		// 清理立即数
+		clearRegConst();
+
+		// 先将临时变量和常数出栈
+		pop_back_temp_stk(_q1);
+		pop_back_temp_stk(_q2);
+
+		Locvar _var = searchLocvar(_q3);
+		if (!_var._var.empty()) {
+			out << "\tmovl\t" + _q2_reg + ", " + std::to_string(_var._pos) + "(%ebp)" << std::endl;
+		}
+		else {
+			Locvar _temp;
+			_temp._var = _q3;
+			_temp._is_temp = true;
+			_temp._reg = _q2_reg;
+			push_back_temp_stk(_temp, _q2_reg);
+		}
 	}
-	else if (_q_0_is("<")) {
+	else if (_q_0_is("-")) {
+		_q1_reg = getQuadReg(_q1);
+		_q2_reg = getQuadReg(_q2);
+		out << "\tsubl\t" << _q1_reg + ", " + _q2_reg << std::endl;
 
+		// 清理立即数
+		clearRegConst();
+
+		// 先将临时变量和常数出栈
+		pop_back_temp_stk(_q1);
+		pop_back_temp_stk(_q2);
+
+		Locvar _var = searchLocvar(_q3);
+		if (!_var._var.empty()) {
+			out << "\tmovl\t" + _q2_reg + ", " + std::to_string(_var._pos) + "(%ebp)" << std::endl;
+		}
+		else {
+			Locvar _temp;
+			_temp._var = _q3;
+			_temp._is_temp = true;
+			_temp._reg = _q2_reg;
+			push_back_temp_stk(_temp, _q2_reg);
+		}
 	}
-	else if (_q_0_is(">=")) {
+}
 
+void Generate::clearRegConst()
+{
+	for (size_t i = 0; i < universReg.size(); ++i) {
+		if (isNumber(universReg.at(i)._var))
+			universReg.at(i)._var.clear();
 	}
-	else if (_q_0_is("<=")) {
+}
 
+void Generate::clearRegTemp(std::string &var)
+{
+	for (size_t i = 0; i < universReg.size(); ++i) {
+		if (universReg.at(i)._var == var) {
+			universReg.at(i)._var.clear();
+		}
 	}
-	else if (_q_0_is("==")) {
+}
 
+
+std::string Generate::getQuadReg(std::string &_q)
+{
+	std::string _reg;
+
+	// 立即数直接加载到内存
+	if (isNumber(_q)) {
+		for (size_t i = 0; i < universReg.size(); ++i) {
+			if (universReg.at(i)._var.empty()) {
+				_reg = universReg.at(i)._reg;
+				universReg.at(i)._var = _q;
+				out << "\tmovl\t$" + _q + ", " << _reg << std::endl;
+				return _reg;
+			}
+		}
 	}
-	else if (_q_0_is("!=")) {
+	else {
+		// 局部变量不会保存在寄存器中
+		Locvar _loc = searchLocvar(_q);
+		if (!_loc._var.empty()) {
+			for (size_t i = 0; i < universReg.size(); ++i) {
+				if (universReg.at(i)._var.empty()) {
+					_reg = universReg.at(i)._reg;
+					universReg.at(i)._var = _q;
+					out << "\tmovl\t" + std::to_string(_loc._pos) + "(%ebp), " << _reg << std::endl;
+					return _reg;
+				}
+			}
+		}
 
+		// 在表达式栈中寻找，临时变量一定先作为结果出现，也就是出现过的一定在寄存器中
+		Locvar _tem = searchTempvar(_q);
+		if (_tem._var.empty()) {
+			error("Temp var is not found.");
+		}
+		return _tem._reg;
+	}
+}
+
+
+void Generate::setRegConst(std::string &_reg)
+{
+	for (size_t i = 0; i < universReg.size(); ++i) {
+		if (universReg.at(i)._reg == _reg) {
+			universReg.at(i).is_const = true;
+		}
+	}
+}
+void Generate::setReg(std::string &_reg, std::string &_var)
+{
+	for (size_t i = 0; i < universReg.size(); ++i) {
+		if (universReg.at(i)._reg == _reg) {
+			universReg.at(i)._var = _var;
+		}
 	}
 }
 
@@ -345,7 +653,7 @@ std::vector<std::string> Generate::getQuad()
 std::string Generate::getOutName()
 {
 	std::string _rstr;
-	for (int i = 0; i < _infilename.length(); ++i) {
+	for (size_t i = 0; i < _infilename.length(); ++i) {
 		if (_infilename.at(i) == '.') 
 			break;
 		_rstr.push_back(_infilename.at(i));

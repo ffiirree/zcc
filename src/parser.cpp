@@ -58,7 +58,7 @@ void Env::push_back(Node &n) {
 void Label::push_back(const std::string &_l) {
 
 	// 如果添加过了
-	for (int i = 0; i < labels.size(); ++i) {
+	for (size_t i = 0; i < labels.size(); ++i) {
 		if (_l == labels.at(i)) {
 			if (enLabels.at(i) == false) {
 				enLabels.at(i) = true;
@@ -145,7 +145,7 @@ Node Parser::funcDef()
 
 	__IN_SCOPE__(localenv, globalenv);
 
-	Type retty = decl_spec_opt(&current_class);                             // 获取函数的返回类型
+	Type *retty = new Type(decl_spec_opt(&current_class));                             // 获取函数的返回类型
 	Type functype = declarator(retty, funcName, params, FUNC_BODY);         // 函数定义类型，函数描述
 	if (functype.type == PTR) {
 		error("Ptr not can be function.");
@@ -199,7 +199,7 @@ Node Parser::param_decl(int decl_type)
 	Type basety = decl_specifiers(&sclass);
 	std::string paramname;
 	std::vector<Node> list;
-	Type type = declarator(basety, paramname, list, NODE_PARAMS);
+	Type type = declarator(&basety, paramname, list, NODE_PARAMS);
 
 	if (decl_type == NODE_FUNC_DECL)
 		return createFuncDeclParams(type);
@@ -221,7 +221,7 @@ Node &Env::search(std::string &key)
 	Env *ptr = this;
 
 	while (ptr) {
-		for (int i = 0; i < ptr->nodes.size(); ++i) {
+		for (size_t i = 0; i < ptr->nodes.size(); ++i) {
 			if (key == ptr->nodes.at(i).varName || key == ptr->nodes.at(i).funcName)
 				return ptr->nodes.at(i);
 		}
@@ -238,7 +238,7 @@ void Env::set(std::string &_name, int ty, Node *_body)
 	Env *ptr = this;
 
 	while (ptr) {
-		for (int i = 0; i < ptr->nodes.size(); ++i) {
+		for (size_t i = 0; i < ptr->nodes.size(); ++i) {
 			if (_name == ptr->nodes.at(i).varName || _name == ptr->nodes.at(i).funcName) {
 				ptr->nodes.at(i).kind = ty;
 				ptr->nodes.at(i).body = _body;
@@ -306,16 +306,24 @@ bool Parser::next_is(int id)
 	return false;
 }
 
-
-
-Node Parser::createIntNode(Token &t)
+Node Parser::createIntNode(Token &t, int size, bool isch)
 {
-	_log_("Create int node.");
-	Node node(NODE_INT);
+	if (isch) {
+		_log_("Create char_ node.");
+		Node node(NODE_CHAR);
 
-	node.int_val = atoi(t.getSval().c_str());
-	node.type = Type(K_INT, 4, false);
-	return node;
+		node.int_val = t.getCh();
+		node.type = Type(K_CHAR, size, false);
+		return node;
+	}
+	else {
+		_log_("Create int_ node.");
+		Node node(NODE_INT);
+
+		node.int_val = atoi(t.getSval().c_str());
+		node.type = Type(K_INT, size, false);
+		return node;
+	}
 }
 
 Node Parser::createFloatNode(Token &t)
@@ -325,6 +333,15 @@ Node Parser::createFloatNode(Token &t)
 
 	node.sval = t.getSval();
 	node.type = Type(K_FLOAT, 4, false);
+	return node;
+}
+
+Node Parser::createStrNode(Token &t)
+{
+	_log_("Create STR node.");
+	Node node(NODE_STRING);
+
+	node.sval = t.getSval();
 	return node;
 }
 
@@ -559,7 +576,7 @@ std::string Parser::getQuadrupleFileName()
 	if (_index_dot <= _index_separator && _fn.length() > 0) _index_dot = _fn.length() - 1;
 	
 	std::string _rfn;
-	for (int i = _index_separator; i < _index_dot; ++i)
+	for (size_t i = _index_separator; i < _index_dot; ++i)
 		_rfn.push_back(_fn.at(i));
 
 	_rfn.push_back('.');
@@ -598,7 +615,7 @@ std::string Parser::num2str(size_t num)
 int Parser::str2int(std::string &str)
 {
 	int r = 0;
-	for (int i = 0; i < str.size(); ++i) {
+	for (size_t i = 0; i < str.size(); ++i) {
 		r = r * 10 + str.at(i) - 48;
 	}
 	return r;
@@ -732,39 +749,86 @@ void Parser::createBoolQuadruple(const std::string &op)
 		boolLabel.push_back(b1);
 	}
 }
-void Parser::createQuadruple(const std::string &op)
+
+std::string getReulst(std::string &v1, std::string &v2, const std::string &op)
 {
-	out << std::left << std::setw(10) << op;
+	// 注意入栈出栈的顺序
+	int _var1 = atoi(v2.c_str());
+	int _var2 = atoi(v1.c_str());
 
-	if (op == "if") {
-		out << std::left << std::setw(15) << _stk_quad.back(); _stk_quad.pop_back();
-		out << std::left << std::setw(15) << "goto ";
-	}
-	else if (op == "=") {
-		out << std::left << std::setw(15) << _stk_quad.back(); _stk_quad.pop_back();
-		out << std::left << std::setw(15) << _stk_quad.back(); _stk_quad.pop_back();
-		out << std::endl;
-	}
-	else if (op == "++" || op == "--") {
-		out << std::left << std::setw(15) << _stk_quad.back();_stk_quad.pop_back();
-		out << std::endl;
+	int r = 0;
 
-		//out << std::left << std::setw(15) << _stk_quad.back();
+	if (op == "+") {
+		r = _var1 + _var2;
 	}
-	else {
-		out << std::left << std::setw(15) << _stk_quad.back(); _stk_quad.pop_back();
-		out << std::left << std::setw(15) << _stk_quad.back(); _stk_quad.pop_back();
-		std::string tempName = newLabel("var");
-		out << std::left << std::setw(10) << tempName;
-		_stk_quad.push_back(tempName);
-		out << std::endl;
+	else if (op == "-") {
+		r = _var1 - _var2;
 	}
+	else if (op == "*") {
+		r = _var1 * _var2;
+	}
+	else if (op == "/") {
+		r = _var1 / _var2;
+	}
+	else if (op == "%") {
+		r = _var1 % _var2;
+	}
+	else if (op == "&") {
+		r = _var1 & _var2;
+	}
+	else if (op == "|") {
+		r = _var1 | _var2;
+	}
+	else if (op == "^") {
+		r = _var1 ^ _var2;
+	}
+
+	return std::to_string(r);
 }
 
+// + - * / % & | ^ 
+// 不进行 
+void Parser::createQuadruple(const std::string &op)
+{
+	std::string _out_str = op;
+	
+	if (op == "=") {
+		_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+		_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+	}
+	else {
+		std::string v1, v2;
+		
+		v1 = _stk_quad.back(); _stk_quad.pop_back();
+		v2 = _stk_quad.back(); _stk_quad.pop_back();
+
+		// 如果两个参数都是常量那么，优化掉
+		if (isNumber(v1) && isNumber(v2)) {
+			_stk_quad.push_back(getReulst(v1, v2, op));
+			return;
+		}
+
+		// 如果不全是常量
+		_out_str += "\t" + v1;
+		_out_str += "\t" + v2;
+
+		std::string tempName = newLabel("var");
+		_out_str += "\t" + tempName;
+
+		// 添加到生成四元式的栈中
+		_stk_quad.push_back(tempName);
+	}
+
+	out << _out_str << std::endl;
+}
+
+/**
+ * @berif 生成函数调用四元式
+ */
 void Parser::createFuncQuad(std::vector<Node> &params)
 {
 	out << std::endl;
-	for (int i = 0; i < params.size(); ++i) {
+	for (size_t i = 0; i < params.size(); ++i) {
 		out << "param " << _stk_quad.back() << std::endl; _stk_quad.pop_back();
 	}
 
@@ -774,6 +838,10 @@ void Parser::createFuncQuad(std::vector<Node> &params)
 	// 检查参数个数
 	if ((fn.kind != NODE_FUNC && fn.kind != NODE_FUNC_DECL) || (fn.params.size() != params.size()))
 		error("func call parms size error.");
+
+	for (size_t i = 0; i < fn.params.size(); ++i) {
+		localenv->_call_size += fn.params.at(i).type.size;
+	}
 
 	out << std::left << std::setw(15) << "call" << std::left << std::setw(15) << fn.funcName  << fn.params.size() << std::endl;
 }
@@ -789,13 +857,10 @@ void Parser::createIncDec()
 		std::string label;
 		if (op == "++") {
 			label = newLabel("inc");
-
 			out << std::left << std::setw(15) << "+";
-			
 		}
 		else {
 			label = newLabel("dec");
-
 			out << std::left << std::setw(15) << "-";
 		}
 

@@ -1,72 +1,54 @@
 #include <stdio.h>
 
-int global_var;
+int whichDayofYear(int day, int mouth, int year);
 
-void foo(int a, int b)
+int main(int argc, char *argv[])
 {
-	int a = 2;
-	int c = 3;
-	c = 3 + a++;
+    int sum = 0;
+
+    // sum 0~99
+    for(int i = 0; i < 100; i += 1){
+       sum += i;
+    }
+
+    // 
+    whichDayofYear(2, 4, 2016);
+
+	return sum;
 }
 
-int main(void)
-{
-	int local_gar;
-	int a, b , c, d;
+/**
+ * Compute which day of the year
+ */
+int whichDayofYear(int day, int mouth, int year) 
+{ 
+    int sum, leap;
+    switch(mouth)
+    { 
+        case 1:  sum = 0;  break; 
+        case 2:  sum = 31; break; 
+        case 3:  sum = 59; break; 
+        case 4:  sum = 90; break; 
+        case 5:  sum = 120;break; 
+        case 6:  sum = 151;break; 
+        case 7:  sum = 181;break; 
+        case 8:  sum = 212;break; 
+        case 9:  sum = 243;break; 
+        case 10: sum = 273;break; 
+        case 11: sum = 304;break; 
+        case 12: sum = 334;break; 
+        default:break; 
+    } 
 
-loop:
-	// test func call
-	foo(a, b);
+    sum = sum + day;
+    
+    if(year % 4 == 0 && year % 100 != 0 || year % 400 == 0)
+    　　leap = 1; 
+    else 
+    　　leap = 0; 
 
-	goto loop;
-	// test do_while_stmt
-	do{
-		global_var = local_gar + 4;
-	}while(global_var > 1);
+    if(leap == 1 && month > 2)
+        sum += 1; 
 
-	if(3 > 4){
-		3+3;
-	}
-	else if(4 >5 ){
-		4 + 4;
-	}
-	else {
-		4 + 5;
-	}
-
-	// test if_stmt
-	if(3 != 4){
-		if(5 < 6){
-			local_gar = global_var;
-		}
-	}
-	else {
-		local_gar = 5 * 6;
-	}
-
-	// test while
-	while (3 + 4 > 5)
-	{
-		local_gar +=1;
-	}
-
-	// test + - * / %
-	local_gar = 3 * 5 / 4 + 7 * 8;
-	local_gar += 4 * 5;
-	
-	// test > < >= <=
-	a * b > 5 + c <= 5 / 4 * d;
-
-	// test == !=
-	4 ==5 *7 +9;
-	4 *6 != 9;
-
-	// test ^ | &
-	55 & 45 + 44 ^ 3 | 3;
-
-	// test || &&
-	334 || 26 && 78 || 12;
-
-
-	return global_var;
+    return sum;
 }

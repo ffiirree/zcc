@@ -21,20 +21,14 @@ public:
 	inline void setNext(Env *_n) { _next.push_back(_n); }
 	inline void setName(const std::string &_n) { _name = _n; }
 	inline std::string getName() { return _name; }
-	inline int getNodesSize() {
-		int r = 0;
-		for (int i = 0; i < nodes.size(); ++i) {
-			r += nodes.at(i).type.size;
-		}
-		return r;
-	}
 	size_t size() { return nodes.size(); }
 	Node &at(size_t i) { return nodes.at(i); }
-
+	int _call_size = 0;
 private:
 	std::string _name;
 	Env *_pre;
 	std::vector<Env *> _next;
+	
 	std::vector<Node> nodes;
 };
 
@@ -53,7 +47,7 @@ public:
 
 private:
 	bool _exist(const std::string &_l) {
-		for (int i = 0; i < labels.size(); ++i) {
+		for (size_t i = 0; i < labels.size(); ++i) {
 			if (_l == labels.at(i))
 				return true;
 		}
@@ -77,6 +71,20 @@ public:
 	bool _leaf = false;
 };
 
+class StrCard {
+public:
+	StrCard() :_str(), _label(){}
+	StrCard(const std::string &_s, const std::string &_l) :_str(_s), _label(_l) { }
+	StrCard(const StrCard &bl) :_str(bl._str), _label(bl._label) {}
+	StrCard operator=(const StrCard &bl) { _str = bl._str; _label = bl._label; return *this; }
+
+	std::string _str;
+	std::string _label;
+};
+
+/**
+ * @ Parser,语法分析和中间代码生成
+ */
 class Parser {
 public:
 	Parser(){}
@@ -98,6 +106,8 @@ public:
 	std::string getQuadrupleFileName();
 	Env *getGloEnv() { return globalenv; }
 	Env *getLocEnv() { return localenv; }
+	std::vector<StrCard> getStrTbl() { return const_string; }
+	std::string newLabel(const std::string &_l);
 
 private:
 	
@@ -114,7 +124,7 @@ private:
 	void createIncDec();
 	std::string num2str(size_t num);
 	int str2int(std::string &str);
-	std::string newLabel(const std::string &_l);
+	
 
 	bool next_is(int id);
 	void expect(int id);
@@ -129,8 +139,9 @@ private:
 
 	//
 	Node createFuncNode(Type &ty, std::string & funcName, std::vector<Node> params, Node *body);
-	Node createIntNode(Token &t);
-	Node Parser::createFloatNode(Token &t);
+	Node createIntNode(Token &t, int size, bool isch);
+	Node createFloatNode(Token &t);
+	Node createStrNode(Token &t);
 	Node createCompoundStmtNode(std::vector<Node> &stmts);
 	Node createDeclNode(Node &var);
 	Node createDeclNode(Node &var, std::vector<Node> &init);
@@ -159,10 +170,10 @@ private:
 	 */
 	void declaration(std::vector<Node> &list, bool isGlo);
 	void skip_parenthesis(int *count);
-	Type declarator(Type &ty, std::string &name, std::vector<Node> &params, int deal_type);
+	Type declarator(Type *ty, std::string &name, std::vector<Node> &params, int deal_type);
 	Type decl_spec_opt(int *sclass);
 	Type decl_specifiers(int *rsclass);
-	Type direct_decl_tail(Type &retty, std::vector<Node> &params, int deal_type);
+	Type direct_decl_tail(Type *retty, std::vector<Node> &params, int deal_type);
 	Type func_param_list(Type *basetype, std::vector<Node> &params, int deal_type);
 	Type decl_array(Type &ty);
 	int array_int_expr();
@@ -247,7 +258,9 @@ private:
 	Env *globalenv = nullptr;           // 全局
 	Env *localenv = nullptr;            // 临时
 	Env *funcCall = nullptr;            // 记录函数调用
-	Label labels;
+	Label labels;                       // 源程序中的Label
+	std::vector<StrCard> const_string; // 字符串常量
+	std::vector<std::string> const_num;    // 数字常量
 
 	std::string label_break;
 	std::vector<std::string> _stk_if_goto;
@@ -264,4 +277,15 @@ private:
 	std::vector<std::string> _stk_incdec;
 	std::vector<BoolLabel> boolLabel;
 };
+
+
+inline bool isNumber(std::string &str)
+{
+	for (size_t i = 0; i < str.size();++i) {
+		if (!(str.at(i) >= '0' && str.at(i) <= '9'))
+			return false;
+	}
+	return true;
+}
+
 #endif // !_ZCC_PARSER_H

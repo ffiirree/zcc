@@ -37,8 +37,11 @@ Token Lex::readToken()
 		c = f.next();
 
 		switch (c) {
-		case '\n': case '\r': break;
-		case '#': while (f.next() != '\n'); break;
+		case '\n': //return Token(TNEWLINE, 0);
+		case '\r': break;
+
+		case '#': while (c != 0 && c != '\n') c = f.next(); break;//return Token(KEYWORD, (int)'#');
+
 		case '+': return read_rep2('+', OP_INC, '=', OP_A_ADD, '+');
 		case '*': return read_rep('=', OP_A_MUL, '*');
 		case '%': return read_rep('=', OP_A_MOD, '%');
@@ -120,7 +123,7 @@ bool Lex::next_is(char e)
 
 int Lex::isKeyword(std::string &word)
 {
-	for (int i = 0; i < keywords.size(); ++i) {
+	for (size_t i = 0; i < keywords.size(); ++i) {
 		if (keywords.at(i) == word) {
 			return i + K_AUTO;
 		}

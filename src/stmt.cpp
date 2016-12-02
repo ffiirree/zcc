@@ -274,7 +274,7 @@ Node Parser::for_stmt()
 	statement();
 
 	out << "goto " << _exp3 << std::endl;
-	out << _next << std::endl;
+	out << _next << ":" << std::endl;
 
 	_stk_ctl_bg_l.pop_back();
 	_stk_ctl_end_l.pop_back();

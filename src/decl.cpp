@@ -12,7 +12,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 		std::string name;
 		std::vector<Node> params;
 
-		Type ty = declarator(baseType, name, params, DECL_BODY);  // 定义
+		Type ty = declarator(&baseType, name, params, DECL_BODY);  // 定义
 		ty.setStatic(sclass == K_STATIC);
 
 		if(sclass == K_TYPEDEF){     //typedef 定义
@@ -75,7 +75,7 @@ void  Parser::init_list(std::vector<Node> &r, Type &ty, int off, bool designated
 			expect('=');
 		}
 		list = decl_init(ty);
-		for (int i = 0; i < list.size(); ++i) {
+		for (size_t i = 0; i < list.size(); ++i) {
 			r.push_back(list.at(i));
 		}
 	} while (next_is(','));
@@ -122,19 +122,19 @@ void conv2ptr(Type *ty)
 	ty->size = 4;
 }
 
-Type Parser::declarator(Type &ty, std::string &name, std::vector<Node> &params, int deal_type)
+Type Parser::declarator(Type *ty, std::string &name, std::vector<Node> &params, int deal_type)
 {
 	// 指针变量
 	if (next_is('*')) {
-		conv2ptr(&ty);
+		conv2ptr(ty);
 		return declarator(ty, name, params, deal_type);
 	}
 	// int (*ptr)();
 	if (next_is('(')) {
-		Type stub;
+		Type *stub = new Type();
 		Type t = declarator(stub, name, params, deal_type);
 		expect(')');
-		stub = direct_decl_tail(ty, params, deal_type);
+		*stub = direct_decl_tail(ty, params, deal_type);
 		return t;
 	}
 
@@ -156,7 +156,7 @@ Type Parser::decl_spec_opt(int *sclass)
 	return Type(K_INT, 4, false);
 }
 
-Type Parser::direct_decl_tail(Type &retty, std::vector<Node> &params, int decl_type)
+Type Parser::direct_decl_tail(Type *retty, std::vector<Node> &params, int decl_type)
 {
 	// 只支持定长数组
 	if (next_is('[')) {
@@ -176,17 +176,17 @@ Type Parser::direct_decl_tail(Type &retty, std::vector<Node> &params, int decl_t
 
 		if (t.getType() == NODE_FUNC)
 			error("array of functions");
-		return Type(ARRAY, retty.size, _len);
+		return Type(ARRAY, retty->size, _len);
 	}
 
 	// 如果是括号，则为函数
 	if (next_is('(')) {
 		if (decl_type == DECL_BODY)
 			decl_type = NODE_FUNC_DECL;
-		return func_param_list(&retty, params, decl_type);
+		return func_param_list(retty, params, decl_type);
 	}
 
-	return retty;
+	return *retty;
 }
 
 
@@ -196,6 +196,7 @@ int Parser::array_int_expr()
 	if (r.kind == NODE_INT || r.kind == NODE_CHAR || r.kind == NODE_INT) {
 		return r.int_val;
 	}
+	return 0;
 }
 
 

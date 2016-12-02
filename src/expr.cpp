@@ -208,8 +208,8 @@ Node Parser::shift_expr()
 		else
 			break;
 		Node *right = new Node(add_expr());
-		ensure_inttype(*node);
-		ensure_inttype(*right);
+		//ensure_inttype(*node);
+		//ensure_inttype(*right);
 		node = new Node(createBinOpNode(node->getType(), op, new Node(conv(*node)), new Node(conv(*right))));
 	}
 	return *node;
@@ -361,6 +361,7 @@ Node Parser::postfix_expr_tail(Node &node)
 Node Parser::primary_expr()
 {
 	Token tok = lex.next();
+	std::string strl;
 
 	if (is_keyword(tok, '(')) {
 		Node r = expr();
@@ -369,7 +370,7 @@ Node Parser::primary_expr()
 	}
 
 	switch (tok.getType()) {
-
+		
 		// 如果是ID， 则可能为变量或函数调用
 	case ID:
 		return var_or_func(tok);
@@ -377,23 +378,26 @@ Node Parser::primary_expr()
 		// 常量
 	case INTEGER:
 		pushQuadruple(tok.getSval());
-		return createIntNode(tok);
+		return createIntNode(tok, 4, false);
 
 	case FLOAT:
 		pushQuadruple(tok.getSval());
 		return createFloatNode(tok);
 
 	case CHAR_:
-		//return ast_inttype(char_type(tok->enc), tok->c);
-		return NULL;
+		pushQuadruple(tok.getSval());
+		return createIntNode(tok, 1, true);
 
 	case STRING_:
-		//return ast_string(tok->enc, tok->sval, tok->slen);
-		return NULL;
+		strl = newLabel("LSTR");
+		pushQuadruple(strl);
+		const_string.push_back(StrCard(tok.getSval(), strl));
+		return createStrNode(tok);
 
 	case KEYWORD:
 		lex.back();
 		return NULL;
+
 	default:
 		error("internal error: unknown token kind");
 	}
@@ -409,7 +413,7 @@ Node Parser::var_or_func(Token &t)
 		pushQuadruple(t.getSval());
 
 	if (r.kind == NODE_NULL)
-		error("undefined var : %s！", t.getSval());
+		error("undefined var : %s！", t.getSval().c_str());
 
 	return r;
 }

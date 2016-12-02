@@ -101,6 +101,11 @@ enum {
 	OP_POST_INC,
 	OP_POST_DEC,
 	CAST,
+	// Only in CPP
+	MIN_CPP_TOKEN,
+	TNEWLINE,
+	TSPACE,
+	TMACRO_PARAM,
 
 #define op(ty, _) ty,
 	OP_MAP
