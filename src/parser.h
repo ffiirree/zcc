@@ -283,9 +283,17 @@ private:
 
 inline bool isNumber(const std::string &str)
 {
-	for (size_t i = 0; i < str.size();++i) {
-		if (!(str.at(i) >= '0' && str.at(i) <= '9'))
+	if (!((str.at(0) >= '0' && str.at(0) <= '9')
+		|| (str.at(0) == '-' || str.at(0) == '+')))
+		return false;
+
+	// Ìí¼Ó¼ì²âfloat
+	bool _has_dot = false;
+	for (size_t i = 1; i < str.size();++i) {
+		if (!((str.at(i) >= '0' && str.at(i) <= '9') || (str.at(i) == '.' && _has_dot == false)))
 			return false;
+		if (str.at(i) == '.')
+			_has_dot == true;
 	}
 	return true;
 }

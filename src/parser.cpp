@@ -819,6 +819,20 @@ void Parser::createUnaryQuadruple(const std::string &op)
 		return;
 	}
 
+	if ((op == "-U" || op == "+U")&& isNumber(_stk_quad.back())) {
+		std::string num = _stk_quad.back(); _stk_quad.pop_back();
+		num = "-" + num;
+		_stk_quad.push_back(num);
+		return;
+	}
+
+	if (op == "~" && isNumber(_stk_quad.back())) {
+		int _n = atoi(_stk_quad.back().c_str()); _stk_quad.pop_back();
+		_n = ~_n;
+		_stk_quad.push_back(std::to_string(_n));
+		return;
+	}
+
 	std::string _out_str;
 	_out_str = op + "\t" + _stk_quad.back(); _stk_quad.pop_back();
 

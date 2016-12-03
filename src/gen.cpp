@@ -68,6 +68,9 @@ void Generate::run()
  */
 void Generate::const_str()
 {
+	if (parser->getStrTbl().empty())
+		return;
+
 	out << "\t.section  .rdata,\"dr\"" << std::endl;
 	std::vector<StrCard> strTbl = parser->getStrTbl();
 	for (size_t i = strTbl.size(); i > 0; --i) {

@@ -1,41 +1,4 @@
 main:
-=	0	i
-.Lforb3:
-if	i < 10	goto .Lfort5
-goto .Lforn2
-.Lfe34:
-++	i
-goto .Lforb3
-.Lfort5:
-=	0	j
-.Lforb7:
-if	j < 15	goto .Lfort9
-goto .Lforn6
-.Lfe38:
-++	j
-goto .Lforb7
-.Lfort9:
-if	j < 10	goto .Landt13
-goto .Liff12
-.Landt13:
-if	i == j	goto .Lift11
-goto .Liff12
-.Lift11:
-
-param .LLSTR14
-call           printf         1
-goto	.Lsn10
-.Liff12:
-
-param .LLSTR15
-call           printf         1
-.Lsn10:
-goto .Lfe38
-.Lforn6:
-
-param .LLSTR17
-call           printf         1
-goto .Lfe34
-.Lforn2:
+=	-3	a
 ret            argc
 .end

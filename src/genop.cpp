@@ -428,7 +428,17 @@ void Generate::getReg(std::vector<std::string> &_q)
 		}
 	}
 	else if (_q_0_is("*U")) {
+		getReg(std::string("%eax"));
+		Locvar _v = searchLocvar(_q1);
+		out << "\tmovl\t" + std::to_string(_v._pos) + "(%ebp), %eax" << std::endl;
+		out << "\tmovl\t(%eax), %eax" << std::endl;
 
+		// 出现在结果的都是第一次
+		Locvar _temp;
+		_temp._var = _q2;
+		_temp._is_temp = true;
+		_temp._reg = "%eax";
+		push_back_temp_stk(_temp, _temp._reg);
 	}
 	else if (_q_0_is("+U")) {
 		// 为局部或全局变量
@@ -446,6 +456,19 @@ void Generate::getReg(std::vector<std::string> &_q)
 		//只能是局部变量或或者全局变量
 		Locvar _loc = searchLocvar(_q1);
 		out << "\tsubl\t$1, " + std::to_string(_loc._pos) + "(%ebp)" << std::endl;
+	}
+	else if (_q_0_is("~")) {
+		//只能是局部变量或或者全局变量
+		Locvar _loc = searchLocvar(_q1);
+		if(!_loc._var.empty()){
+			out << "\tnotl\t$1, " + std::to_string(_loc._pos) + "(%ebp)" << std::endl;
+			return;
+		}
+		
+		_loc = searchTempvar(_q1);
+		if(!_loc._var.empty()){
+			out << "\tnotl\t" << _loc._reg << std::endl;
+		}
 	}
 }
 #undef _q_0_is
