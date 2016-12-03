@@ -19,8 +19,6 @@ void Generate::getReg(std::vector<std::string> &_q)
 		if (_q.size() > 3)
 			_q3 = _q.at(3);
 	}
-	
-	
 
 	std::string _q1_reg;
 	std::string _q2_reg;
@@ -38,25 +36,7 @@ void Generate::getReg(std::vector<std::string> &_q)
 		_q2_reg = getQuadReg(_q2);
 		out << "\taddl\t" << _q1_reg + ", " + _q2_reg << std::endl;
 
-		// 清理立即数
-		clearRegConst();
-
-		// 先将临时变量和常数出栈
-		pop_back_temp_stk(_q1);
-		pop_back_temp_stk(_q2);
-		pop_back_temp_stk(_q1);
-
-		Locvar _var = searchLocvar(_q3);
-		if (!_var._var.empty()) {
-			out << "\tmovl\t" + _q2_reg + ", " + std::to_string(_var._pos) + "(%ebp)" << std::endl;
-		}
-		else {
-			Locvar _temp;
-			_temp._var = _q3;
-			_temp._is_temp = true;
-			_temp._reg = _q2_reg;
-			push_back_temp_stk(_temp, _q2_reg);
-		}
+		saveAndClear(_q1, _q2, _q3, _q2_reg);
 	}
 	//subl S,D D = D – S
 	else if (_q_0_is("-")) {
@@ -64,32 +44,13 @@ void Generate::getReg(std::vector<std::string> &_q)
 		_q2_reg = getQuadReg(_q2);
 		out << "\tsubl\t" << _q1_reg + ", " + _q2_reg << std::endl;
 
-		// 清理立即数
-		clearRegConst();
-
-		// 先将临时变量和常数出栈
-		pop_back_temp_stk(_q1);
-		pop_back_temp_stk(_q2);
-		pop_back_temp_stk(_q1);
-
-		Locvar _var = searchLocvar(_q3);
-		if (!_var._var.empty()) {
-			out << "\tmovl\t" + _q2_reg + ", " + std::to_string(_var._pos) + "(%ebp)" << std::endl;
-		}
-		else {
-			// 出现在结果的都是第一次
-			Locvar _temp;
-			_temp._var = _q3;
-			_temp._is_temp = true;
-			_temp._reg = _q2_reg;
-			push_back_temp_stk(_temp, _q2_reg);
-		}
+		saveAndClear(_q1, _q2, _q3, _q2_reg);
 	}
 	else if (_q_0_is("*")) {
 		char _q1_ty = getVarType(_q1), _q2_ty = getVarType(_q2);
 
 		// 保证eax为空
-		getReg(std::string("%eax"));
+		getReg("%eax");
 
 		if (_q1_ty == 'l') {
 			/*setReg(_q1_reg, _q1);因为是临时，不需要*/
@@ -154,62 +115,24 @@ void Generate::getReg(std::vector<std::string> &_q)
 		}
 	}
 	else if (_q_0_is("/")) {
-
+		genMulOrModAsm(_q);
 	}
 	else if (_q_0_is("%")) {
-
+		genMulOrModAsm(_q);
 	}
 	else if (_q_0_is("&")) {
 		_q1_reg = getQuadReg(_q1);
 		_q2_reg = getQuadReg(_q2);
 		out << "\tandl\t" << _q1_reg + ", " + _q2_reg << std::endl;
 
-		// 清理立即数
-		clearRegConst();
-
-		// 先将临时变量和常数出栈
-		pop_back_temp_stk(_q1);
-		pop_back_temp_stk(_q2);
-		pop_back_temp_stk(_q1);
-
-		Locvar _var = searchLocvar(_q3);
-		if (!_var._var.empty()) {
-			out << "\tmovl\t" + _q2_reg + ", " + std::to_string(_var._pos) + "(%ebp)" << std::endl;
-		}
-		else {
-			// 出现在结果的都是第一次
-			Locvar _temp;
-			_temp._var = _q3;
-			_temp._is_temp = true;
-			_temp._reg = _q2_reg;
-			push_back_temp_stk(_temp, _q2_reg);
-		}
+		saveAndClear(_q1, _q2, _q3, _q2_reg);
 	}
 	else if (_q_0_is("|")) {
 		_q1_reg = getQuadReg(_q1);
 		_q2_reg = getQuadReg(_q2);
 		out << "\torl\t" << _q1_reg + ", " + _q2_reg << std::endl;
 
-		// 清理立即数
-		clearRegConst();
-
-		// 先将临时变量和常数出栈
-		pop_back_temp_stk(_q1);
-		pop_back_temp_stk(_q2);
-		pop_back_temp_stk(_q1);
-
-		Locvar _var = searchLocvar(_q3);
-		if (!_var._var.empty()) {
-			out << "\tmovl\t" + _q2_reg + ", " + std::to_string(_var._pos) + "(%ebp)" << std::endl;
-		}
-		else {
-			// 出现在结果的都是第一次
-			Locvar _temp;
-			_temp._var = _q3;
-			_temp._is_temp = true;
-			_temp._reg = _q2_reg;
-			push_back_temp_stk(_temp, _q2_reg);
-		}
+		saveAndClear(_q1, _q2, _q3, _q2_reg);
 	}
 	// xorl S, D   D = D ^ S 至少一个在寄存器
 	else if (_q_0_is("^")) {
@@ -217,30 +140,11 @@ void Generate::getReg(std::vector<std::string> &_q)
 		_q2_reg = getQuadReg(_q2);
 		out << "\txorl\t" << _q1_reg + ", " + _q2_reg << std::endl;
 
-		// 清理立即数
-		clearRegConst();
-
-		// 先将临时变量和常数出栈
-		pop_back_temp_stk(_q1);
-		pop_back_temp_stk(_q2);
-		pop_back_temp_stk(_q1);
-
-		Locvar _var = searchLocvar(_q3);
-		if (!_var._var.empty()) {
-			out << "\tmovl\t" + _q2_reg + ", " + std::to_string(_var._pos) + "(%ebp)" << std::endl;
-		}
-		else {
-			// 出现在结果的都是第一次
-			Locvar _temp;
-			_temp._var = _q3;
-			_temp._is_temp = true;
-			_temp._reg = _q2_reg;
-			push_back_temp_stk(_temp, _q2_reg);
-		}
+		saveAndClear(_q1, _q2, _q3, _q2_reg);
 	}
 	else if (_q_0_is(">>")) {
-		getReg(std::string("%eax"));
-		getReg(std::string("%ecx"));
+		getReg("%eax");
+		getReg("%ecx");
 
 		std::string _out_str;
 
@@ -258,7 +162,6 @@ void Generate::getReg(std::vector<std::string> &_q)
 			_out_str = "%cl";
 		}
 
-
 		if (isNumber(_q2)) {
 			out << "\tmovl\t$" << _q2 << ", %eax" << std::endl;
 		}
@@ -270,29 +173,8 @@ void Generate::getReg(std::vector<std::string> &_q)
 			Locvar _temp = searchTempvar(_q2);
 			out << "\tmovl\t" << _temp._reg << ", %eax" << std::endl;
 		}
-
 		out << "\tsarl\t" << _out_str + ", %eax" << std::endl;
-
-		// 清理立即数
-		clearRegConst();
-
-		// 先将临时变量和常数出栈
-		pop_back_temp_stk(_q1);
-		pop_back_temp_stk(_q2);
-		pop_back_temp_stk(_q1);
-
-		Locvar _var = searchLocvar(_q3);
-		if (!_var._var.empty()) {
-			out << "\tmovl\t%eax, " + std::to_string(_var._pos) + "(%ebp)" << std::endl;
-		}
-		else {
-			// 出现在结果的都是第一次
-			Locvar _temp;
-			_temp._var = _q3;
-			_temp._is_temp = true;
-			_temp._reg = "%eax";
-			push_back_temp_stk(_temp, _q2_reg);
-		}
+		saveAndClear(_q1, _q2, _q3, "%eax");
 	}
 	else if (_q_0_is("<<")) {
 		getReg(std::string("%eax"));
@@ -328,27 +210,7 @@ void Generate::getReg(std::vector<std::string> &_q)
 		}
 
 		out << "\tsall\t" << _out_str + ", %eax" << std::endl;
-
-		// 清理立即数
-		clearRegConst();
-
-		// 先将临时变量和常数出栈
-		pop_back_temp_stk(_q1);
-		pop_back_temp_stk(_q2);
-		pop_back_temp_stk(_q1);
-
-		Locvar _var = searchLocvar(_q3);
-		if (!_var._var.empty()) {
-			out << "\tmovl\t%eax, " + std::to_string(_var._pos) + "(%ebp)" << std::endl;
-		}
-		else {
-			// 出现在结果的都是第一次
-			Locvar _temp;
-			_temp._var = _q3;
-			_temp._is_temp = true;
-			_temp._reg = "%eax";
-			push_back_temp_stk(_temp, _q2_reg);
-		}
+		saveAndClear(_q1, _q2, _q3, "%eax");
 	}
 	else if (_q_0_is(">>>")) {
 		getReg(std::string("%eax"));
@@ -370,7 +232,6 @@ void Generate::getReg(std::vector<std::string> &_q)
 			_out_str = "%cl";
 		}
 
-
 		if (isNumber(_q2)) {
 			out << "\tmovl\t$" << _q2 << ", %eax" << std::endl;
 		}
@@ -384,27 +245,7 @@ void Generate::getReg(std::vector<std::string> &_q)
 		}
 
 		out << "\tshrl\t" << _out_str + ", %eax" << std::endl;
-
-		// 清理立即数
-		clearRegConst();
-
-		// 先将临时变量和常数出栈
-		pop_back_temp_stk(_q1);
-		pop_back_temp_stk(_q2);
-		pop_back_temp_stk(_q1);
-
-		Locvar _var = searchLocvar(_q3);
-		if (!_var._var.empty()) {
-			out << "\tmovl\t%eax, " + std::to_string(_var._pos) + "(%ebp)" << std::endl;
-		}
-		else {
-			// 出现在结果的都是第一次
-			Locvar _temp;
-			_temp._var = _q3;
-			_temp._is_temp = true;
-			_temp._reg = "%eax";
-			push_back_temp_stk(_temp, _q2_reg);
-		}
+		saveAndClear(_q1, _q2, _q3, std::string("%eax"));
 	}
 	else if (_q_0_is("&U")) {
 		// 只能是全局变量或局部变量
@@ -428,7 +269,7 @@ void Generate::getReg(std::vector<std::string> &_q)
 		}
 	}
 	else if (_q_0_is("*U")) {
-		getReg(std::string("%eax"));
+		getReg("%eax");
 		Locvar _v = searchLocvar(_q1);
 		out << "\tmovl\t" + std::to_string(_v._pos) + "(%ebp), %eax" << std::endl;
 		out << "\tmovl\t(%eax), %eax" << std::endl;
@@ -442,10 +283,10 @@ void Generate::getReg(std::vector<std::string> &_q)
 	}
 	else if (_q_0_is("+U")) {
 		// 为局部或全局变量
-
+		error("Not support operator.");
 	}
 	else if (_q_0_is("-U")) {
-
+		error("Not support operator.");
 	}
 	else if (_q_0_is("++")) {
 		//只能是局部变量或或者全局变量
@@ -472,3 +313,74 @@ void Generate::getReg(std::vector<std::string> &_q)
 	}
 }
 #undef _q_0_is
+
+
+void Generate::genMulOrModAsm(std::vector<std::string> &_q)
+{
+	// 注意出栈和入栈的顺序
+	std::string _q1 = _q.at(1);
+	std::string _q2 = _q.at(2);
+	std::string _q3 = _q.at(3);
+
+	std::string _save_reg;                // 保存结果
+	if (_q1.at(0) == '/') _save_reg = "%eax";
+	else _save_reg = "%edx";
+
+	getReg("%eax");
+	getReg("%edx");
+
+	if (isLocVar(_q2)) {
+		Locvar _l = searchLocvar(_q2);
+		out << "\tmovl\t" + std::to_string(_l._pos) + "(%ebp), %eax" << std::endl;
+	}
+	else if (isTempVar(_q2)) {
+		Locvar _t = searchTempvar(_q2);
+		out << "\tmovl\t" + _t._reg << ", %eax" << std::endl;
+	}
+	else if (isNumber(_q2)) {
+		out << "\tmovl\t$" + _q2 + ", %eax" << std::endl;
+	}
+
+	out << "\tcltd" << std::endl;
+
+	if (isNumber(_q1)) {
+		out << "\tidivl\t$" + _q1;
+	}
+	else if (isLocVar(_q1)) {
+		Locvar _l = searchLocvar(_q1);
+		out << "\tidivl\t" + std::to_string(_l._pos) + "(%ebp)" << std::endl;
+	}
+	else if (isTempVar(_q1)) {
+		Locvar _t = searchTempvar(_q1);
+		out << "\tidivl\t" + _t._reg << std::endl;
+	}
+
+	saveAndClear(_q1, _q2, _q3, _save_reg);
+}
+
+/**
+ * 运算之后寄存器的清理和数据的保存
+ */
+void Generate::saveAndClear(std::string &_q1, std::string &_q2, std::string &_q3, const std::string &_reg)
+{
+	// 清理立即数
+	clearRegConst();
+
+	// 先将临时变量和常数出栈
+	pop_back_temp_stk(_q1);
+	pop_back_temp_stk(_q2);
+	pop_back_temp_stk(_q1);
+
+	Locvar _var = searchLocvar(_q3);
+	if (!_var._var.empty()) {
+		out << "\tmovl\t" + _reg + ", " + std::to_string(_var._pos) + "(%ebp)" << std::endl;
+	}
+	else {
+		// 出现在结果的都是第一次
+		Locvar _temp;
+		_temp._var = _q3;
+		_temp._is_temp = true;
+		_temp._reg = _reg;
+		push_back_temp_stk(_temp, _reg);
+	}
+}

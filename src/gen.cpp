@@ -500,7 +500,7 @@ void Generate::clearRegConst()
 /**
  * var删除
  */
-void Generate::clearRegTemp(std::string &var)
+void Generate::clearRegTemp(const std::string &var)
 {
 	for (size_t i = 0; i < universReg.size(); ++i) {
 		if (universReg.at(i)._var == var) {
@@ -524,7 +524,7 @@ void Generate::setRegConst(std::string &_reg)
 /**
  * 将寄存器_reg设置为_var
  */
-void Generate::setReg(std::string &_reg, std::string &_var)
+void Generate::setReg(const std::string &_reg, std::string &_var)
 {
 	for (size_t i = 0; i < universReg.size(); ++i) {
 		if (universReg.at(i)._reg == _reg) {
@@ -536,7 +536,7 @@ void Generate::setReg(std::string &_reg, std::string &_var)
 /**
  * 获取_reg寄存器，此时寄存器为空
  */
-std::string Generate::getReg(std::string &_reg)
+std::string Generate::getReg(const std::string &_reg)
 {
 	std::string _var;
 	for (size_t i = 0; i < universReg.size(); ++i) {
@@ -573,7 +573,7 @@ std::string Generate::getReg(std::string &_reg)
 /**
 * @ 临时变量进栈，并绑定寄存器
 */
-void Generate::push_back_temp_stk(Locvar & tv, std::string &reg)
+void Generate::push_back_temp_stk(Locvar & tv,const std::string &reg)
 {
 	setReg(reg, tv._var);
 	_stk_temp_var.push_back(tv);
@@ -582,7 +582,7 @@ void Generate::push_back_temp_stk(Locvar & tv, std::string &reg)
 /**
 * 临时变量出栈，并解绑寄存器
 */
-void Generate::pop_back_temp_stk(std::string &var)
+void Generate::pop_back_temp_stk(const std::string &var)
 {
 	clearRegTemp(var);
 

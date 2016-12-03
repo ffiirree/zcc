@@ -1,4 +1,11 @@
 main:
-=	-3	a
+=	7	a
+=	5	b
+%	b	a	.Lvar2
+=	.Lvar2	c
+
+param c
+param .LLSTR3
+call           printf         2
 ret            argc
 .end

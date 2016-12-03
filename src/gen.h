@@ -42,6 +42,11 @@ public:
 	std::vector<std::string> getQuad();
 
 private:
+	//
+	void saveAndClear(std::string &_q1, std::string &_q2, std::string &_q3, const std::string &_reg);
+	void genMulOrModAsm(std::vector<std::string> &_q);
+
+
 	std::string getTypeString(Node &n);
 	// 产生汇编代码
 	void generate(std::vector<std::string> &_q);
@@ -83,8 +88,8 @@ private:
 		return *var;
 	}
 	std::string Generate::getQuadReg(const std::string &_q1);
-	std::string Generate::getReg(std::string &_reg);
-	void Generate::setReg(std::string &_reg, std::string &_var);
+	std::string Generate::getReg(const std::string &_reg);
+	void Generate::setReg(const std::string &_reg, std::string &_var);
 	void setRegConst(std::string &_reg);
 	void getReg(std::vector<std::string> &_q);
 	void glo_var_decl(Node &n);
@@ -97,7 +102,7 @@ private:
 	std::vector<Reg> universReg;
 	void Generate::clearRegConst();
 
-	void Generate::clearRegTemp(std::string &var);
+	void Generate::clearRegTemp(const std::string &var);
 	std::vector<Reg> segReg;
 	File inf;
 	std::ofstream out;
@@ -108,8 +113,8 @@ private:
 
 	// 使用表达式栈来分配寄存器
 	std::vector<Locvar> _stk_temp_var;
-	void push_back_temp_stk(Locvar & tv, std::string &reg);
-	void pop_back_temp_stk(std::string &var);
+	void push_back_temp_stk(Locvar & tv, const std::string &reg);
+	void pop_back_temp_stk(const std::string &var);
 
 	bool isTempVar(std::string &_t);
 	bool isLocVar(std::string &_l);

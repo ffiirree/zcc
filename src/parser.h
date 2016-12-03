@@ -283,6 +283,9 @@ private:
 
 inline bool isNumber(const std::string &str)
 {
+	if (str.empty())
+		return false;
+
 	if (!((str.at(0) >= '0' && str.at(0) <= '9')
 		|| (str.at(0) == '-' || str.at(0) == '+')))
 		return false;
@@ -293,7 +296,7 @@ inline bool isNumber(const std::string &str)
 		if (!((str.at(i) >= '0' && str.at(i) <= '9') || (str.at(i) == '.' && _has_dot == false)))
 			return false;
 		if (str.at(i) == '.')
-			_has_dot == true;
+			_has_dot = true;
 	}
 	return true;
 }
