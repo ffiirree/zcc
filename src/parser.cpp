@@ -14,7 +14,7 @@ std::vector<Node> Parser::trans_unit()
 
 		if (t.getType() == K_EOF) {
 			labels.cheak();
-			_log_("End of file.");
+			_log_("Parser OK.");
 			out.close();
 			return list;
 		}
@@ -28,14 +28,6 @@ std::vector<Node> Parser::trans_unit()
 }
 
 void Env::push_back(Node &n) {
-	if (n.kind == NODE_GLO_VAR)
-		_log_("Add glo var : %s.", n.varName.c_str());
-	else if (n.kind == NODE_LOC_VAR)
-		_log_("Add loc var : %s.", n.varName.c_str());
-	else if (n.kind == NODE_FUNC)
-		_log_("Add function name : %s.", n.funcName.c_str());
-
-
 	if (n.kind == NODE_FUNC) {
 		Node r = search(n.funcName);
 		if (r.kind == NODE_FUNC_DECL) {
@@ -43,14 +35,14 @@ void Env::push_back(Node &n) {
 			return;
 		}
 		else if (r.kind != 0) {
-			error("function redefined.");
+			error("Function redefined: %s", n.funcName.c_str());
 		}
 	}
 
 	if (n.kind == NODE_GLO_VAR) {
 		Node r = search(n.varName);
 		if (r.kind != 0)
-			error("redefined var.");
+			error("redefined var:%s", n.varName.c_str());
 	}
 
 	nodes.push_back(n);

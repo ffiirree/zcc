@@ -10,11 +10,14 @@ Lex::Lex(const std::string &filename):
 	KEYWORD_MAP
 #undef keyword
 
-		Token t;
-		do {
-			t = readToken();
-			tokens.push_back(t);
-		} while (t.getType() != K_EOF);
+	Token t;
+	int counter = 0;
+	do {
+		t = readToken();
+		t.setPos(f.getPos());
+		t.setCounter(++counter);
+		tokens.push_back(t);
+	} while (t.getType() != K_EOF);
 }
 
 void Lex::scan(const std::string &filename)
@@ -33,6 +36,7 @@ void Lex::scan(const std::string &filename)
 Token Lex::readToken()
 {
 	char c;
+
 	do {
 		c = f.next();
 

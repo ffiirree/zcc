@@ -140,23 +140,16 @@ public:
 	Token(int _type, int _id) :type(_type), counter(0), id(_id) {  }
 	Token(int ty, std::string &_sval) : type(ty), counter(0), sval(_sval) {  }
 	Token(int ty, char _c) : type(ty), pos(), counter(0), ch(_c) {  }
-	~Token() {
-		if (type == ID || type == STRING_ || type == INTEGER || type == FLOAT)
-			sval.~basic_string();
-	}
+	~Token() { if (type == ID || type == STRING_ || type == INTEGER || type == FLOAT)sval.~basic_string(); }
 
 	Token(const Token &t) :type(t.type), pos(t.pos), counter(t.counter) { copyUnion(t); }
-	Token operator=(const Token &t) {
-		type = t.type;
-		pos = t.pos;
-		counter = t.counter;
-		copyUnion(t);
-		return (*this);
-	}
+	Token operator=(const Token &t) { type = t.type;pos = t.pos;counter = t.counter;copyUnion(t);return (*this); }
 
 	inline int getType() const { return type; }
 	inline Pos getPos() const { return pos; }
+	inline void setPos(const Pos &_p) { pos = _p; }
 	inline int getCounter() const { return counter; }
+	inline void setCounter(int _c) { counter = _c; }
 	inline int getId() const { return id; }
 	inline std::string getSval() const { return sval; }
 	inline int getCh() const { return ch; }
@@ -187,24 +180,15 @@ class Node;
  */
 class Type {
 public:
-	Type(){}
+	Type() {}
 	Type(int ty, int _s, int _l) :type(ty), size(_s), len(_l) {}
-	Type(int ty, int s, bool isunsig) :type(ty), size(s), isUnsig(isunsig) {  }
+	Type(int ty, int s, bool isunsig) :type(ty), size(s), isUnsig(isunsig) { }
 	Type(int ty, Type *ret, std::vector<Node> _params) : type(ty), retType(ret), params(_params) { }
 
 	Type(const Type &t):type(t.type), size(t.size), isUnsig(t.isUnsig), 
 		isSta(t.isSta), ptr(t.ptr), len(t.len), retType(t.retType), params(t.params){}
-	inline Type operator=(const Type &t) { 
-		type = t.type;
-		size = t.size;
-		isUnsig = t.isUnsig;
-		isSta = t.isSta;
-		ptr = t.ptr;
-		len = t.len;
-		retType = t.retType;
-		params = t.params;
-		return *this;
-	}
+	inline Type operator=(const Type &t) { type = t.type;size = t.size; isUnsig = t.isUnsig;
+		isSta = t.isSta; ptr = t.ptr; len = t.len; retType = t.retType; params = t.params; return *this; }
 
 	inline Type create(int ty, int s, bool isuns) { type = ty, size = s, isUnsig = isuns; return *this; }
 
