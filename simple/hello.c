@@ -1,11 +1,10 @@
-int printf(char *shift_expr, int a);
+int printf(char *_out, ...);
 
 int main(int argc, char *argv[])
 {
-    int a = 7;
-    int b = 5;
-    int c = a % b;
-
-    printf("%d", c);
+    unsigned int a  = 100;
+    unsigned int b = 50;
+    a = a / b;
+    printf("%d", a);
     return argc;
 }

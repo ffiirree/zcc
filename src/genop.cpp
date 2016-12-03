@@ -54,45 +54,45 @@ void Generate::getReg(std::vector<std::string> &_q)
 
 		if (_q1_ty == 'l') {
 			/*setReg(_q1_reg, _q1);因为是临时，不需要*/
-			Locvar _loc = searchLocvar(_q1);
-			out << "\tmovl\t" + std::to_string(_loc._pos) + "(%ebp), %eax" << std::endl;
+			LocVar _loc = searchLocvar(_q1);
+			out << "\tmovl\t" + std::to_string(_loc._off) + "(%ebp), %eax" << std::endl;
 
 			if (_q2_ty == 'n')  // imull n, eax, eax
 				out << "\timull\t$" + _q2 + ", %eax, %eax" << std::endl;
 			else if (_q2_ty == 'l') { // imull (%ebp), eax
-				Locvar _q2_v = searchLocvar(_q2);
-				out << "\timull\t" + std::to_string(_q2_v._pos) + "(%ebp), %eax" << std::endl;
+				LocVar _q2_v = searchLocvar(_q2);
+				out << "\timull\t" + std::to_string(_q2_v._off) + "(%ebp), %eax" << std::endl;
 			}
 			else if (_q2_ty == 't') { // imull ebx, eax
-				Locvar _t = searchTempvar(_q2);
+				TempVar _t = searchTempvar(_q2);
 				out << "\timull\t" << _t._reg << ", %eax" << std::endl;
 				pop_back_temp_stk(_q2);
 			}
 		}
 		else if (_q1_ty == 'n') {
 			if (_q2_ty == 'l') {
-				Locvar _loc = searchLocvar(_q2);
-				out << "\tmovl\t" + std::to_string(_loc._pos) + "(%ebp), %eax" << std::endl;
+				LocVar _loc = searchLocvar(_q2);
+				out << "\tmovl\t" + std::to_string(_loc._off) + "(%ebp), %eax" << std::endl;
 				out << "\timull\t$" + _q1 + ", %eax, %eax" << std::endl;
 			}
 			else if (_q2_ty == 't') {
-				Locvar _t = searchTempvar(_q2);
+				TempVar _t = searchTempvar(_q2);
 				out << "\timull\t$" + _q1 + "," + _t._reg + ", %eax" << std::endl;
 				pop_back_temp_stk(_q2);
 			}
 		}
 		else if (_q1_ty == 't') {
-			Locvar _q1_t = searchTempvar(_q1);
+			TempVar _q1_t = searchTempvar(_q1);
 			if (_q2_ty == 'n')
 				out << "\timull\t$" + _q2 + "," + _q1_t._reg + ", %eax" << std::endl;
 			else if (_q2_ty == 'l') { // imull ebx, eax
-				Locvar _l = searchLocvar(_q2);
-				out << "\tmovl\t" + std::to_string(_l._pos) + "(%ebp), %eax" << std::endl;
+				LocVar _l = searchLocvar(_q2);
+				out << "\tmovl\t" + std::to_string(_l._off) + "(%ebp), %eax" << std::endl;
 
 				out << "\timull\t" + _q1_t._reg + ", %eax" << std::endl;
 			}
 			else if (_q2_ty == 't') {
-				Locvar q2_t = searchTempvar(_q2);
+				TempVar q2_t = searchTempvar(_q2);
 
 				out << "\tmovl\t" << q2_t._reg << ", %eax" << std::endl;
 				out << "\timull\t" << _q1_t._reg << ", %eax" << std::endl;
@@ -103,14 +103,13 @@ void Generate::getReg(std::vector<std::string> &_q)
 		}
 		// 结果在eax
 		if (isLocVar(_q3)) {
-			Locvar _loc = searchLocvar(_q3);
-			out << "\tmovl\teax, " + std::to_string(_loc._pos) + "(%ebp)" << std::endl;
+			LocVar _loc = searchLocvar(_q3);
+			out << "\tmovl\teax, " + std::to_string(_loc._off) + "(%ebp)" << std::endl;
 		}
 		else {
-			Locvar _t;
-			_t._var = _q3;
+			TempVar _t;
+			_t._name = _q3;
 			_t._reg = "%eax";
-			_t._is_temp = true;
 			push_back_temp_stk(_t, _t._reg);
 		}
 	}
@@ -152,12 +151,12 @@ void Generate::getReg(std::vector<std::string> &_q)
 			_out_str = "$" + _q1;
 		}
 		else if (isLocVar(_q1)) {
-			Locvar _q1_v = searchLocvar(_q1);
-			out << "\tmovl\t" + std::to_string(_q1_v._pos) + "(%ebp), %ecx" << std::endl;
+			LocVar _q1_v = searchLocvar(_q1);
+			out << "\tmovl\t" + std::to_string(_q1_v._off) + "(%ebp), %ecx" << std::endl;
 			_out_str = "%cl";
 		}
 		else if (isTempVar(_q1)) {
-			Locvar _temp = searchTempvar(_q1);
+			TempVar _temp = searchTempvar(_q1);
 			out << "\tmovl\t" << _temp._reg << ", %ecx" << std::endl;
 			_out_str = "%cl";
 		}
@@ -166,11 +165,11 @@ void Generate::getReg(std::vector<std::string> &_q)
 			out << "\tmovl\t$" << _q2 << ", %eax" << std::endl;
 		}
 		else if (isLocVar(_q2)) {
-			Locvar _q2_v = searchLocvar(_q2);
-			out << "\tmovl\t" + std::to_string(_q2_v._pos) + "(%ebp), %eax" << std::endl;
+			LocVar _q2_v = searchLocvar(_q2);
+			out << "\tmovl\t" + std::to_string(_q2_v._off) + "(%ebp), %eax" << std::endl;
 		}
 		else if (isTempVar(_q2)) {
-			Locvar _temp = searchTempvar(_q2);
+			TempVar _temp = searchTempvar(_q2);
 			out << "\tmovl\t" << _temp._reg << ", %eax" << std::endl;
 		}
 		out << "\tsarl\t" << _out_str + ", %eax" << std::endl;
@@ -186,12 +185,12 @@ void Generate::getReg(std::vector<std::string> &_q)
 			_out_str = "$" + _q1;
 		}
 		else if (isLocVar(_q1)) {
-			Locvar _q1_v = searchLocvar(_q1);
-			out << "\tmovl\t" + std::to_string(_q1_v._pos) + "(%ebp), %ecx" << std::endl;
+			LocVar _q1_v = searchLocvar(_q1);
+			out << "\tmovl\t" + std::to_string(_q1_v._off) + "(%ebp), %ecx" << std::endl;
 			_out_str = "%cl";
 		}
 		else if (isTempVar(_q1)) {
-			Locvar _temp = searchTempvar(_q1);
+			TempVar _temp = searchTempvar(_q1);
 			out << "\tmovl\t" << _temp._reg << ", %ecx" << std::endl;
 			_out_str = "%cl";
 		}
@@ -201,11 +200,11 @@ void Generate::getReg(std::vector<std::string> &_q)
 			out << "\tmovl\t$" << _q2 << ", %eax" << std::endl;
 		}
 		else if (isLocVar(_q2)) {
-			Locvar _q2_v = searchLocvar(_q2);
-			out << "\tmovl\t" + std::to_string(_q2_v._pos) + "(%ebp), %eax" << std::endl;
+            LocVar _q2_v = searchLocvar(_q2);
+			out << "\tmovl\t" + std::to_string(_q2_v._off) + "(%ebp), %eax" << std::endl;
 		}
 		else if (isTempVar(_q2)) {
-			Locvar _temp = searchTempvar(_q2);
+			TempVar _temp = searchTempvar(_q2);
 			out << "\tmovl\t" << _temp._reg << ", %eax" << std::endl;
 		}
 
@@ -222,12 +221,12 @@ void Generate::getReg(std::vector<std::string> &_q)
 			_out_str = "$" + _q1;
 		}
 		else if (isLocVar(_q1)) {
-			Locvar _q1_v = searchLocvar(_q1);
-			out << "\tmovl\t" + std::to_string(_q1_v._pos) + "(%ebp), %ecx" << std::endl;
+            LocVar _q1_v = searchLocvar(_q1);
+			out << "\tmovl\t" + std::to_string(_q1_v._off) + "(%ebp), %ecx" << std::endl;
 			_out_str = "%cl";
 		}
 		else if (isTempVar(_q1)) {
-			Locvar _temp = searchTempvar(_q1);
+			TempVar _temp = searchTempvar(_q1);
 			out << "\tmovl\t" << _temp._reg << ", %ecx" << std::endl;
 			_out_str = "%cl";
 		}
@@ -236,11 +235,11 @@ void Generate::getReg(std::vector<std::string> &_q)
 			out << "\tmovl\t$" << _q2 << ", %eax" << std::endl;
 		}
 		else if (isLocVar(_q2)) {
-			Locvar _q2_v = searchLocvar(_q2);
-			out << "\tmovl\t" + std::to_string(_q2_v._pos) + "(%ebp), %eax" << std::endl;
+			LocVar _q2_v = searchLocvar(_q2);
+			out << "\tmovl\t" + std::to_string(_q2_v._off) + "(%ebp), %eax" << std::endl;
 		}
 		else if (isTempVar(_q2)) {
-			Locvar _temp = searchTempvar(_q2);
+			TempVar _temp = searchTempvar(_q2);
 			out << "\tmovl\t" << _temp._reg << ", %eax" << std::endl;
 		}
 
@@ -249,35 +248,34 @@ void Generate::getReg(std::vector<std::string> &_q)
 	}
 	else if (_q_0_is("&U")) {
 		// 只能是全局变量或局部变量
-		Locvar _lv = searchLocvar(_q1);
-		if (_lv._var.empty())
+		LocVar _lv = searchLocvar(_q1);
+		if (_lv.varName.empty())
 			error("& addr error.");
 		getReg(std::string("%eax"));
-		out << "\tleal\t" + std::to_string(_lv._pos) + "(%ebp), %eax" << std::endl;
+		out << "\tleal\t" + std::to_string(_lv._off) + "(%ebp), %eax" << std::endl;
 
-		Locvar _var = searchLocvar(_q2);
-		if (!_var._var.empty()) {
-			out << "\tmovl\t%eax, " + std::to_string(_var._pos) + "(%ebp)" << std::endl;
+		LocVar _var = searchLocvar(_q2);
+		if (!_var.varName.empty()) {
+			out << "\tmovl\t%eax, " + std::to_string(_var._off) + "(%ebp)" << std::endl;
 		}
 		else {
 			// 出现在结果的都是第一次
-			Locvar _temp;
-			_temp._var = _q2;
-			_temp._is_temp = true;
+			TempVar _temp;
+			_temp._name = _q2;
+
 			_temp._reg = "%eax";
 			push_back_temp_stk(_temp, _temp._reg);
 		}
 	}
 	else if (_q_0_is("*U")) {
 		getReg("%eax");
-		Locvar _v = searchLocvar(_q1);
-		out << "\tmovl\t" + std::to_string(_v._pos) + "(%ebp), %eax" << std::endl;
+		LocVar _v = searchLocvar(_q1);
+		out << "\tmovl\t" + std::to_string(_v._off) + "(%ebp), %eax" << std::endl;
 		out << "\tmovl\t(%eax), %eax" << std::endl;
 
 		// 出现在结果的都是第一次
-		Locvar _temp;
-		_temp._var = _q2;
-		_temp._is_temp = true;
+		TempVar _temp;
+		_temp._name = _q2;
 		_temp._reg = "%eax";
 		push_back_temp_stk(_temp, _temp._reg);
 	}
@@ -290,26 +288,32 @@ void Generate::getReg(std::vector<std::string> &_q)
 	}
 	else if (_q_0_is("++")) {
 		//只能是局部变量或或者全局变量
-		Locvar _loc = searchLocvar(_q1);
-		out << "\taddl\t$1, " + std::to_string(_loc._pos) + "(%ebp)" << std::endl;
+		LocVar _loc = searchLocvar(_q1);
+		out << "\taddl\t$1, " + std::to_string(_loc._off) + "(%ebp)" << std::endl;
 	}
 	else if (_q_0_is("--")) {
 		//只能是局部变量或或者全局变量
-		Locvar _loc = searchLocvar(_q1);
-		out << "\tsubl\t$1, " + std::to_string(_loc._pos) + "(%ebp)" << std::endl;
+		LocVar _loc = searchLocvar(_q1);
+		out << "\tsubl\t$1, " + std::to_string(_loc._off) + "(%ebp)" << std::endl;
 	}
 	else if (_q_0_is("~")) {
 		//只能是局部变量或或者全局变量
-		Locvar _loc = searchLocvar(_q1);
-		if(!_loc._var.empty()){
-			out << "\tnotl\t$1, " + std::to_string(_loc._pos) + "(%ebp)" << std::endl;
+		LocVar _loc = searchLocvar(_q1);
+		if(!_loc.varName.empty()){
+			out << "\tnotl\t$1, " + std::to_string(_loc._off) + "(%ebp)" << std::endl;
 			return;
 		}
 		
-		_loc = searchTempvar(_q1);
-		if(!_loc._var.empty()){
-			out << "\tnotl\t" << _loc._reg << std::endl;
+		TempVar _tem = searchTempvar(_q1);
+		if(!_tem._name.empty()){
+			out << "\tnotl\t" << _tem._reg << std::endl;
 		}
+	}
+	else if (_q_0_is("[]")) {
+		error("Not support operator.");
+	}
+	else {
+		error("Not support operator.");
 	}
 }
 #undef _q_0_is
@@ -330,11 +334,11 @@ void Generate::genMulOrModAsm(std::vector<std::string> &_q)
 	getReg("%edx");
 
 	if (isLocVar(_q2)) {
-		Locvar _l = searchLocvar(_q2);
-		out << "\tmovl\t" + std::to_string(_l._pos) + "(%ebp), %eax" << std::endl;
+		LocVar _l = searchLocvar(_q2);
+		out << "\tmovl\t" + std::to_string(_l._off) + "(%ebp), %eax" << std::endl;
 	}
 	else if (isTempVar(_q2)) {
-		Locvar _t = searchTempvar(_q2);
+		TempVar _t = searchTempvar(_q2);
 		out << "\tmovl\t" + _t._reg << ", %eax" << std::endl;
 	}
 	else if (isNumber(_q2)) {
@@ -347,11 +351,11 @@ void Generate::genMulOrModAsm(std::vector<std::string> &_q)
 		out << "\tidivl\t$" + _q1;
 	}
 	else if (isLocVar(_q1)) {
-		Locvar _l = searchLocvar(_q1);
-		out << "\tidivl\t" + std::to_string(_l._pos) + "(%ebp)" << std::endl;
+		LocVar _l = searchLocvar(_q1);
+		out << "\tidivl\t" + std::to_string(_l._off) + "(%ebp)" << std::endl;
 	}
 	else if (isTempVar(_q1)) {
-		Locvar _t = searchTempvar(_q1);
+		TempVar _t = searchTempvar(_q1);
 		out << "\tidivl\t" + _t._reg << std::endl;
 	}
 
@@ -371,15 +375,14 @@ void Generate::saveAndClear(std::string &_q1, std::string &_q2, std::string &_q3
 	pop_back_temp_stk(_q2);
 	pop_back_temp_stk(_q1);
 
-	Locvar _var = searchLocvar(_q3);
-	if (!_var._var.empty()) {
-		out << "\tmovl\t" + _reg + ", " + std::to_string(_var._pos) + "(%ebp)" << std::endl;
+	LocVar _var = searchLocvar(_q3);
+	if (!_var.varName.empty()) {
+		out << "\tmovl\t" + _reg + ", " + std::to_string(_var._off) + "(%ebp)" << std::endl;
 	}
 	else {
 		// 出现在结果的都是第一次
-		Locvar _temp;
-		_temp._var = _q3;
-		_temp._is_temp = true;
+		TempVar _temp;
+		_temp._name = _q3;
 		_temp._reg = _reg;
 		push_back_temp_stk(_temp, _reg);
 	}

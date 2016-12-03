@@ -181,7 +181,7 @@ class Node;
 class Type {
 public:
 	Type() {}
-	Type(int ty, int _s, int _l) :type(ty), size(_s), len(_l) {}
+	Type(int ty, int _s, std::vector<int> _l) :type(ty), size(_s), len(_l) {}
 	Type(int ty, int s, bool isunsig) :type(ty), size(s), isUnsig(isunsig) { }
 	Type(int ty, Type *ret, std::vector<Node> _params) : type(ty), retType(ret), params(_params) { }
 
@@ -210,7 +210,8 @@ public:
 	Type *ptr = nullptr;
 
 	// array length
-	int len = 0;
+	int _all_len = 0;
+	std::vector<int> len;
 
 	//function
 	Type *retType= nullptr;
@@ -276,64 +277,41 @@ public:
 	int kind = NODE_NULL;
 	Type type;
 
-	// Char, int, or long  //常量
+	// Char, int, or long
 	long int_val = 0;
 
 	// Float or double
-	struct {
-		double float_val = 0.0;
-		//char *flabel;
-	};
+	double float_val = 0.0;
 
 	// String
-	struct {
-		std::string sval;
-		//char *slabel;
-	};
+	std::string sval;
 
 	// Local/global variable
 	struct {
 		std::string varName;
 
 		// local
-		int loc_off = 0;
+		int _off = 0;                 // 局部变量在栈中的偏移
 		std::vector<Node> lvarinit;
 
 		// global
 		std::string glabel;
 	};
 
-	// Binary operator
-	struct {
-		Node *left = nullptr;        // 左节点
-		Node *right = nullptr;       // 右节点
-	};
+	// 二元运算符
+	Node *left = nullptr;             // 左节点
+	Node *right = nullptr;            // 右节点
 
-	// Unary operator
-	struct {
-		Node *operand = nullptr;
-	};
+	// 一元运算符
+	Node *operand = nullptr;
 
-
-	// Function call or function declaration
-	struct {
-		std::string funcName;
-
-		// Function call
-		std::vector<Node> args;
-		Type func_type;
-
-		// Function pointer or function designator
-		Node *func_ptr = nullptr;
-
-		// Function declaration
-		std::vector<Node> params;
-		std::vector<Node> localvars;
-		Node *body = nullptr;
-	};
+	// 函数定义和声明
+	std::string funcName;           // 函数名
+	std::vector<Node> params;       // 函数参数
+	Node *body = nullptr;           // 函数体
 
 
-	// Declaration
+	// 声明
 	struct {
 		Node *decl_var = nullptr;
 		std::vector<Node> decl_init;
@@ -359,18 +337,11 @@ public:
 		std::string newLabel;
 	};
 
-	// Return statement
+	// return stmt
 	Node *retval = nullptr;
 
 	// Compound statement
 	std::vector<Node> stmts;
-
-	// Struct reference
-	struct {
-		Node *struc = nullptr;
-		char *field = nullptr;
-		Type *fieldtype = nullptr;
-	};
 
 private:
 	inline void copying(const Node &n);

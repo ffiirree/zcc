@@ -19,11 +19,10 @@ Generate::Generate(Parser *p)
 
 	out << "\t.file\t\"" << _infilename << "\""<< std::endl;
 
-
 	const_str();
-	Env *gloenv = parser->getGloEnv();
-	for (size_t i = 0; i < gloenv->size(); ++i) {
-		Node n = gloenv->at(i);
+	gloEnv = parser->getGloEnv();
+	for (size_t i = 0; i < gloEnv->size(); ++i) {
+		Node n = gloEnv->at(i);
 		if (n.kind == NODE_GLO_VAR && n.params.empty())
 			var_decl(n);
 	}
@@ -110,8 +109,9 @@ void Generate::glo_var_define(Node &n)
 {
 	out << "\t.globl\t" << "_" + n.varName << std::endl;
 	out << "\t.data" << std::endl;
-	if (n.type.getType() == ARRAY)
-		out << "\t.align\t" << n.type.len * 4 << std::endl;
+	if (n.type.getType() == ARRAY) {
+		out << "\t.align\t" << n.type._all_len * n.type.getSize() << std::endl;
+	}
 	else
 		out << "\t.align\t" << n.type.size << std::endl;
 	out << "_" + n.varName << ":" << std::endl;
@@ -120,7 +120,7 @@ void Generate::glo_var_define(Node &n)
 		for (; i < n.lvarinit.size(); ++i) {
 			out << getTypeString(n) << n.lvarinit.at(i).int_val << std::endl;
 		}
-		out << "\t.space\t" << (n.type.len - i) * n.type.size << std::endl;
+		out << "\t.space\t" << (n.type._all_len - i) * n.type.size << std::endl;
 	}
 	else
 		out << getTypeString(n) << n.lvarinit.at(0).int_val << std::endl << std::endl;
@@ -174,24 +174,29 @@ void Generate::getEnvSize(Env *_begin, int &_size)
 	}
 
 	for (size_t i = 0; i < _begin->size(); ++i) {
-		int t = _begin->at(i).type.size;
+		int _var_size = 0;
+
+		if (_begin->at(i).type.getType() == ARRAY)
+			_var_size = _begin->at(i).type.size * _begin->at(i).type._all_len;
+		else 
+			_var_size = _begin->at(i).type.size;
 		
-		// 保存局部变量
-		locvar.push_back(Locvar(_begin->at(i).varName, t));
+		//// 保存局部变量
+		//locvar.push_back(Locvar(_begin->at(i).varName, _var_size));
 
 		// 处理参数在栈中的位置，栈底ebp
 		if (is_params) {
-			locvar.back()._pos = params_pos;
-			params_pos += t;
+			_begin->at(i)._off = params_pos;
+			params_pos += _var_size;
 		}
 		else {
-			_size += t;
-			locvar.back()._pos = -_size;
+			_size += _var_size;
+			_begin->at(i)._off = -_size;
 		}
 
-		// 变量的初值
-		if (!_begin->at(i).lvarinit.empty()) 
-			locvar.back()._lvalue = _begin->at(i).lvarinit;
+		//// 变量的初值
+		//if (!_begin->at(i).lvarinit.empty()) 
+		//	locvar.back()._lvalue = _begin->at(i).lvarinit;
 	}
 	std::vector<Env *> node = _begin->getNext();
 	for (size_t i = 0; i < node.size(); ++i) {
@@ -231,7 +236,6 @@ int Generate::getFuncCallSize(Node &n)
 
 void Generate::func_decl(Node &n)
 {
-	locvar.clear();
 	int size = getFuncLocVarSize(n);            // 获取临时变量的 大小
 	size += getFuncCallSize(n);
 
@@ -284,6 +288,8 @@ void Generate::generate(std::vector<std::string> &_q)
 		Node r = parser->getGloEnv()->search(_q.at(0));
 
 		if (r.kind == NODE_FUNC) {
+            setLocEnv(r.funcName);
+
 			currentFunc = r;
 			func_decl(r);
 			return;
@@ -293,8 +299,8 @@ void Generate::generate(std::vector<std::string> &_q)
 	}
 	else if (_q_0_is("=")) {
 		// 赋值中第二个一般为局部变量或全局变量
-		Locvar var = searchLocvar(_q.at(2));
-		Locvar tvar = searchTempvar(_q.at(1));
+		LocVar var = searchLocvar(_q.at(2));
+		TempVar tvar = searchTempvar(_q.at(1));
 
 		std::string _out;
 
@@ -309,21 +315,21 @@ void Generate::generate(std::vector<std::string> &_q)
 		}
 		// 或为临时变量
 		
-		if (!tvar._var.empty()) {
+		if (!tvar._name.empty()) {
 			_out = tvar._reg;
 		}
 
 _ass_end:
-		if (var._size == 1) {
-			out << "\tmovb\t" << _out + ", "  + std::to_string(var._pos) << "(%ebp)" << std::endl;
+		if (var.type.getSize() == 1) {
+			out << "\tmovb\t" << _out + ", "  + std::to_string(var._off) << "(%ebp)" << std::endl;
 			return;
 		}
-		else if (var._size == 2) {
-			out << "\tmovw\t" << _out + ", "  + std::to_string(var._pos) << "(%ebp)" << std::endl;
+		else if (var.type.getSize() == 2) {
+			out << "\tmovw\t" << _out + ", "  + std::to_string(var._off) << "(%ebp)" << std::endl;
 			return;
 		}
-		else if (var._size == 4) {
-			out << "\tmovl\t" << _out + ", "  + std::to_string(var._pos) << "(%ebp)" << std::endl;
+		else if (var.type.getSize() == 4) {
+			out << "\tmovl\t" << _out + ", "  + std::to_string(var._off) << "(%ebp)" << std::endl;
 			return;
 		}
 	}
@@ -376,17 +382,17 @@ _ass_end:
 			size_t param_size = func.params.at(i).type.size;
 
 			std::string _out_str;
-			Locvar _loc = searchLocvar(params.back());
-			if (!_loc._var.empty()) {
+			LocVar _loc = searchLocvar(params.back());
+			if (!_loc.varName.empty()) {
 				getReg(std::string("%eax"));
-				out << "\tmovl\t" + std::to_string(_loc._pos) + "(%ebp), %eax" << std::endl;
+				out << "\tmovl\t" + std::to_string(_loc._off) + "(%ebp), %eax" << std::endl;
 				_out_str = "%eax";
 			}
 			else if(isNumber(params.back())){
 				_out_str = "$" + params.back();
 			}
 			else if(isTempVar(params.back())){
-				Locvar _te = searchTempvar(params.back());
+				TempVar _te = searchTempvar(params.back());
 				_out_str = _te._reg;
 			}
 
@@ -418,12 +424,12 @@ _ass_end:
 
 		// 查找变量
 		// !ERROR 还有可能是全局变量
-		Locvar ret = searchLocvar(_q.at(1));
+		LocVar ret = searchLocvar(_q.at(1));
 
-		if (ret._var.empty())
+		if (ret.varName.empty())
 			_out = "$" + _q.at(1);
 		else
-			_out = std::to_string(ret._pos) + "(%ebp)";
+			_out = std::to_string(ret._off) + "(%ebp)";
 		switch (size) {
 		case 1: out << "\tmovb\t" << _out << ", %eax" << std::endl; break;
 		case 2: out << "\tmovw\t" << _out << ", %eax" << std::endl; break;
@@ -464,21 +470,21 @@ std::string Generate::getQuadReg(const std::string &_q)
 	}
 	else {
 		// 局部变量不会保存在寄存器中
-		Locvar _loc = searchLocvar(_q);
-		if (!_loc._var.empty()) {
+		LocVar _loc = searchLocvar(_q);
+		if (!_loc.varName.empty()) {
 			for (size_t i = 0; i < universReg.size(); ++i) {
 				if (universReg.at(i)._var.empty()) {
 					_reg = universReg.at(i)._reg;
 					universReg.at(i)._var = _q;
-					out << "\tmovl\t" + std::to_string(_loc._pos) + "(%ebp), " << _reg << std::endl;
+					out << "\tmovl\t" + std::to_string(_loc._off) + "(%ebp), " << _reg << std::endl;
 					return _reg;
 				}
 			}
 		}
 
 		// 在表达式栈中寻找，临时变量一定先作为结果出现，也就是出现过的一定在寄存器中
-		Locvar _tem = searchTempvar(_q);
-		if (_tem._var.empty()) {
+		TempVar _tem = searchTempvar(_q);
+		if (_tem._name.empty()) {
 			error("Temp var is not found.");
 		}
 		return _tem._reg;
@@ -552,12 +558,12 @@ std::string Generate::getReg(const std::string &_reg)
 	}
 
 	// 如果指定寄存器不为空, 调整寄存器
-	Locvar _tem = searchTempvar(_var);
+	TempVar _tem = searchTempvar(_var);
 	for (size_t i = 0; i < universReg.size(); ++i) {
 		if (_reg != universReg.at(i)._reg && universReg.at(i)._var.empty()) {
 			universReg.at(i)._var = _var;
 			_tem._reg = universReg.at(i)._reg;
-			Locvar _pus = _tem;
+			TempVar _pus = _tem;
 			_stk_temp_var.pop_back();
 			_stk_temp_var.push_back(_pus);
 			out << "\tmovl\t" + _reg + ", " + _tem._reg << std::endl;
@@ -573,9 +579,9 @@ std::string Generate::getReg(const std::string &_reg)
 /**
 * @ 临时变量进栈，并绑定寄存器
 */
-void Generate::push_back_temp_stk(Locvar & tv,const std::string &reg)
+void Generate::push_back_temp_stk(TempVar & tv,const std::string &reg)
 {
-	setReg(reg, tv._var);
+	setReg(reg, tv._name);
 	_stk_temp_var.push_back(tv);
 }
 
@@ -591,24 +597,24 @@ void Generate::pop_back_temp_stk(const std::string &var)
 	if (_stk_temp_var.empty())
 		return;
 
-	if (_stk_temp_var.back()._var == var)
+	if (_stk_temp_var.back()._name == var)
 		_stk_temp_var.pop_back();
 }
 
 bool Generate::isTempVar(std::string &_t)
 {
-	Locvar _var = searchTempvar(_t);
-	if (!_var._var.empty()) {
+	TempVar _var = searchTempvar(_t);
+	if (!_var._name.empty()) {
 		return true;
 	}
 	return false;
 }
 bool Generate::isLocVar(std::string &_l)
 {
-	Locvar _var = searchLocvar(_l);
-	if (!_var._var.empty()) {
+	LocVar var = locEnv->search(_l);
+	if (!var.varName.empty())
 		return true;
-	}
+
 	return false;
 }
 
@@ -656,6 +662,8 @@ std::vector<std::string> Generate::getQuad()
 		case_A_Z:
 		case '.':
 		case '_':
+		case '[':
+		case ']':
 		case_op:
 			_name.push_back(c);
 			_is_push = false;
@@ -679,4 +687,25 @@ std::string Generate::getOutName()
 		_rstr.push_back(_infilename.at(i));
 	}
 	return _rstr + ".s";
+}
+
+void Generate::setLocEnv(const std::string &envName) {
+    for (size_t i = 0; i < gloEnv->getNext().size(); ++i) {
+        if (gloEnv->getNext().at(i)->getName() == envName) {
+            locEnv = gloEnv->getNext().at(i);
+            return;
+        }
+    }
+    locEnv = nullptr;
+}
+
+TempVar &Generate::searchTempvar(const std::string &name)
+{
+    for (size_t i = 0; i < _stk_temp_var.size(); ++i) {
+        if (_stk_temp_var.at(i)._name == name) {
+            return _stk_temp_var.at(i);
+        }
+    }
+    TempVar *var = new TempVar();
+    return *var;
 }

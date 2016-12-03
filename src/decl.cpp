@@ -141,9 +141,12 @@ Type Parser::declarator(Type *ty, std::string &name, std::vector<Node> &params, 
 		return t;
 	}
 
-	Token t = lex.next();
+	Token t = lex.peek();
 	if (t.getType() == ID) {
+		lex.next();
 		name = t.getSval();
+		if (is_keyword(lex.peek(), '['))
+			_stk_quad.push_back(name);
 		return direct_decl_tail(ty, params, deal_type);
 	}
 	return direct_decl_tail(ty, params, deal_type);
@@ -163,23 +166,7 @@ Type Parser::direct_decl_tail(Type *retty, std::vector<Node> &params, int decl_t
 {
 	// 只支持定长数组
 	if (next_is('[')) {
-		int _len = 0;
-		if (next_is(']')) {
-			_len = -1;
-		}
-		else {
-			_len = array_int_expr();
-			expect(']');
-		}
-
-		Token tok = lex.peek();
-		Type t = direct_decl_tail(retty, std::vector<Node>(), decl_type);
-		if(t.len != 0)
-			_len = _len * t.len;
-
-		if (t.getType() == NODE_FUNC)
-			error("array of functions");
-		return Type(ARRAY, retty->size, _len);
+		decl_array(retty);
 	}
 
 	// 如果是括号，则为函数
@@ -192,15 +179,48 @@ Type Parser::direct_decl_tail(Type *retty, std::vector<Node> &params, int decl_t
 	return *retty;
 }
 
+void Parser::decl_array(Type *ty)
+{
+	std::string _out = "[]\t" + _stk_quad.back();
+
+	int _d_len = 0;
+	int _all_len = 1;
+	do {
+		_d_len = array_int_expr();
+		expect(']');
+		if (_d_len) {
+			ty->len.push_back(_d_len);
+			_all_len *= _d_len;
+		}		
+	} while (next_is('['));
+	ty->_all_len = _all_len;
+
+	if (next_is('=')) {
+		expect('{');
+		if (next_is('}'))
+			return;
+		out << _out << std::endl;
+		int _pos = 0;
+		do {
+			conditional_expr();
+			pushQuadruple(std::to_string(_pos++));
+			createQuadruple("[]");
+		} while (next_is(','));
+		expect('}');
+	}
+}
 
 int Parser::array_int_expr()
 {
 	Node r = conditional_expr();
+	
 	if (r.kind == NODE_INT || r.kind == NODE_CHAR || r.kind == NODE_INT) {
+		_stk_quad.pop_back();
 		return r.int_val;
 	}
 	return 0;
 }
+
 
 
 Type Parser::decl_specifiers(int *rsclass)
@@ -267,6 +287,9 @@ Type Parser::decl_specifiers(int *rsclass)
 
 			// Function specifiers
 		case K_INLINE: _log_("no inline."); break;
+		case ELLIPSIS: 
+			type.create(ELLIPSIS, 0, false);
+			break;
 
 		default: 
 			goto _end;

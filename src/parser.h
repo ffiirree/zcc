@@ -13,7 +13,7 @@ public:
 	void push_back(Node &n);
 	void pop_back() { nodes.pop_back(); }
 	Node &back() { return nodes.back(); }
-	Node &search(std::string &key);
+	Node &search(const std::string &key);
 	void set(std::string &_name, int ty, Node *_body);
 
 	inline Env *pre() { return _pre; }
@@ -178,7 +178,7 @@ private:
 	Type decl_specifiers(int *rsclass);
 	Type direct_decl_tail(Type *retty, std::vector<Node> &params, int deal_type);
 	Type func_param_list(Type *basetype, std::vector<Node> &params, int deal_type);
-	Type decl_array(Type &ty);
+	void decl_array(Type *ty);
 	int array_int_expr();
 	Node func_body(Type &functype, std::string, std::vector<Node> &params);
 	std::vector<Node> initializer(Type &ty);

@@ -137,7 +137,7 @@ Node Parser::funcDef()
 
 	__IN_SCOPE__(localenv, globalenv);
 
-	Type *retty = new Type(decl_spec_opt(&current_class));                             // 获取函数的返回类型
+	Type *retty = new Type(decl_spec_opt(&current_class));                  // 获取函数的返回类型
 	Type functype = declarator(retty, funcName, params, FUNC_BODY);         // 函数定义类型，函数描述
 	if (functype.type == PTR) {
 		error("Ptr not can be function.");
@@ -209,7 +209,7 @@ Node Parser::func_body(Type &functype, std::string name, std::vector<Node> &para
 
 
 
-Node &Env::search(std::string &key)
+Node &Env::search(const std::string &key)
 {
 	Env *ptr = this;
 
@@ -856,6 +856,10 @@ void Parser::createQuadruple(const std::string &op)
 		_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
 		_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
 	}
+	else if (op == "[]") {
+		_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+		_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+	}
 	else {
 		std::string v1, v2;
 		
@@ -896,9 +900,15 @@ void Parser::createFuncQuad(std::vector<Node> &params)
 	_stk_quad.pop_back();
 
 	// 检查参数个数
+	for (size_t i = 0;i < fn.params.size(); ++i) {
+		if (fn.params.at(i).type.getType() == ELLIPSIS) {
+			goto _skip_cheak_params_num;             // 如果是变参，跳过参数检查
+		}
+	}
 	if ((fn.kind != NODE_FUNC && fn.kind != NODE_FUNC_DECL) || (fn.params.size() != params.size()))
 		error("func call parms size error.");
 
+_skip_cheak_params_num:
 	for (size_t i = 0; i < fn.params.size(); ++i) {
 		localenv->_call_size += fn.params.at(i).type.size;
 	}

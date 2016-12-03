@@ -95,7 +95,7 @@ inline void Node::copying(const Node &n)
 
 
 	varName = n.varName;
-	loc_off = n.loc_off;
+	_off = n._off;
 	lvarinit = n.lvarinit;
 	glabel = n.glabel;
 
@@ -105,11 +105,7 @@ inline void Node::copying(const Node &n)
 	operand = n.operand;
 
 	funcName = n.funcName;
-	args = n.args;
-	func_type = n.func_type;
-	func_ptr = n.func_ptr;
 	params = n.params;
-	localvars = n.localvars;
 	body = n.body;
 
 	decl_var = n.decl_var;
@@ -126,7 +122,4 @@ inline void Node::copying(const Node &n)
 
 	retval = n.retval;
 	stmts = n.stmts;
-	struc = n.struc;
-	field = n.field;
-	fieldtype = n.fieldtype;
 }

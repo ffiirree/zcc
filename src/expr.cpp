@@ -431,7 +431,7 @@ Node Parser::primary_expr()
 		return createFloatNode(tok);
 
 	case CHAR_:
-		pushQuadruple(tok.getSval());
+		pushQuadruple(std::to_string(tok.getCh()));
 		return createIntNode(tok, 1, true);
 
 	case STRING_:

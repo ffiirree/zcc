@@ -1,5 +1,6 @@
 #ifndef __ZCC_GEN_H
 #define __ZCC_GEN_H
+
 #include "file.h"
 #include "parser.h"
 #include <iostream>
@@ -15,24 +16,25 @@ public:
 	bool is_const = false;
 };
 
-class Locvar {
+class TempVar {
 public:
-	Locvar() :_var() {  }
-	Locvar(const std::string &_r) :_var(_r) {}
-	Locvar(const std::string &_r, int _v) :_var(_r), _size(_v) {  }
-	Locvar(const Locvar& r) :_var(r._var), _size(r._size), _pos(r._pos), _lvalue(r._lvalue), _is_temp(r._is_temp), _reg(r._reg) { }
-	Locvar operator= (const Locvar &r) { _var = r._var; _size = r._size; _pos = r._pos; _lvalue = r._lvalue;_is_temp = r._is_temp; _reg = r._reg; return *this; }
+	TempVar() :_name() {  }
+	TempVar(const std::string &_r) :_name(_r) {}
+	TempVar(const std::string &_r, int _v) :_name(_r), _size(_v) {  }
+	TempVar(const TempVar& r) :_name(r._name), _size(r._size), _lvalue(r._lvalue), _is_unsig(r._is_unsig), _reg(r._reg) { }
+	TempVar operator= (const TempVar &r) { _name = r._name; _size = r._size; _lvalue = r._lvalue;_is_unsig = r._is_unsig; _reg = r._reg; return *this; }
 
-	std::string _var;              // 变量名
+	std::string _name;             // 变量名
 	int _size = 0;                 // 变量大小
-	bool _is_temp = false;        // 是否是参数
+	bool _is_unsig = false;        // 是否是lin
 	std::vector<Node> _lvalue;     // 
-	int _pos = 0;                  // 栈中的位置，相对ebp
 	std::string _reg;              // 是否放在了寄存器中
 };
 
 class Generate{
 public:
+	using LocVar = Node;
+
 	Generate(Parser *parser);
 	Generate(const Generate &) = delete;
 	Generate operator= (const Generate &) = delete;
@@ -67,26 +69,10 @@ private:
 	// 获取函数调用的大小
 	int getFuncCallSize(Node &n);
 	// 获取局部变量
-	Locvar &searchLocvar(const std::string &name)
-	{
-		for (size_t i = 0; i < locvar.size(); ++i) {
-			if (locvar.at(i)._var == name) {
-				return locvar.at(i);
-			}
-		}
-		Locvar *var = new Locvar();
-		return *var;
-	}
-	Locvar &searchTempvar(const std::string &name)
-	{
-		for (size_t i = 0; i < _stk_temp_var.size(); ++i) {
-			if (_stk_temp_var.at(i)._var == name) {
-				return _stk_temp_var.at(i);
-			}
-		}
-		Locvar *var = new Locvar();
-		return *var;
-	}
+    LocVar &searchLocvar(const std::string &name) { return locEnv->search(name); }
+    void setLocEnv(const std::string &envName);
+    TempVar &searchTempvar(const std::string &name);
+
 	std::string Generate::getQuadReg(const std::string &_q1);
 	std::string Generate::getReg(const std::string &_reg);
 	void Generate::setReg(const std::string &_reg, std::string &_var);
@@ -96,8 +82,8 @@ private:
 	void glo_var_define(Node &n);
 
 	Parser *parser;
-
-	std::vector<Locvar> locvar;
+	Env *gloEnv = nullptr;
+	Env *locEnv = nullptr;
 
 	std::vector<Reg> universReg;
 	void Generate::clearRegConst();
@@ -112,8 +98,8 @@ private:
 	Node currentFunc;
 
 	// 使用表达式栈来分配寄存器
-	std::vector<Locvar> _stk_temp_var;
-	void push_back_temp_stk(Locvar & tv, const std::string &reg);
+	std::vector<TempVar> _stk_temp_var;
+	void push_back_temp_stk(TempVar & tv, const std::string &reg);
 	void pop_back_temp_stk(const std::string &var);
 
 	bool isTempVar(std::string &_t);
