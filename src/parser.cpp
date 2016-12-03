@@ -676,13 +676,20 @@ void Parser::gotoLabel(const std::string &op)
 void Parser::generateIfGoto()
 {
 	BoolLabel b, b1, b2;
+	std::vector<std::string>  _temp;
 
 	if (_stk_if_goto.size() == 1) {
 		b = boolLabel.back();boolLabel.pop_back();
-		_stk_if_goto_out.push_back("goto " + b._false);
 		_stk_if_goto_out.push_back(_stk_if_goto.back() + b._true);
+		_stk_if_goto_out.push_back("goto " + b._false);
 		_stk_if_goto.pop_back();
+		goto _gen_end;
 	}
+
+	for (int i = _stk_if_goto.size(); i > 0; --i) {
+		_temp.push_back(_stk_if_goto.back());_stk_if_goto.pop_back();
+	}
+
 	for (int i = _stk_if_goto_op.size(); i > 0; --i) {
 		std::string op = _stk_if_goto_op.back(); _stk_if_goto_op.pop_back();
 		b = boolLabel.back();boolLabel.pop_back();
@@ -701,10 +708,10 @@ void Parser::generateIfGoto()
 			b2._false = b._false;
 		}
 
-		if (b2._leaf) {
-			_stk_if_goto_out.push_back("goto " + b2._false);
-			_stk_if_goto_out.push_back(_stk_if_goto.back() + b2._true);
-			_stk_if_goto.pop_back();
+		if (b1._leaf) {
+			_stk_if_goto_out.push_back(_temp.back() + b1._true);
+			_stk_if_goto_out.push_back("goto " + b1._false);
+			_temp.pop_back();
 
 			if (op == "||")
 				_stk_if_goto_out.push_back(b1._false + ":");
@@ -712,11 +719,13 @@ void Parser::generateIfGoto()
 				_stk_if_goto_out.push_back(b1._true + ":");
 		}
 
-		if (b1._leaf) {
-			_stk_if_goto_out.push_back("goto " + b1._false);
-			_stk_if_goto_out.push_back(_stk_if_goto.back() + b1._true);
-			_stk_if_goto.pop_back();
+		if (b2._leaf) {
+			_stk_if_goto_out.push_back(_temp.back() + b2._true);
+			_stk_if_goto_out.push_back("goto " + b2._false);
+			_temp.pop_back();
 		}
+
+		
 
 		if(!b2._leaf)
 			boolLabel.push_back(b2);
@@ -725,9 +734,11 @@ void Parser::generateIfGoto()
 			boolLabel.push_back(b1);
 	}
 
-	for (int i = _stk_if_goto_out.size(); i > 0; --i) {
-		out << _stk_if_goto_out.back() << std::endl; _stk_if_goto_out.pop_back();
+_gen_end:
+	for (size_t i = 0; i < _stk_if_goto_out.size(); ++i) {
+		out << _stk_if_goto_out.at(i) << std::endl; 
 	}
+	_stk_if_goto_out.clear();
 }
 
 void Parser::createBoolGenQuadruple(const std::string &op)

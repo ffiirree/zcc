@@ -102,6 +102,11 @@ Node Parser::logical_or_expr()
 		node = new Node(createBinOpNode(Type(K_INT, 4, false), OP_LOGOR, node, new Node(logical_and_expr())));
 		boolLabel.push_back(BoolLabel());
 		_stk_if_goto_op.push_back("||");
+		//std::vector<BoolLabel> _temp = boolLabel;
+		//boolLabel.clear();
+		//for (int i = _temp.size(); i > 0; --i) {
+		//	boolLabel.push_back(_temp.back());_temp.pop_back();
+		//}
 	}
 	return *node;
 }

@@ -1,15 +1,18 @@
-int printf(char *s, int a);
-
-int max(int a, int b)
-{
-    if(a > b) return a; 
-    else return b;
-}
+int printf(char *shift_expr);
 
 int main(int argc, char *argv[])
 {
-    int ac = max(12, 13);
+    for(int i = 0; i < 10; ++i){
+        for(int j = 0; j < 15; ++j){
 
-    printf("%d\n", ac);
+
+            if(j < 10 && i == j)
+                printf("*");
+            else 
+                printf(" ");
+
+        }
+        printf("\n");
+    }
     return argc;
 }
