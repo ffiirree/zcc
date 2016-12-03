@@ -1,13 +1,22 @@
+max:
+if	a > b	goto .Lift3
+goto .Liff4
+.Lift3:
+ret            a
+goto	.Lsn2
+.Liff4:
+ret            b
+.Lsn2:
+.end
 main:
-=	9	a
-=	6	b
-*	b	89	.Lvar2
-*	4	b	.Lvar3
-+	.Lvar3	.Lvar2	.Lvar4
--	6	.Lvar4	.Lvar5
-=	.Lvar5	a
 
-param a
+param 13
+param 12
+call           max            2
+=	%eax	ac
+
+param ac
 param .LLSTR6
 call           printf         2
 ret            argc
+.end

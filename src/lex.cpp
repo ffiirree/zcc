@@ -100,14 +100,14 @@ Token Lex::readToken()
 }
 
 
-Token Lex::read_rep2(char exp1, int _k1, char exp2, int _k2, char _else)
+Token Lex::read_rep2(char exp1, int _k1, char exp2, int _k2, int _else)
 {
 	if (next_is(exp1))
 		return Token(KEYWORD, _k1);
 	return Token(KEYWORD, (int)(next_is(exp2) ? _k2 : _else));
 }
 
-Token Lex::read_rep(char exp, int _k, char _else)
+Token Lex::read_rep(char exp, int _k, int _else)
 {
 	return Token(KEYWORD, (int)(next_is(exp) ? _k : _else));
 }
@@ -148,7 +148,9 @@ Token Lex::read_string(char fir)
 }
 
 
-
+/**
+ * 注意强制转换为char
+ */
 Token Lex::read_char()
 {
 	char c = f.next();
@@ -157,7 +159,7 @@ Token Lex::read_char()
 	if (c != '\'')
 		error("unterminated char");
 
-	return Token(CHAR_, c);
+	return Token(CHAR_, (char)c);
 }
 
 Token Lex::read_id(char fir)

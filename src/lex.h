@@ -23,8 +23,8 @@ public:
 
 private:
 	Token readToken();
-	Token read_rep(char exp, int _k, char _else);
-	Token read_rep2(char exp1, int _k1, char exp2, int _k2, char _else);
+	Token read_rep(char exp, int _k, int _else);
+	Token read_rep2(char exp1, int _k1, char exp2, int _k2, int _else);
 	Token read_string(char c);
 	Token read_char();
 	Token read_id(char c);

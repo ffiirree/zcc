@@ -54,11 +54,13 @@ Node Parser::assignment_expr()
 		if (cop) {
 			_temp = binop(cop, conv(*node), value);
 			pushQuadruple((*node).varName);
+
 			createQuadruple(get_compound_assign_op_signal(t));
 			createQuadruple("=");
 		}
 		else {
 			_temp = value;
+
 			createQuadruple("=");
 		}
 		Node *right = new Node(_temp);
@@ -163,11 +165,7 @@ Node Parser::equal_expr()
 	r.setType(Type(K_INT, 4, false));
 	return r;
 }
-Node Parser::equal_expr_tail()
-{
-	Node r;
-	return r;
-}
+
 Node Parser::relational_expr()
 {
 	Node *node = new Node(shift_expr());
@@ -202,7 +200,7 @@ Node Parser::shift_expr()
 	for (;;) {
 		int op;
 		if (next_is(OP_SAL))
-			op = OP_SAL;
+			op = OP_SAL;//<<
 		else if (next_is(OP_SAR))
 			op = node->getType().isSigned() ? OP_SHR : OP_SAR;
 		else
@@ -211,6 +209,12 @@ Node Parser::shift_expr()
 		//ensure_inttype(*node);
 		//ensure_inttype(*right);
 		node = new Node(createBinOpNode(node->getType(), op, new Node(conv(*node)), new Node(conv(*right))));
+		if(op == OP_SAL)
+			createQuadruple("<<");
+		else if(op == OP_SHR)
+			createQuadruple(">>>");
+		else if(op == OP_SAR)
+			createQuadruple(">>");
 	}
 	return *node;
 }
@@ -273,23 +277,62 @@ Node Parser::unary_expr()
 {
 	Token tok = lex.next();
 	if (tok.getType() == KEYWORD) {
+		Node r;
 		switch (tok.getId()) {
-		case K_SIZEOF: return sizeof_operand();
-		case OP_INC: return unary_incdec(OP_PRE_INC);
-		case OP_DEC: return unary_incdec(OP_PRE_DEC);
-		case OP_LOGAND: return label_addr(tok);
-		case '&': return unary_addr();
-		case '*': return unary_deref(tok);
-		case '+': return cast_expr();
-		case '-': return unary_minus();
-		case '~': return unary_bitnot(tok);
-		case '!': return unary_lognot();
+		case K_SIZEOF: 
+			createUnaryQuadruple("sizeof");
+			return sizeof_operand();
+		case OP_INC: 
+			r = unary_incdec(OP_PRE_INC);
+			createUnaryQuadruple("++");
+			return r;
+		case OP_DEC: 
+			r = unary_incdec(OP_PRE_DEC);
+			createUnaryQuadruple("--");
+			return r; 
+
+		case '&': 
+			r = unary_addr();
+			createUnaryQuadruple("&U");
+			return r;
+
+		case '*': 
+			r = unary_deref(tok);
+			createUnaryQuadruple("*U");
+			return r;
+
+		case '+': 
+			r = cast_expr();
+			createUnaryQuadruple("+U");
+			return r;
+
+		case '-': 
+			r = unary_minus();
+			createUnaryQuadruple("-U");
+			return r;
+		case '~': 
+			r = unary_bitnot(tok);
+			createUnaryQuadruple("~");
+			return r;
+		case '!': 
+			r = unary_lognot();
+			//createUnaryQuadruple("!");
+			return r;
 		}
 	}
 	lex.back();
 	return postfix_expr();
 }
 
+Node Parser::unary_minus()
+{
+	Node *expr = new Node(cast_expr());
+
+	if (is_inttype(expr->type))
+		return binop('-', conv(createIntNode(expr->type, 0)), conv(*expr));
+
+	return binop('-', createFloatNode(expr->type, 0.0), *expr);
+}
 
 Node Parser::postfix_expr()
 {
@@ -352,7 +395,7 @@ Node Parser::postfix_expr_tail(Node &node)
 			else 
 				pushIncDec("++");
 
-			return createUnaryNode(op, node);
+			return createUnaryNode(op, node.type, node);
 		}
 		return node;
 	}
@@ -422,7 +465,7 @@ Node Parser::var_or_func(Token &t)
 Node Parser::wrap(Type &t, Node &node) {
 	if (t.getType() == node.type.getType() && t.isSigned() == t.isSigned())
 		return node;
-	return createUnaryNode(CONV, node);
+	return createUnaryNode(CONV, node.type, node);
 }
 
 Node Parser::binop(int op, Node &lhs, Node &rhs)
@@ -492,39 +535,48 @@ Node Parser::sizeof_operand()
 	Node r;
 	return r;
 }
+
 Node Parser::unary_incdec(int ty)
 {
-	Node r = createUnaryNode(ty, Node());
-	return r;
+	Node *node = new Node(unary_expr());
+	
+	return createUnaryNode(ty, node->type, *node);
 }
 
-Node Parser::label_addr(Token &t)
-{
-	Node r;
-	return r;
-}
 Node Parser::unary_addr()
 {
-	Node r;
-	return r;
+	Node *operand = new Node(cast_expr());
+
+	return createUnaryNode(NODE_ADDR, conv2ptr(operand->type), *operand);
 }
+
+
 Node Parser::unary_deref(Token &t)
 {
-	Node r;
-	return r;
+	Node *operand = new Node(conv(cast_expr()));
+	if (operand->type.getType() != PTR)
+		error("pointer type expected, but got");
+	if (operand->type.getType() == NODE_FUNC)
+		return *operand;
+	return createUnaryNode(NODE_DEREF, *(operand->type.ptr), *operand);
 }
-Node Parser::unary_minus()
-{
-	Node r;
-	return r;
-}
+
+
+
+
+
 Node Parser::unary_bitnot(Token &t)
 {
-	Node r;
-	return r;
+	Node *expr = new Node(cast_expr());
+	*expr = conv(*expr);
+
+	if (!is_inttype(expr->type))
+		error("invalid use of ~");
+	return createUnaryNode('~', expr->type, *expr);
 }
 Node Parser::unary_lognot()
 {
-	Node r;
-	return r;
+	Node *operand = new Node(cast_expr());
+	*operand = conv(*operand);
+	return createUnaryNode('!', Type(K_INT, 4, false), *operand);
 }

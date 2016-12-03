@@ -115,19 +115,22 @@ Node Parser::designator_list()
                           | '(' [ID_list] ')' direct_declarator_tail                                        # Function declarators (including prototypes)
                           | empty
  */
-void conv2ptr(Type *ty)
+Type Parser::conv2ptr(Type ty)
 {
-	ty->type = PTR;
-	ty->ptr = ty;
-	ty->size = 4;
+	Type r;
+	Type *ptr = new Type(ty);
+	r.type = PTR;
+	r.ptr = ptr;
+	r.size = 4;
+
+	return r;
 }
 
 Type Parser::declarator(Type *ty, std::string &name, std::vector<Node> &params, int deal_type)
 {
 	// ÷∏’Î±‰¡ø
 	if (next_is('*')) {
-		conv2ptr(ty);
-		return declarator(ty, name, params, deal_type);
+		return declarator(new Type(conv2ptr(*ty)), name, params, deal_type);
 	}
 	// int (*ptr)();
 	if (next_is('(')) {

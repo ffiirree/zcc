@@ -14,7 +14,7 @@
 #define case_A_F    _CASE_6('A','B','C','D','E','F')
 #define case_a_z    _CASE_12('a','b','c','d','e','f','g','h','i','j','k','l'): _CASE_12('m','n','o','p','q','r','s','t','u','v','w','x'): case 'y': case'z'
 #define case_A_Z    _CASE_12('A','B','C','D','E','F','G','H','I','J','K','L'): _CASE_12('M','N','O','P','Q','R','S','T','U','V','W','X'): case 'Y': case'Z'
-#define case_op		_CASE_6('=', '+', '-', '*', '/', '%'):_CASE_6('&', '^', '|', '<' ,'>', '!')
+#define case_op		_CASE_6('=', '+', '-', '*', '/', '%'):_CASE_6('&', '^', '|', '<' ,'>', '!'):case '~'
 
 #define OP_MAP  op(OP_ARROW, "->")\
 				op(OP_A_ADD, "+=")\
@@ -110,8 +110,8 @@ enum {
 #define op(ty, _) ty,
 	OP_MAP
 #undef op
-	OP_SHR,
-	OP_SHL,
+	OP_SHR, // Âß¼­ÓÒÒÆ
+	OP_SHL, // Âß¼­×óÒÆ£¬Í¬ËãÊõ×óÒÆ
 	OP_A_SHR,
 	OP_A_SHL,
 };
@@ -262,7 +262,9 @@ enum NodeKind{
 
 	NODE_PARAMS,
 	NODE_FUNC_DECL,
-	NODE_DECL_PARAM
+	NODE_DECL_PARAM,
+	NODE_ADDR,
+	NODE_DEREF
 };
 
 

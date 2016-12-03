@@ -110,13 +110,14 @@ public:
 	std::string newLabel(const std::string &_l);
 
 private:
-	
+	Type conv2ptr(Type ty);
 	std::string getQuadrupleFileName(std::string &filename);
 	void createQuadFile();
 	void generateIfGoto();
 	void pushQuadruple(const std::string &name);
 	void pushIncDec(const std::string &name);
 	void createQuadruple(const std::string &op);
+	void createUnaryQuadruple(const std::string &op);
 	void createBoolQuadruple(const std::string &op);
 	void createBoolGenQuadruple(const std::string &op);
 	void gotoLabel(const std::string &op);
@@ -140,6 +141,8 @@ private:
 	//
 	Node createFuncNode(Type &ty, std::string & funcName, std::vector<Node> params, Node *body);
 	Node createIntNode(Token &t, int size, bool isch);
+	Node createIntNode(Type &ty, int val);
+	Node createFloatNode(Type &ty, double val);
 	Node createFloatNode(Token &t);
 	Node createStrNode(Token &t);
 	Node createCompoundStmtNode(std::vector<Node> &stmts);
@@ -151,7 +154,7 @@ private:
 	Node createFuncDecl(Type &ty, std::string & funcName, std::vector<Node> params);
 	// Á½Ôª²Ù×÷·û
 	Node createBinOpNode(Type &ty, int kind, Node *left, Node *right);
-	Node createUnaryNode(int kind, Node &node);
+	Node createUnaryNode(int kind, Type &ty, Node &node);
 
 	Node createRetStmtNode(Node *n);
 	Node createJumpNode(std::string label);
@@ -181,7 +184,7 @@ private:
 	std::vector<Node> initializer(Type &ty);
 	std::vector<Node> decl_init(Type &ty);
 	void init_list(std::vector<Node> &r, Type &ty, int off, bool designated);
-	Node Parser::designator_list();
+	Node designator_list();
 
 	void decl_or_stmt(std::vector<Node> &list);
 
@@ -218,7 +221,6 @@ private:
 	Node bit_xor_expr();
 	Node bit_and_expr();
 	Node equal_expr();
-	Node equal_expr_tail();
 	Node relational_expr();
 	Node shift_expr();
 	Node add_expr();

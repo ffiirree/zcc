@@ -158,6 +158,7 @@ Node Parser::funcDef()
 	Node r = func_body(functype, funcName, params);                         // 函数体
 
 	__OUT_SCOPE__(localenv, funcName);
+	out << ".end" << std::endl;
 	return r;
 }
 
@@ -326,10 +327,31 @@ Node Parser::createIntNode(Token &t, int size, bool isch)
 	}
 }
 
+
+Node Parser::createIntNode(Type &ty, int val)
+{
+	_log_("Create int node.");
+	Node node(NODE_INT);
+	node.int_val = val;
+	node.type = ty;
+	return node;
+}
+
+Node Parser::createFloatNode(Type &ty, double val)
+{
+	_log_("Create float node.");
+	Node node(NODE_DOUBLE);
+
+	node.type = ty;
+	node.float_val = val;
+	return node;
+}
+
+
 Node Parser::createFloatNode(Token &t)
 {
 	_log_("Create float node.");
-	Node node(NODE_INT);
+	Node node(NODE_DOUBLE);
 
 	node.sval = t.getSval();
 	node.type = Type(K_FLOAT, 4, false);
@@ -449,11 +471,12 @@ Node Parser::createBinOpNode(Type &ty, int kind, Node *left, Node *right)
 	return r;
 }
 
-Node Parser::createUnaryNode(int kind, Node &node)
+Node Parser::createUnaryNode(int kind, Type &ty, Node &node)
 {
 	_log_("Create unary op %c node.", static_cast<char>(kind));
 
 	Node r(kind);
+	r.type = ty;
 	r.operand = &node;
 	return r;
 }
@@ -786,8 +809,28 @@ std::string getReulst(std::string &v1, std::string &v2, const std::string &op)
 	return std::to_string(r);
 }
 
+void Parser::createUnaryQuadruple(const std::string &op)
+{
+	if (op == "++" || op == "--") {
+		out << op + "\t" + _stk_quad.back() << std::endl;
+		return;
+	}
+
+	std::string _out_str;
+	_out_str = op + "\t" + _stk_quad.back(); _stk_quad.pop_back();
+
+	std::string tempName = newLabel("uy");
+	_out_str += "\t" + tempName;
+
+	// 添加到生成四元式的栈中
+	_stk_quad.push_back(tempName);
+
+	out << _out_str << std::endl;
+}
+
 // + - * / % & | ^ 
 // 不进行 
+// 赋值运算和二元操作符
 void Parser::createQuadruple(const std::string &op)
 {
 	std::string _out_str = op;
@@ -844,6 +887,7 @@ void Parser::createFuncQuad(std::vector<Node> &params)
 	}
 
 	out << std::left << std::setw(15) << "call" << std::left << std::setw(15) << fn.funcName  << fn.params.size() << std::endl;
+	_stk_quad.push_back("%eax");
 }
 
 void Parser::createIncDec()

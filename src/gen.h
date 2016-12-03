@@ -108,8 +108,8 @@ private:
 
 	// 使用表达式栈来分配寄存器
 	std::vector<Locvar> _stk_temp_var;
-	inline void push_back_temp_stk(Locvar & tv, std::string &reg);
-	inline void pop_back_temp_stk(std::string &var);
+	void push_back_temp_stk(Locvar & tv, std::string &reg);
+	void pop_back_temp_stk(std::string &var);
 
 	bool isTempVar(std::string &_t);
 	bool isLocVar(std::string &_l);

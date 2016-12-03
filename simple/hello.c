@@ -1,11 +1,15 @@
-int printf(char *s, int n);
+int printf(char *s, int a);
+
+int max(int a, int b)
+{
+    if(a > b) return a; 
+    else return b;
+}
 
 int main(int argc, char *argv[])
 {
-    int a = 9, b = 6;
+    int ac = max(12, 13);
 
-    a = 89 * b + b * 4 - 6;
-    printf("%d", a);
-
+    printf("%d\n", ac);
     return argc;
 }
