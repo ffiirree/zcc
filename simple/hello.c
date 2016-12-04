@@ -1,10 +1,13 @@
-int printf(char *_out, ...);
+int printf(char *_out, int a);
+
+char b = 8;
 
 int main(int argc, char *argv[])
 {
-    unsigned int a  = 100;
-    unsigned int b = 50;
-    a = a / b;
-    printf("%d", a);
+    char *a = &b;
+    int c = *a;
+
+    printf("%d\n", b);
     return argc;
 }
+

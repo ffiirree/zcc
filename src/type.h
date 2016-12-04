@@ -181,20 +181,20 @@ class Node;
 class Type {
 public:
 	Type() {}
-	Type(int ty, int _s, std::vector<int> _l) :type(ty), size(_s), len(_l) {}
+	Type(int ty, int _s, std::vector<int> _l) :type(ty), _all_len(_s), len(_l) {}
 	Type(int ty, int s, bool isunsig) :type(ty), size(s), isUnsig(isunsig) { }
 	Type(int ty, Type *ret, std::vector<Node> _params) : type(ty), retType(ret), params(_params) { }
 
 	Type(const Type &t):type(t.type), size(t.size), isUnsig(t.isUnsig), 
-		isSta(t.isSta), ptr(t.ptr), len(t.len), retType(t.retType), params(t.params){}
+		isSta(t.isSta), ptr(t.ptr), len(t.len), retType(t.retType), params(t.params), _all_len(t._all_len){}
 	inline Type operator=(const Type &t) { type = t.type;size = t.size; isUnsig = t.isUnsig;
-		isSta = t.isSta; ptr = t.ptr; len = t.len; retType = t.retType; params = t.params; return *this; }
+    isSta = t.isSta; ptr = t.ptr; len = t.len; retType = t.retType; params = t.params; _all_len = t._all_len; return *this; }
 
 	inline Type create(int ty, int s, bool isuns) { type = ty, size = s, isUnsig = isuns; return *this; }
 
 
 	inline int getType() const { return type; }
-	inline bool isSigned() { return !isUnsig; }
+	inline bool isUnsigned() { return isUnsig; }
 	inline bool isStatic() { return isSta; }
 	inline void setStatic(bool is) { isSta = is; }
 	inline int getSize() const { return size; }

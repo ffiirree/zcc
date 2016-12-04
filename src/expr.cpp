@@ -202,7 +202,7 @@ Node Parser::shift_expr()
 		if (next_is(OP_SAL))
 			op = OP_SAL;//<<
 		else if (next_is(OP_SAR))
-			op = node->getType().isSigned() ? OP_SHR : OP_SAR;
+			op = node->getType().isUnsigned() ? OP_SHR : OP_SAR;
 		else
 			break;
 		Node *right = new Node(add_expr());
@@ -408,6 +408,7 @@ Node Parser::primary_expr()
 {
 	Token tok = lex.next();
 	std::string strl;
+    std::string Lfloat;
 
 	if (is_keyword(tok, '(')) {
 		Node r = expr();
@@ -427,7 +428,9 @@ Node Parser::primary_expr()
 		return createIntNode(tok, 4, false);
 
 	case FLOAT:
-		pushQuadruple(tok.getSval());
+        Lfloat = newLabel("f");
+        float_const.push_back(Lfloat);
+		pushQuadruple(Lfloat);
 		return createFloatNode(tok);
 
 	case CHAR_:
@@ -466,7 +469,7 @@ Node Parser::var_or_func(Token &t)
 
 
 Node Parser::wrap(Type &t, Node &node) {
-	if (t.getType() == node.type.getType() && t.isSigned() == t.isSigned())
+	if (t.getType() == node.type.getType() && t.isUnsigned() == t.isUnsigned())
 		return node;
 	return createUnaryNode(CONV, node.type, node);
 }
@@ -511,7 +514,7 @@ Type Parser::usual_arith_conv(Type &t, Type &u)
 	if (t.getSize() > u.getSize())
 		return t;
 	//assert(t.getSize() == u.getSize());
-	if (t.isSigned() == u.isSigned())
+	if (t.isUnsigned() == u.isUnsigned())
 		return t;
 	Type r = t;
 	r.setUnsig(true);

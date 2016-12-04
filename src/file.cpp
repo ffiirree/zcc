@@ -10,7 +10,7 @@ void File::create(const std::string &_filename)
 	if (!in.is_open())
 		error("internal error: file open failed!");
 
-	int size = in.tellg();
+	int size = static_cast<int>(in.tellg());
 	buffer = std::shared_ptr<char>(new char[size + 1]);
 	buffer.get()[size] = 0;
 	in.seekg(0, ios::beg);

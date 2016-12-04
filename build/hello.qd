@@ -1,11 +1,11 @@
 main:
-=	100	a
-=	50	b
-/	b	a	.Lvar2
-=	.Lvar2	a
+&U	b	.Luy2
+=	.Luy2	a
+*U	a	.Luy3
+=	.Luy3	c
 
-param a
-param .LLSTR3
+param b
+param .LLSTR4
 call           printf         2
 ret            argc
 .end

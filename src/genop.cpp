@@ -1,117 +1,49 @@
 #include "gen.h"
 #include "error.h"
 
+#define _operation_(oper)   do{ \
+                                _q1_reg = gas_load(_q1);\
+                                _q2_reg = gas_load(_q2);\
+                                gas_ins(oper, _q1_reg, _q2_reg);\
+                                saveAndClear(_q1, _q2, _q3, _q2_reg);\
+                            }while(0)
+
+#define _op_shift_(op)     do{\
+                                getReg("%edx");\
+                                getReg("%ecx");\
+                                gas_load(_q1, "%ecx");\
+                                gas_load(_q2, "%edx");\
+                                gas_ins(op, "%cl", "%edx");\
+                                saveAndClear(_q1, _q2, _q3, "%edx");\
+                            }while(0)
 
 
-#define _q_0_is(str) (_q.at(0) == str)
+#define _q_0_is(str)          (_q.at(0) == str)
+#define _q1                    _q.at(1)
+#define _q2                    _q.at(2)
+#define _q3                    _q.at(3)
 /**
-* @berif 寄存器分配
-*/
+ * @berif 寄存器分配
+ */
 void Generate::getReg(std::vector<std::string> &_q)
 {
-	// 注意出栈和入栈的顺序
-	std::string _q1 = _q.at(1);
-	std::string _q2;
-	std::string _q3;
-
-	if (_q.size() > 2) {
-		_q2 = _q.at(2);
-		if (_q.size() > 3)
-			_q3 = _q.at(3);
-	}
-
 	std::string _q1_reg;
 	std::string _q2_reg;
-	std::string _q3_reg;
 
-	// 加载前两个量到寄存器中，计算出结果
-	//   1.如果第三个是局部变量或全局变量，movl->
-	//   2.否则，第三个为当前结果寄存器
-	// 
-	// 临时变量保存在寄存器中
-	// 局部变量参与运算后弹出
-	// addl S,D D = D + S
 	if (_q_0_is("+")) {
-		_q1_reg = getQuadReg(_q1);
-		_q2_reg = getQuadReg(_q2);
-		out << "\taddl\t" << _q1_reg + ", " + _q2_reg << std::endl;
-
-		saveAndClear(_q1, _q2, _q3, _q2_reg);
+        _operation_("addl");
 	}
-	//subl S,D D = D – S
 	else if (_q_0_is("-")) {
-		_q1_reg = getQuadReg(_q1);
-		_q2_reg = getQuadReg(_q2);
-		out << "\tsubl\t" << _q1_reg + ", " + _q2_reg << std::endl;
-
-		saveAndClear(_q1, _q2, _q3, _q2_reg);
+        _operation_("subl");
 	}
 	else if (_q_0_is("*")) {
-		char _q1_ty = getVarType(_q1), _q2_ty = getVarType(_q2);
+        getReg("%eax");
+        getReg("%edx");
 
-		// 保证eax为空
-		getReg("%eax");
+        bool isunsigned = gas_load(_q2, "%eax") | gas_load(_q1, "%edx");
+        gas_ins(mul(4, isunsigned), "%edx", "%eax");
 
-		if (_q1_ty == 'l') {
-			/*setReg(_q1_reg, _q1);因为是临时，不需要*/
-			LocVar _loc = searchLocvar(_q1);
-			out << "\tmovl\t" + std::to_string(_loc._off) + "(%ebp), %eax" << std::endl;
-
-			if (_q2_ty == 'n')  // imull n, eax, eax
-				out << "\timull\t$" + _q2 + ", %eax, %eax" << std::endl;
-			else if (_q2_ty == 'l') { // imull (%ebp), eax
-				LocVar _q2_v = searchLocvar(_q2);
-				out << "\timull\t" + std::to_string(_q2_v._off) + "(%ebp), %eax" << std::endl;
-			}
-			else if (_q2_ty == 't') { // imull ebx, eax
-				TempVar _t = searchTempvar(_q2);
-				out << "\timull\t" << _t._reg << ", %eax" << std::endl;
-				pop_back_temp_stk(_q2);
-			}
-		}
-		else if (_q1_ty == 'n') {
-			if (_q2_ty == 'l') {
-				LocVar _loc = searchLocvar(_q2);
-				out << "\tmovl\t" + std::to_string(_loc._off) + "(%ebp), %eax" << std::endl;
-				out << "\timull\t$" + _q1 + ", %eax, %eax" << std::endl;
-			}
-			else if (_q2_ty == 't') {
-				TempVar _t = searchTempvar(_q2);
-				out << "\timull\t$" + _q1 + "," + _t._reg + ", %eax" << std::endl;
-				pop_back_temp_stk(_q2);
-			}
-		}
-		else if (_q1_ty == 't') {
-			TempVar _q1_t = searchTempvar(_q1);
-			if (_q2_ty == 'n')
-				out << "\timull\t$" + _q2 + "," + _q1_t._reg + ", %eax" << std::endl;
-			else if (_q2_ty == 'l') { // imull ebx, eax
-				LocVar _l = searchLocvar(_q2);
-				out << "\tmovl\t" + std::to_string(_l._off) + "(%ebp), %eax" << std::endl;
-
-				out << "\timull\t" + _q1_t._reg + ", %eax" << std::endl;
-			}
-			else if (_q2_ty == 't') {
-				TempVar q2_t = searchTempvar(_q2);
-
-				out << "\tmovl\t" << q2_t._reg << ", %eax" << std::endl;
-				out << "\timull\t" << _q1_t._reg << ", %eax" << std::endl;
-			}
-			pop_back_temp_stk(_q2);
-			pop_back_temp_stk(_q1);
-			pop_back_temp_stk(_q2);
-		}
-		// 结果在eax
-		if (isLocVar(_q3)) {
-			LocVar _loc = searchLocvar(_q3);
-			out << "\tmovl\teax, " + std::to_string(_loc._off) + "(%ebp)" << std::endl;
-		}
-		else {
-			TempVar _t;
-			_t._name = _q3;
-			_t._reg = "%eax";
-			push_back_temp_stk(_t, _t._reg);
-		}
+        saveAndClear(_q1, _q2, _q3, "%eax");
 	}
 	else if (_q_0_is("/")) {
 		genMulOrModAsm(_q);
@@ -120,269 +52,161 @@ void Generate::getReg(std::vector<std::string> &_q)
 		genMulOrModAsm(_q);
 	}
 	else if (_q_0_is("&")) {
-		_q1_reg = getQuadReg(_q1);
-		_q2_reg = getQuadReg(_q2);
-		out << "\tandl\t" << _q1_reg + ", " + _q2_reg << std::endl;
-
-		saveAndClear(_q1, _q2, _q3, _q2_reg);
+        _operation_("andl");
 	}
 	else if (_q_0_is("|")) {
-		_q1_reg = getQuadReg(_q1);
-		_q2_reg = getQuadReg(_q2);
-		out << "\torl\t" << _q1_reg + ", " + _q2_reg << std::endl;
-
-		saveAndClear(_q1, _q2, _q3, _q2_reg);
+        _operation_("orl");
 	}
-	// xorl S, D   D = D ^ S 至少一个在寄存器
 	else if (_q_0_is("^")) {
-		_q1_reg = getQuadReg(_q1);
-		_q2_reg = getQuadReg(_q2);
-		out << "\txorl\t" << _q1_reg + ", " + _q2_reg << std::endl;
-
-		saveAndClear(_q1, _q2, _q3, _q2_reg);
+        _operation_("xorl");
 	}
 	else if (_q_0_is(">>")) {
-		getReg("%eax");
-		getReg("%ecx");
-
-		std::string _out_str;
-
-		if (isNumber(_q1)) {
-			_out_str = "$" + _q1;
-		}
-		else if (isLocVar(_q1)) {
-			LocVar _q1_v = searchLocvar(_q1);
-			out << "\tmovl\t" + std::to_string(_q1_v._off) + "(%ebp), %ecx" << std::endl;
-			_out_str = "%cl";
-		}
-		else if (isTempVar(_q1)) {
-			TempVar _temp = searchTempvar(_q1);
-			out << "\tmovl\t" << _temp._reg << ", %ecx" << std::endl;
-			_out_str = "%cl";
-		}
-
-		if (isNumber(_q2)) {
-			out << "\tmovl\t$" << _q2 << ", %eax" << std::endl;
-		}
-		else if (isLocVar(_q2)) {
-			LocVar _q2_v = searchLocvar(_q2);
-			out << "\tmovl\t" + std::to_string(_q2_v._off) + "(%ebp), %eax" << std::endl;
-		}
-		else if (isTempVar(_q2)) {
-			TempVar _temp = searchTempvar(_q2);
-			out << "\tmovl\t" << _temp._reg << ", %eax" << std::endl;
-		}
-		out << "\tsarl\t" << _out_str + ", %eax" << std::endl;
-		saveAndClear(_q1, _q2, _q3, "%eax");
+        _op_shift_("sarl");
 	}
 	else if (_q_0_is("<<")) {
-		getReg(std::string("%eax"));
-		getReg(std::string("%ecx"));
-
-		std::string _out_str;
-
-		if (isNumber(_q1)) {
-			_out_str = "$" + _q1;
-		}
-		else if (isLocVar(_q1)) {
-			LocVar _q1_v = searchLocvar(_q1);
-			out << "\tmovl\t" + std::to_string(_q1_v._off) + "(%ebp), %ecx" << std::endl;
-			_out_str = "%cl";
-		}
-		else if (isTempVar(_q1)) {
-			TempVar _temp = searchTempvar(_q1);
-			out << "\tmovl\t" << _temp._reg << ", %ecx" << std::endl;
-			_out_str = "%cl";
-		}
-
-
-		if (isNumber(_q2)) {
-			out << "\tmovl\t$" << _q2 << ", %eax" << std::endl;
-		}
-		else if (isLocVar(_q2)) {
-            LocVar _q2_v = searchLocvar(_q2);
-			out << "\tmovl\t" + std::to_string(_q2_v._off) + "(%ebp), %eax" << std::endl;
-		}
-		else if (isTempVar(_q2)) {
-			TempVar _temp = searchTempvar(_q2);
-			out << "\tmovl\t" << _temp._reg << ", %eax" << std::endl;
-		}
-
-		out << "\tsall\t" << _out_str + ", %eax" << std::endl;
-		saveAndClear(_q1, _q2, _q3, "%eax");
+        _op_shift_("sall");
 	}
 	else if (_q_0_is(">>>")) {
-		getReg(std::string("%eax"));
-		getReg(std::string("%ecx"));
-
-		std::string _out_str;
-
-		if (isNumber(_q1)) {
-			_out_str = "$" + _q1;
-		}
-		else if (isLocVar(_q1)) {
-            LocVar _q1_v = searchLocvar(_q1);
-			out << "\tmovl\t" + std::to_string(_q1_v._off) + "(%ebp), %ecx" << std::endl;
-			_out_str = "%cl";
-		}
-		else if (isTempVar(_q1)) {
-			TempVar _temp = searchTempvar(_q1);
-			out << "\tmovl\t" << _temp._reg << ", %ecx" << std::endl;
-			_out_str = "%cl";
-		}
-
-		if (isNumber(_q2)) {
-			out << "\tmovl\t$" << _q2 << ", %eax" << std::endl;
-		}
-		else if (isLocVar(_q2)) {
-			LocVar _q2_v = searchLocvar(_q2);
-			out << "\tmovl\t" + std::to_string(_q2_v._off) + "(%ebp), %eax" << std::endl;
-		}
-		else if (isTempVar(_q2)) {
-			TempVar _temp = searchTempvar(_q2);
-			out << "\tmovl\t" << _temp._reg << ", %eax" << std::endl;
-		}
-
-		out << "\tshrl\t" << _out_str + ", %eax" << std::endl;
-		saveAndClear(_q1, _q2, _q3, std::string("%eax"));
+        _op_shift_("shrl");
 	}
 	else if (_q_0_is("&U")) {
-		// 只能是全局变量或局部变量
-		LocVar _lv = searchLocvar(_q1);
-		if (_lv.varName.empty())
-			error("& addr error.");
-		getReg(std::string("%eax"));
-		out << "\tleal\t" + std::to_string(_lv._off) + "(%ebp), %eax" << std::endl;
+        getReg(std::string("%eax"));
 
-		LocVar _var = searchLocvar(_q2);
-		if (!_var.varName.empty()) {
-			out << "\tmovl\t%eax, " + std::to_string(_var._off) + "(%ebp)" << std::endl;
-		}
-		else {
-			// 出现在结果的都是第一次
-			TempVar _temp;
-			_temp._name = _q2;
+        Node var;
+        if (isLocVar(_q1)) {
+            var = searchLocvar(_q1);
+            gas_ins("leal", loc_var_val(var._off), "%eax");
+        }
+        else {
+            var = gloEnv->search(_q1);
+            gas_ins("movl", "$_" + var.varName, "%eax");
+        }
 
-			_temp._reg = "%eax";
-			push_back_temp_stk(_temp, _temp._reg);
-		}
+        // 保存
+        TempVar _temp(_q2, "%eax");
+        push_back_temp_stk(_temp, _temp._reg);
 	}
 	else if (_q_0_is("*U")) {
+        // 取其他类型的值还有问题，没有通过指针看出原始类型，需要修改
 		getReg("%eax");
-		LocVar _v = searchLocvar(_q1);
-		out << "\tmovl\t" + std::to_string(_v._off) + "(%ebp), %eax" << std::endl;
-		out << "\tmovl\t(%eax), %eax" << std::endl;
+        
+        Node var;
+        if (isLocVar(_q1)) {
+            var = searchLocvar(_q1);
+            gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), "%eax");
+        }
+        else {
+            var = gloEnv->search(_q1);
+            gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, "%eax");
+        }
+        gas_ins(movXXl(var.type.size, var.type.isUnsig), "0(%eax)", "%eax");
 
-		// 出现在结果的都是第一次
-		TempVar _temp;
-		_temp._name = _q2;
-		_temp._reg = "%eax";
+		// 保存
+        TempVar _temp(_q2, "%eax");
 		push_back_temp_stk(_temp, _temp._reg);
 	}
-	else if (_q_0_is("+U")) {
-		// 为局部或全局变量
-		error("Not support operator.");
-	}
-	else if (_q_0_is("-U")) {
-		error("Not support operator.");
-	}
 	else if (_q_0_is("++")) {
-		//只能是局部变量或或者全局变量
-		LocVar _loc = searchLocvar(_q1);
-		out << "\taddl\t$1, " + std::to_string(_loc._off) + "(%ebp)" << std::endl;
+        genIncDec(_q1, "addl    $1, ");
 	}
 	else if (_q_0_is("--")) {
-		//只能是局部变量或或者全局变量
-		LocVar _loc = searchLocvar(_q1);
-		out << "\tsubl\t$1, " + std::to_string(_loc._off) + "(%ebp)" << std::endl;
+        genIncDec(_q1, "subl    $1, ");
 	}
 	else if (_q_0_is("~")) {
-		//只能是局部变量或或者全局变量
-		LocVar _loc = searchLocvar(_q1);
-		if(!_loc.varName.empty()){
-			out << "\tnotl\t$1, " + std::to_string(_loc._off) + "(%ebp)" << std::endl;
-			return;
-		}
-		
-		TempVar _tem = searchTempvar(_q1);
-		if(!_tem._name.empty()){
-			out << "\tnotl\t" << _tem._reg << std::endl;
-		}
+        genIncDec(_q1, "notl\t");
 	}
 	else if (_q_0_is("[]")) {
 		error("Not support operator.");
 	}
-	else {
-		error("Not support operator.");
-	}
+    else if (_q_0_is("+U")) {
+        error("Not support operator.");
+    }
+    else if (_q_0_is("-U")) {
+        error("Not support operator.");
+    }
+    else {
+        error("Not support operator.");
+    }
 }
 #undef _q_0_is
+#undef _q1
+#undef _q2
+#undef _q3
 
+void Generate::genIncDec(const std::string &_obj, const std::string &op)
+{
+    std::string _des = getEmptyReg();
+    LocVar _loc = searchLocvar(_obj);
+    if (!_loc.varName.empty()) {
+        gas_ins(movXXl(_loc.type.size, _loc.type.isUnsig), loc_var_val(_loc._off), _des);
+        gas_tab(op + _des);
+        gas_ins(mov2stk(_loc.type.size), reg2stk(_des, _loc.type.size), loc_var_val(_loc._off));
+    }
+    else if (isTempVar(_obj)) {
+        TempVar _tem = searchTempvar(_obj);
+        gas_tab(op + _tem._reg);
+    }
+    else {
+        Node var = gloEnv->search(_obj);
+        gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, _des);
+        gas_tab(op + _des);
+        gas_ins(mov2stk(var.type.size), reg2stk(_des, var.type.size), "_" + var.varName);
+    }
+}
 
 void Generate::genMulOrModAsm(std::vector<std::string> &_q)
 {
-	// 注意出栈和入栈的顺序
-	std::string _q1 = _q.at(1);
-	std::string _q2 = _q.at(2);
-	std::string _q3 = _q.at(3);
-
 	std::string _save_reg;                // 保存结果
-	if (_q1.at(0) == '/') _save_reg = "%eax";
-	else _save_reg = "%edx";
+	if (_q.at(0) == "/") 
+        _save_reg = "%eax";
+	else 
+        _save_reg = "%edx";
 
 	getReg("%eax");
 	getReg("%edx");
 
-	if (isLocVar(_q2)) {
-		LocVar _l = searchLocvar(_q2);
-		out << "\tmovl\t" + std::to_string(_l._off) + "(%ebp), %eax" << std::endl;
-	}
-	else if (isTempVar(_q2)) {
-		TempVar _t = searchTempvar(_q2);
-		out << "\tmovl\t" + _t._reg << ", %eax" << std::endl;
-	}
-	else if (isNumber(_q2)) {
-		out << "\tmovl\t$" + _q2 + ", %eax" << std::endl;
-	}
+    gas_load(_q.at(2), "%eax");
+    gas_tab("cltd");                 // edx + eax ,扩充为64bits
 
-	out << "\tcltd" << std::endl;
+	if (isNumber(_q.at(1))) {
+        gas_tab("idivl\t$" + _q.at(1));
+	}
+	else if (isLocVar(_q.at(1))) {
+		LocVar _l = searchLocvar(_q.at(1));
+        gas_tab("idivl\t" + loc_var_val(_l._off));
+	}
+	else if (isTempVar(_q.at(1))) {
+		TempVar _t = searchTempvar(_q.at(1));
+        gas_tab("idivl\t" + _t._reg);
+	}
+    else {
+        getReg("%ecx");
+        Node var = gloEnv->search(_q.at(1));
+        gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, "%ecx");
+        gas_tab("idivl  %eax");
+    }
 
-	if (isNumber(_q1)) {
-		out << "\tidivl\t$" + _q1;
-	}
-	else if (isLocVar(_q1)) {
-		LocVar _l = searchLocvar(_q1);
-		out << "\tidivl\t" + std::to_string(_l._off) + "(%ebp)" << std::endl;
-	}
-	else if (isTempVar(_q1)) {
-		TempVar _t = searchTempvar(_q1);
-		out << "\tidivl\t" + _t._reg << std::endl;
-	}
-
-	saveAndClear(_q1, _q2, _q3, _save_reg);
+	saveAndClear(_q.at(1), _q.at(2), _q.at(3), _save_reg);
 }
+
 
 /**
  * 运算之后寄存器的清理和数据的保存
  */
-void Generate::saveAndClear(std::string &_q1, std::string &_q2, std::string &_q3, const std::string &_reg)
+void Generate::saveAndClear(std::string &q1, std::string &q2, std::string &q3, const std::string &_reg)
 {
-	// 清理立即数
-	clearRegConst();
-
 	// 先将临时变量和常数出栈
-	pop_back_temp_stk(_q1);
-	pop_back_temp_stk(_q2);
-	pop_back_temp_stk(_q1);
+	pop_back_temp_stk(q1);
+	pop_back_temp_stk(q2);
+	pop_back_temp_stk(q1);
 
-	LocVar _var = searchLocvar(_q3);
-	if (!_var.varName.empty()) {
-		out << "\tmovl\t" + _reg + ", " + std::to_string(_var._off) + "(%ebp)" << std::endl;
+	LocVar _loc = searchLocvar(q3);
+	if (!_loc.varName.empty()) {
+        gas_ins(movXXl(_loc.type.size, _loc.type.isUnsig), reg2stk(_reg, _loc.type.size), loc_var_val(_loc._off));
 	}
 	else {
 		// 出现在结果的都是第一次
 		TempVar _temp;
-		_temp._name = _q3;
+		_temp._name = q3;
 		_temp._reg = _reg;
 		push_back_temp_stk(_temp, _reg);
 	}

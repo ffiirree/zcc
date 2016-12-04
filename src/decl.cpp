@@ -15,11 +15,11 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 		Type ty = declarator(&baseType, name, params, DECL_BODY);  // 定义
 		ty.setStatic(sclass == K_STATIC);
 
-		if(sclass == K_TYPEDEF){     //typedef 定义
-
+		if(sclass == K_TYPEDEF){                  //typedef 定义
+            error("Do not support typedef.");
 		}
-		else if (ty.isStatic() && !isGlo) {   // 局部static变量
-
+		else if (ty.isStatic() && !isGlo) {       // 局部static变量
+            error("Do not support static.");
 		}
 		else if (params.size() != 0) {
 			createFuncDecl(baseType, name, params);
@@ -37,8 +37,15 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 
 			if (next_is('=')) {
 				list.push_back(createDeclNode(var, decl_init(ty)));
-				if (!isGlo)
-					createQuadruple("=");
+                if (!isGlo) {
+                    if(var.type.type == K_FLOAT)
+                        createQuadruple("=f");
+                    else if(var.type.type == K_DOUBLE)
+                        createQuadruple("=d");
+                    else
+                        createQuadruple("=");
+                }
+					
 			}
 			else if (sclass != K_EXTERN && ty.getType() != NODE_FUNC) {
 				list.push_back(createDeclNode(var));
@@ -145,8 +152,6 @@ Type Parser::declarator(Type *ty, std::string &name, std::vector<Node> &params, 
 	if (t.getType() == ID) {
 		lex.next();
 		name = t.getSval();
-		if (is_keyword(lex.peek(), '['))
-			_stk_quad.push_back(name);
 		return direct_decl_tail(ty, params, deal_type);
 	}
 	return direct_decl_tail(ty, params, deal_type);
@@ -167,6 +172,9 @@ Type Parser::direct_decl_tail(Type *retty, std::vector<Node> &params, int decl_t
 	// 只支持定长数组
 	if (next_is('[')) {
 		decl_array(retty);
+        Type r(ARRAY, retty->_all_len, retty->len);
+        r.size = retty->size;
+        return r;
 	}
 
 	// 如果是括号，则为函数
@@ -181,8 +189,6 @@ Type Parser::direct_decl_tail(Type *retty, std::vector<Node> &params, int decl_t
 
 void Parser::decl_array(Type *ty)
 {
-	std::string _out = "[]\t" + _stk_quad.back();
-
 	int _d_len = 0;
 	int _all_len = 1;
 	do {
@@ -194,20 +200,6 @@ void Parser::decl_array(Type *ty)
 		}		
 	} while (next_is('['));
 	ty->_all_len = _all_len;
-
-	if (next_is('=')) {
-		expect('{');
-		if (next_is('}'))
-			return;
-		out << _out << std::endl;
-		int _pos = 0;
-		do {
-			conditional_expr();
-			pushQuadruple(std::to_string(_pos++));
-			createQuadruple("[]");
-		} while (next_is(','));
-		expect('}');
-	}
 }
 
 int Parser::array_int_expr()
@@ -229,8 +221,7 @@ Type Parser::decl_specifiers(int *rsclass)
 	Token t;
 	Type type;
 
-	enum { k_zero = 0, k_void = 0x01, k_bool, k_char, k_int, k_float, k_double } kind = k_zero;
-	enum { size_zero = 0, k_short = 0x02, k_long = 0x04 } size = size_zero;
+	enum { k_zero = 0, k_void = 0x01, k_bool, k_char, k_short, k_int, k_long, k_float, k_double } kind = k_zero;
 	enum { sig_zero = 0, k_signed = 0x01, k_unsigned } issigned = sig_zero;
 
 	for (;;) {
@@ -252,13 +243,13 @@ Type Parser::decl_specifiers(int *rsclass)
 			// 只能出现一次
 		case K_VOID:     type_spec_cheak(kind, k_void, "void");break;
 		case K_CHAR:     type_spec_cheak(kind, k_char, "char");break;
+        case K_SHORT:    type_spec_cheak(kind, k_short, "short"); break;
 		case K_INT:      type_spec_cheak(kind, k_int, "int");break;
+        case K_LONG:     type_spec_cheak(kind, k_long, "long");break;
 		case K_FLOAT:    type_spec_cheak(kind, k_float, "float");break;
 		case K_DOUBLE:   type_spec_cheak(kind, k_double, "double");break;
 		case K_BOOL:     type_spec_cheak(kind, k_bool, "bool"); break;
-
-		case K_SHORT:    type_spec_cheak(size, k_short, "short"); break;
-		case K_LONG:     type_spec_cheak(size, k_long, "long");break;
+		
 
 		case K_SIGNED:   type_spec_cheak(issigned, k_signed, "signed");break;
 		case K_UNSIGNED: type_spec_cheak(issigned, k_unsigned, "unsigned"); break;
@@ -305,18 +296,12 @@ _end:
 		{
 		case k_void: type.create(K_VOID, 0, false); break;
 		case k_bool: type.create(K_BOOL, 1, false); break;
-		case k_char: type.create(K_CHAR, 1, issigned == k_signed); break;
-		case k_int: type.create(K_INT, 4, issigned == k_signed); break;
+		case k_char: type.create(K_CHAR, 1, issigned == k_unsigned); break;
+        case k_short: type.create(K_SHORT, 2, issigned == k_unsigned);break;
+		case k_int: type.create(K_INT, 4, issigned == k_unsigned); break;
+        case k_long: type.create(K_LONG, 4, issigned == k_unsigned); break;
 		case k_float: type.create(K_FLOAT, 4, false); break;
 		case k_double: type.create(K_DOUBLE, 8, false); break;
-		default: break;
-		}
-	}
-	if (size) {
-		switch (size)
-		{
-		case k_short: type.create(K_SHORT, size, issigned == k_signed); break;
-		case k_long: type.create(K_LONG, size, issigned == k_signed); break;
 		default: break;
 		}
 	}

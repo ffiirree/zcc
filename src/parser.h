@@ -3,6 +3,7 @@
 
 #include "lex.h"
 
+
 #define __IN_SCOPE__(localEnv, preEnv) do{ Env *old = preEnv; localEnv = new Env(old); old->setNext(localEnv);}while(0)
 #define __OUT_SCOPE__(localEnv, _name) do{localEnv->setName(_name); localEnv = localEnv->pre(); }while(0)
 
@@ -14,6 +15,7 @@ public:
 	void pop_back() { nodes.pop_back(); }
 	Node &back() { return nodes.back(); }
 	Node &search(const std::string &key);
+   
 	void set(std::string &_name, int ty, Node *_body);
 
 	inline Env *pre() { return _pre; }
@@ -110,6 +112,7 @@ public:
 	std::string newLabel(const std::string &_l);
 
 private:
+    bool cheak_redefined(Env *_env, const std::string &_name);
 	Type conv2ptr(Type ty);
 	std::string getQuadrupleFileName(std::string &filename);
 	void createQuadFile();
@@ -257,12 +260,13 @@ private:
 
 
 	Lex lex;
-	Env *globalenv = nullptr;           // 全局
-	Env *localenv = nullptr;            // 临时
-	Env *funcCall = nullptr;            // 记录函数调用
-	Label labels;                       // 源程序中的Label
-	std::vector<StrCard> const_string; // 字符串常量
-	std::vector<std::string> const_num;    // 数字常量
+	Env *globalenv = nullptr;              // 全局
+	Env *localenv = nullptr;               // 临时
+	Env *funcCall = nullptr;               // 记录函数调用
+	Label labels;                          // 源程序中的Label
+	std::vector<StrCard> const_string;     // 字符串常量
+	//std::vector<std::string> const_num;    // 数字常量
+    std::vector<std::string> float_const;  // 浮点数常量
 
 	std::string label_break;
 	std::vector<std::string> _stk_if_goto;

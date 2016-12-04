@@ -439,8 +439,11 @@ Node Parser::createLocVarNode(Type &ty, std::string name)
 
 	Node r(NODE_LOC_VAR, ty);
 	r.varName = name;
-	localenv->push_back(r);
 
+    if (cheak_redefined(localenv, name))
+        error("redefined local variable : %s", name.c_str());
+
+	localenv->push_back(r);
 	return r;
 }
 

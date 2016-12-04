@@ -93,7 +93,6 @@ inline void Node::copying(const Node &n)
 
 	sval = n.sval;
 
-
 	varName = n.varName;
 	_off = n._off;
 	lvarinit = n.lvarinit;
