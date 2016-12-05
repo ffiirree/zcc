@@ -1,11 +1,17 @@
 main:
-&U	b	.Luy2
-=	.Luy2	a
-*U	a	.Luy3
-=	.Luy3	c
+.=	5	t	4
+.=	1	t	3
+.=	0	t	2
+clr
+.&	1	t	.Lvar2
+=	5	.Lvar2
+clr
+.	1	t	.Lvar4
 
-param b
-param .LLSTR4
-call           printf         2
-ret            argc
+param .Lvar4
+param .LLSTR3
+call           printf         2	.Lret5
+clr
+ret	0
+clr
 .end

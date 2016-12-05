@@ -1,13 +1,17 @@
-int printf(char *_out, int a);
+int printf(char *_s, int a);
 
-char b = 8;
+typedef struct Test{
+    char type;
+    int cols;
+    int rows;
+} Hask;
 
-int main(int argc, char *argv[])
+
+int main(void)
 {
-    char *a = &b;
-    int c = *a;
+    Hask t = {2, 3, 4};
 
-    printf("%d\n", b);
-    return argc;
+    t.cols = 5;
+    printf("%d\n", t.cols);
+    return 0;
 }
-

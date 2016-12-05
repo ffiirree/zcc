@@ -31,7 +31,7 @@ void Env::push_back(Node &n) {
 	if (n.kind == NODE_FUNC) {
 		Node r = search(n.funcName);
 		if (r.kind == NODE_FUNC_DECL) {
-			set(n.funcName, NODE_FUNC, n.body);
+            setFuncDef(n);
 			return;
 		}
 		else if (r.kind != 0) {
@@ -226,15 +226,14 @@ Node &Env::search(const std::string &key)
 	return *r;
 }
 
-void Env::set(std::string &_name, int ty, Node *_body)
+void Env::setFuncDef(Node &_def)
 {
 	Env *ptr = this;
 
 	while (ptr) {
 		for (size_t i = 0; i < ptr->nodes.size(); ++i) {
-			if (_name == ptr->nodes.at(i).varName || _name == ptr->nodes.at(i).funcName) {
-				ptr->nodes.at(i).kind = ty;
-				ptr->nodes.at(i).body = _body;
+			if (_def.funcName == ptr->nodes.at(i).funcName) {
+                ptr->nodes.at(i) = _def;
 			}
 		}
 		ptr = ptr->pre();
@@ -302,7 +301,6 @@ bool Parser::next_is(int id)
 Node Parser::createIntNode(Token &t, int size, bool isch)
 {
 	if (isch) {
-		_log_("Create char_ node.");
 		Node node(NODE_CHAR);
 
 		node.int_val = t.getCh();
@@ -310,7 +308,6 @@ Node Parser::createIntNode(Token &t, int size, bool isch)
 		return node;
 	}
 	else {
-		_log_("Create int_ node.");
 		Node node(NODE_INT);
 
 		node.int_val = atoi(t.getSval().c_str());
@@ -322,7 +319,6 @@ Node Parser::createIntNode(Token &t, int size, bool isch)
 
 Node Parser::createIntNode(Type &ty, int val)
 {
-	_log_("Create int node.");
 	Node node(NODE_INT);
 	node.int_val = val;
 	node.type = ty;
@@ -331,7 +327,6 @@ Node Parser::createIntNode(Type &ty, int val)
 
 Node Parser::createFloatNode(Type &ty, double val)
 {
-	_log_("Create float node.");
 	Node node(NODE_DOUBLE);
 
 	node.type = ty;
@@ -342,7 +337,6 @@ Node Parser::createFloatNode(Type &ty, double val)
 
 Node Parser::createFloatNode(Token &t)
 {
-	_log_("Create float node.");
 	Node node(NODE_DOUBLE);
 
 	node.sval = t.getSval();
@@ -352,7 +346,6 @@ Node Parser::createFloatNode(Token &t)
 
 Node Parser::createStrNode(Token &t)
 {
-	_log_("Create STR node.");
 	Node node(NODE_STRING);
 
 	node.sval = t.getSval();
@@ -361,8 +354,6 @@ Node Parser::createStrNode(Token &t)
 
 Node Parser::createFuncNode(Type &ty, std::string & funcName, std::vector<Node> params, Node *body)
 {
-	_log_("Create function node.");
-
 	Node node(NODE_FUNC, ty);
 	node.funcName = funcName;
 	node.params = params;
@@ -375,8 +366,6 @@ Node Parser::createFuncNode(Type &ty, std::string & funcName, std::vector<Node> 
 
 Node Parser::createFuncDecl(Type &ty, std::string & funcName, std::vector<Node> params)
 {
-	_log_("Create function decl node.");
-
 	Node node(NODE_FUNC_DECL, ty);
 	node.funcName = funcName;
 	node.params = params;
@@ -390,24 +379,18 @@ Node Parser::createFuncDecl(Type &ty, std::string & funcName, std::vector<Node> 
 
 Node Parser::createCompoundStmtNode(std::vector<Node> &stmts)
 {
-	_log_("Create compound stmt node.");
-
 	Node node(NODE_COMP_STMT);
 	node.stmts = stmts;
 	return node;
 }
 Node Parser::createDeclNode(Node &var)
 {
-	_log_("Create decl node.");
-
 	Node node(NODE_DECL);
 	node.decl_var = &var;
 	return node;
 }
 Node Parser::createDeclNode(Node &var, std::vector<Node> &init)
 {
-	_log_("Create decl node with init.");
-
 	Node node(NODE_DECL);
 	node.decl_var = &var;
 	node.decl_init = init;
@@ -424,8 +407,6 @@ Node Parser::createDeclNode(Node &var, std::vector<Node> &init)
 
 Node Parser::createGLoVarNode(Type &ty, std::string name)
 {
-	_log_("Create glo var node.");
-
 	Node r(NODE_GLO_VAR, ty);
 	r.varName = name;
 
@@ -435,8 +416,6 @@ Node Parser::createGLoVarNode(Type &ty, std::string name)
 }
 Node Parser::createLocVarNode(Type &ty, std::string name)
 {
-	_log_("Create loc var node.");
-
 	Node r(NODE_LOC_VAR, ty);
 	r.varName = name;
 
@@ -449,17 +428,12 @@ Node Parser::createLocVarNode(Type &ty, std::string name)
 
 Node Parser::createFuncDeclParams(Type &ty)
 {
-	_log_("Create func dec param node.");
-
 	Node r(NODE_DECL_PARAM, ty);
-
 	return r;
 }
 
 Node Parser::createBinOpNode(Type &ty, int kind, Node *left, Node *right)
 {
-	_log_("Create binop %c node.", static_cast<char>(kind));
-
 	Node r(kind, ty);
 	r.left = left;
 	r.right = right;
@@ -468,8 +442,6 @@ Node Parser::createBinOpNode(Type &ty, int kind, Node *left, Node *right)
 
 Node Parser::createUnaryNode(int kind, Type &ty, Node &node)
 {
-	_log_("Create unary op %c node.", static_cast<char>(kind));
-
 	Node r(kind);
 	r.type = ty;
 	r.operand = &node;
@@ -478,8 +450,6 @@ Node Parser::createUnaryNode(int kind, Type &ty, Node &node)
 
 Node Parser::createRetStmtNode(Node *n)
 {
-	_log_("Create return stmt node.");
-
 	Node r(NODE_RETURN);
 	r.retval = n;
 	return r;
@@ -487,8 +457,6 @@ Node Parser::createRetStmtNode(Node *n)
 
 Node Parser::createJumpNode(std::string label)
 {
-	_log_("Create Jump node.");
-
 	Node r(NODE_GOTO);
 	r.label = label;
 	r.newLabel = label;
@@ -497,8 +465,6 @@ Node Parser::createJumpNode(std::string label)
 
 Node Parser::createIfStmtNode(Node *cond, Node *then, Node *els)
 {
-	_log_("Create if stmt.");
-
 	Node r(NODE_IF_STMT);
 	r.cond = cond;
 	r.then = then;
@@ -509,6 +475,9 @@ Node Parser::createIfStmtNode(Node *cond, Node *then, Node *els)
 
 bool Parser::is_type(const Token &t)
 {
+    if (t.getType() == ID)
+        return getCustomType(t.getSval()).type != 0;
+
 	if (t.getType() != KEYWORD)
 		return false;
 
@@ -564,6 +533,7 @@ bool Parser::is_inttype(Type &ty)
 		return false;
 	}
 }
+
 bool Parser::is_floattype(Type &ty)
 {
 	switch (ty.getType())
@@ -849,6 +819,7 @@ void Parser::createUnaryQuadruple(const std::string &op)
 }
 
 // + - * / % & | ^ 
+// +f -f *f /f
 // 不进行 
 // 赋值运算和二元操作符
 void Parser::createQuadruple(const std::string &op)
@@ -863,6 +834,28 @@ void Parser::createQuadruple(const std::string &op)
 		_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
 		_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
 	}
+    else if (op == "+f" || op == "-f" || op == "*f" || op == "/f") {
+        std::string v1, v2;
+
+        v1 = _stk_quad.back(); _stk_quad.pop_back();
+        v2 = _stk_quad.back(); _stk_quad.pop_back();
+
+        _out_str += "\t" + v1;
+        _out_str += "\t" + v2;
+
+        std::string tempName = newLabel("var");
+        _out_str += "\t" + tempName;
+
+        // 添加到生成四元式的栈中
+        _stk_quad.push_back(tempName);
+    }
+    else if (op == ".=") {
+        std::string v1, v2;
+
+        _out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+        _out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+        _out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+    }
 	else {
 		std::string v1, v2;
 		
@@ -916,8 +909,15 @@ _skip_cheak_params_num:
 		localenv->_call_size += fn.params.at(i).type.size;
 	}
 
-	out << std::left << std::setw(15) << "call" << std::left << std::setw(15) << fn.funcName  << fn.params.size() << std::endl;
-	_stk_quad.push_back("%eax");
+    out << std::left << std::setw(15) << "call" << std::left << std::setw(15) << fn.funcName << fn.params.size();
+
+    std::string ret_;
+    if (fn.type.type != K_VOID || fn.type.retType != nullptr) {
+        ret_ = newLabel("ret");
+        _stk_quad.push_back(ret_);
+        out << "\t" + ret_;
+    }
+    out << std::endl;
 }
 
 void Parser::createIncDec()
@@ -945,4 +945,13 @@ void Parser::createIncDec()
 		out << std::left << std::setw(15) << label;
 		out << std::left << std::setw(15) << var << std::endl;
 	}
+}
+
+Type Parser::getCustomType(const std::string &_n)
+{
+    std::map<std::string, Type>::iterator iter = custom_type_tbl.find(_n);
+    if (!(iter == custom_type_tbl.end())) {
+        return iter->second;
+    }
+    return Type();
 }

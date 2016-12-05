@@ -37,6 +37,7 @@ Node Parser::statement()
 
 	Node r = expr_opt();
 	expect(';');
+
 	return r;
 }
 /**
@@ -74,6 +75,7 @@ void Parser::decl_or_stmt(std::vector<Node> &list)
 	else {
 		list.push_back(statement());
 	}
+    out << "clr" << std::endl;
 }
 
 /**
@@ -309,17 +311,7 @@ Node Parser::return_stmt()
 	Node *retval = new Node(expr_opt());
 	expect(';');
 
-	out << std::left << std::setw(15) << "ret";
-
-	if (retval->kind == NODE_INT || retval->kind == NODE_LONG
-		|| retval->kind == NODE_CHAR || retval->kind == NODE_SHORT)
-		out << retval->int_val;
-	else if (retval->kind == NODE_FLOAT || retval->kind == NODE_DOUBLE)
-		out << retval->float_val;
-	else if (retval->kind == NODE_GLO_VAR || retval->kind == NODE_LOC_VAR)
-		out << retval->varName;
-
-	out << std::endl;
+    out << "ret\t" + _stk_quad.back() << std::endl;
 
 	return createRetStmtNode(retval);
 }

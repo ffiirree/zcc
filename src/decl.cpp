@@ -1,6 +1,10 @@
 #include "parser.h"
 #include "error.h"
 
+typedef struct Test {
+    int a;
+}Tsdf;
+
 void Parser::declaration(std::vector<Node> &list, bool isGlo)
 {
 	int sclass = 0;
@@ -16,7 +20,8 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 		ty.setStatic(sclass == K_STATIC);
 
 		if(sclass == K_TYPEDEF){                  //typedef 定义
-            error("Do not support typedef.");
+            baseType.type = K_TYPEDEF;
+            custom_type_tbl.insert(std::pair<std::string, Type>(name, baseType));
 		}
 		else if (ty.isStatic() && !isGlo) {       // 局部static变量
             error("Do not support static.");
@@ -42,6 +47,15 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
                         createQuadruple("=f");
                     else if(var.type.type == K_DOUBLE)
                         createQuadruple("=d");
+                    else if (var.type.type == K_STRUCT || var.type.type == K_TYPEDEF) {
+                        // 需要全部初始化
+                        int _off = 0;
+                        for (size_t i = ty.fields.size(); i > 0; --i) {
+                            _stk_quad.push_back(var.varName);
+                            _stk_quad.push_back(std::to_string(ty.fields.at(i - 1)._off));
+                            createQuadruple(".=");
+                        }
+                    }
                     else
                         createQuadruple("=");
                 }
@@ -51,8 +65,10 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 				list.push_back(createDeclNode(var));
 			}
 		}
-		if (next_is(';'))
-			return;
+        if (next_is(';')) {
+            return;
+        }
+			
 		if (!next_is(','))
 			error("';' or ',' are expected, but got not");
 	}
@@ -222,15 +238,19 @@ Type Parser::decl_specifiers(int *rsclass)
 	Type type;
 
 	enum { k_zero = 0, k_void = 0x01, k_bool, k_char, k_short, k_int, k_long, k_float, k_double } kind = k_zero;
-	enum { sig_zero = 0, k_signed = 0x01, k_unsigned } issigned = sig_zero;
+    bool is_unsig = false;
+    Type custom_type;
 
 	for (;;) {
 		t = lex.next();
 		if (t.getType() == K_EOF)
 			error("error");
 
-		if (kind == 0 && t.getType()== ID) {
-			type = get_type(t.getSval());
+		if (kind == 0 && t.getType()== ID && !custom_type.type) {
+            custom_type = getCustomType(t.getSval());
+            lex.next();
+            if (custom_type.type == 0)
+                error("Undefined type: ", t.getSval());
 		}
 
 		if (t.getType()!= KEYWORD) {
@@ -239,7 +259,7 @@ Type Parser::decl_specifiers(int *rsclass)
 		switch (t.getId())
 		{
 			// Type specifiers
-#define type_spec_cheak(cheak, val, type) do{if(cheak) error("error %s specifier.", type); else cheak = val;}while(0)
+#define type_spec_cheak(cheak, val, _t) do{if(cheak) error("error %s specifier.", _t); else cheak = val;}while(0)
 			// 只能出现一次
 		case K_VOID:     type_spec_cheak(kind, k_void, "void");break;
 		case K_CHAR:     type_spec_cheak(kind, k_char, "char");break;
@@ -251,24 +271,25 @@ Type Parser::decl_specifiers(int *rsclass)
 		case K_BOOL:     type_spec_cheak(kind, k_bool, "bool"); break;
 		
 
-		case K_SIGNED:   type_spec_cheak(issigned, k_signed, "signed");break;
-		case K_UNSIGNED: type_spec_cheak(issigned, k_unsigned, "unsigned"); break;
+		case K_SIGNED:   type_spec_cheak(is_unsig, false, "signed");break;
+		case K_UNSIGNED: type_spec_cheak(is_unsig, true, "unsigned"); break;
 
 		case K_TYPEDEF:  type_spec_cheak(current_class, K_TYPEDEF, "typedef");break;
 		case K_EXTERN:   type_spec_cheak(current_class, K_EXTERN, "extern");break;
 		case K_STATIC:   type_spec_cheak(current_class, K_STATIC, "static");break;
 		case K_AUTO:     type_spec_cheak(current_class, K_AUTO, "auto");break;
 		case K_REGISTER: type_spec_cheak(current_class, K_REGISTER, "register");break;
-#undef type_spec_cheak
+
 
 		case K_COMPLEX: // do something ..
 		case K_IMAGINARY: // do something ..
 
 
 		case K_ENUM: _log_("no enum."); break;
-		case K_STRUCT: _log_("no struct."); break;
+        case K_STRUCT: if (custom_type.type != 0) error("error struct specifier."); custom_type = struct_def(); break;
 		case K_UNION: _log_("no union."); break;
 
+#undef type_spec_cheak
 			// Storage-class specifiers
 			// 只能出现在声明的首位，且只能一次
 			// Type qualifiers
@@ -288,26 +309,30 @@ Type Parser::decl_specifiers(int *rsclass)
 		}
 	}
 _end:
+    lex.back();
+
+    
+
 	if (current_class)
 		*rsclass = current_class;
+
+    if (custom_type.type != 0)
+        return custom_type;
 
 	if (kind) {
 		switch (kind)
 		{
 		case k_void: type.create(K_VOID, 0, false); break;
 		case k_bool: type.create(K_BOOL, 1, false); break;
-		case k_char: type.create(K_CHAR, 1, issigned == k_unsigned); break;
-        case k_short: type.create(K_SHORT, 2, issigned == k_unsigned);break;
-		case k_int: type.create(K_INT, 4, issigned == k_unsigned); break;
-        case k_long: type.create(K_LONG, 4, issigned == k_unsigned); break;
+		case k_char: type.create(K_CHAR, 1, is_unsig); break;
+        case k_short: type.create(K_SHORT, 2, is_unsig);break;
+		case k_int: type.create(K_INT, 4, is_unsig); break;
+        case k_long: type.create(K_LONG, 4, is_unsig); break;
 		case k_float: type.create(K_FLOAT, 4, false); break;
 		case k_double: type.create(K_DOUBLE, 8, false); break;
 		default: break;
 		}
 	}
-
-	lex.back();
-
 	return type;
 }
 
@@ -316,4 +341,47 @@ std::vector<Node> Parser::initializer(Type &ty)
 {
 	std::vector<Node> list;
 	return list;
+}
+
+Type Parser::struct_def()
+{
+    Type r;
+    std::string _new_type_name;
+    r.type = K_STRUCT;
+
+    Token t = lex.peek();
+    if (t.getType() != ID) {
+        error("error define struct");
+    }
+    t = lex.next();
+    _new_type_name = t.getSval();
+
+    Type *_ft;
+    std::string _fn;
+    int _fo = 0;
+    
+    if (!next_is('{')) {
+        lex.back();
+        return Type();
+    }
+        
+
+    int sclass = 0;
+    while (lex.peek().getId() != '}' && lex.peek().getType() != K_EOF) {
+        _ft = new Type(decl_spec_opt(&sclass));
+
+        if (lex.peek().getType() != ID)
+            error("expect a identier.");
+        _fn = lex.next().getSval();
+        expect(';');
+
+        r.fields.push_back(Field(_fn, _ft, _fo));
+        _fo += _ft->size;
+    }
+    r.size = _fo;
+    expect('}');
+
+    custom_type_tbl.insert(std::pair<std::string, Type>(_new_type_name, r));
+
+    return r;
 }

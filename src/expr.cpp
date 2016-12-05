@@ -47,9 +47,9 @@ Node Parser::assignment_expr()
 		// 右侧值
 		Node value = assignment_expr();
 
-		if (is_keyword(t, '=') || cop) {
-			ensure_lvalue(*node);
-		}
+		//if (is_keyword(t, '=') || cop) {
+		//	ensure_lvalue(*node);
+		//}
 		Node _temp;
 		if (cop) {
 			_temp = binop(cop, conv(*node), value);
@@ -64,10 +64,6 @@ Node Parser::assignment_expr()
 			createQuadruple("=");
 		}
 		Node *right = new Node(_temp);
-
-		// 数学运算中的隐式类型转换
-		//if(is_arithtype(node->getType() && node->getType().getType() != right->getType().getType()))
-		//	right = ast_conv(node->ty, right);
 
 		return createBinOpNode(node->getType(), '=', node, right);
 	}
@@ -206,8 +202,7 @@ Node Parser::shift_expr()
 		else
 			break;
 		Node *right = new Node(add_expr());
-		//ensure_inttype(*node);
-		//ensure_inttype(*right);
+
 		node = new Node(createBinOpNode(node->getType(), op, new Node(conv(*node)), new Node(conv(*right))));
 		if(op == OP_SAL)
 			createQuadruple("<<");
@@ -224,12 +219,22 @@ Node Parser::add_expr()
 	Node *node = new Node(multi_expr());
 	for (;;) {
 		if (next_is('+')) {
-			node = new Node(binop('+', conv(*node), conv(multi_expr())));
-			createQuadruple("+");
+            Node *right = new Node(multi_expr());
+			node = new Node(binop('+', conv(*node), conv(*right)));
+            if (node->type.type == K_FLOAT || node->type.type == K_DOUBLE
+                || right->type.type == K_FLOAT || right->type.type == K_DOUBLE)
+                createQuadruple("+f");
+            else
+                createQuadruple("+");
 		}
 		else if (next_is('-')) {
-			node = new Node(binop('-', conv(*node), conv(multi_expr())));
-			createQuadruple("-");
+            Node *right = new Node(multi_expr());
+			node = new Node(binop('-', conv(*node), conv(*right)));
+            if (node->type.type == K_FLOAT || node->type.type == K_DOUBLE
+                || right->type.type == K_FLOAT || right->type.type == K_DOUBLE)
+                createQuadruple("-f");
+            else
+                createQuadruple("-");
 		}
 		else    
 			return *node;
@@ -241,12 +246,23 @@ Node Parser::multi_expr()
 	Node *node = new Node(cast_expr());
 	for (;;) {
 		if (next_is('*')) {
-			node = new Node(binop('*', conv(*node), conv(cast_expr())));
-			createQuadruple("*");
+            Node *right = new Node(cast_expr());
+			node = new Node(binop('*', conv(*node), conv(*right)));
+            if (node->type.type == K_FLOAT || node->type.type == K_DOUBLE
+                || right->type.type == K_FLOAT || right->type.type == K_DOUBLE)
+                createQuadruple("*f");
+            else
+                createQuadruple("*");
 		}
 		else if (next_is('/')) {
-			node = new Node(binop('/', conv(*node), conv(cast_expr())));
-			createQuadruple("/");
+            Node *right = new Node(cast_expr());
+			node = new Node(binop('/', conv(*node), conv(*right)));
+			
+            if (node->type.type == K_FLOAT || node->type.type == K_DOUBLE
+                || right->type.type == K_FLOAT || right->type.type == K_DOUBLE)
+                createQuadruple("/f");
+            else
+                createQuadruple("/");
 		}
 		else if (next_is('%')) {
 			node = new Node(binop('%', conv(*node), conv(cast_expr())));
@@ -264,127 +280,120 @@ Node Parser::multi_expr()
 Node Parser::cast_expr()
 {
 	Token tok = lex.next();
-	if (is_keyword(tok, '(') && is_type(lex.peek())) {
-		/*Type ty = cast_type();
-		expect(')');
-		return createUnaryNode(CAST, ty, cast_expr());*/
-	}
-	lex.back();
-	return unary_expr();
+if (is_keyword(tok, '(') && is_type(lex.peek())) {
+}
+lex.back();
+return unary_expr();
 }
 
 Node Parser::unary_expr()
 {
-	Token tok = lex.next();
-	if (tok.getType() == KEYWORD) {
-		Node r;
-		switch (tok.getId()) {
-		case K_SIZEOF: 
-			createUnaryQuadruple("sizeof");
-			return sizeof_operand();
-		case OP_INC: 
-			r = unary_incdec(OP_PRE_INC);
-			createUnaryQuadruple("++");
-			return r;
-		case OP_DEC: 
-			r = unary_incdec(OP_PRE_DEC);
-			createUnaryQuadruple("--");
-			return r; 
+    Token tok = lex.next();
+    if (tok.getType() == KEYWORD) {
+        Node r;
+        switch (tok.getId()) {
+        case K_SIZEOF:
+            createUnaryQuadruple("sizeof");
+            return sizeof_operand();
+        case OP_INC:
+            r = unary_incdec(OP_PRE_INC);
+            createUnaryQuadruple("++");
+            return r;
+        case OP_DEC:
+            r = unary_incdec(OP_PRE_DEC);
+            createUnaryQuadruple("--");
+            return r;
 
-		case '&': 
-			r = unary_addr();
-			createUnaryQuadruple("&U");
-			return r;
+        case '&':
+            r = unary_addr();
+            createUnaryQuadruple("&U");
+            return r;
 
-		case '*': 
-			r = unary_deref(tok);
-			createUnaryQuadruple("*U");
-			return r;
+        case '*':
+            r = unary_deref(tok);
+            createUnaryQuadruple("*U");
+            return r;
 
-			// 不完全
-		case '+': 
-			r = cast_expr();
-			createUnaryQuadruple("+U");
-			return r;
+            // 不完全
+        case '+':
+            r = cast_expr();
+            createUnaryQuadruple("+U");
+            return r;
 
-			// 不完全
-		case '-': 
-			r = unary_minus();
-			createUnaryQuadruple("-U");
-			return r;
+            // 不完全
+        case '-':
+            r = unary_minus();
+            createUnaryQuadruple("-U");
+            return r;
 
-		case '~': 
-			r = unary_bitnot(tok);
-			createUnaryQuadruple("~");
-			return r;
-		case '!': 
-			r = unary_lognot();
-			//createUnaryQuadruple("!");
-			return r;
-		}
-	}
-	lex.back();
-	return postfix_expr();
+        case '~':
+            r = unary_bitnot(tok);
+            createUnaryQuadruple("~");
+            return r;
+        case '!':
+            r = unary_lognot();
+            //createUnaryQuadruple("!");
+            return r;
+        }
+    }
+    lex.back();
+    return postfix_expr();
 }
 
 Node Parser::unary_minus()
 {
-	Node *expr = new Node(cast_expr());
+    Node *expr = new Node(cast_expr());
 
-	if (is_inttype(expr->type))
-		return binop('-', conv(createIntNode(expr->type, 0)), conv(*expr));
+    if (is_inttype(expr->type))
+        return binop('-', conv(createIntNode(expr->type, 0)), conv(*expr));
 
-	return binop('-', createFloatNode(expr->type, 0.0), *expr);
+    return binop('-', createFloatNode(expr->type, 0.0), *expr);
 }
 
 Node Parser::postfix_expr()
 {
-	Node *node = new Node(primary_expr());
-	return postfix_expr_tail(*node);
+    Node *node = new Node(primary_expr());
+    return postfix_expr_tail(*node);
 }
 
 
 std::vector<Node> Parser::argument_expr_list()
 {
-	std::vector<Node> list;
-	list.push_back(assignment_expr());
-	while (next_is(','))
-		list.push_back(assignment_expr());
-	return list;
+    std::vector<Node> list;
+    list.push_back(assignment_expr());
+    while (next_is(','))
+        list.push_back(assignment_expr());
+    return list;
 }
 
 Node Parser::postfix_expr_tail(Node &node)
 {
-	for (;;) {
-		//postfix_expr_tail = '('[argument_expr_list] ')' postfix_expr_tail
-		if (next_is('(')) {
+    for (;;) {
+        if (next_is('(')) {
 
-			std::vector<Node> parms = argument_expr_list();
-			expect(')');
-			createFuncQuad(parms);
-			//Token tok = lex.peek();
-			//node = conv(node);
-			//Type t = node.getType();
-			//if (t.getType() != '*' || t.ptr->kind != FUNC)
-			//	errort(tok, "function expected, but got %s", node2s(node));
-			//node = read_funcall(node);
-			//continue;
-		}
-		if (next_is('[')) {
-			//node = read_subscript_expr(node);
-			//continue;
-		}
-		if (next_is('.')) {
-			/*node = read_struct_field(node);
-			continue;*/
+            std::vector<Node> parms = argument_expr_list();
+            expect(')');
+            createFuncQuad(parms);
+        }
+        if (next_is('[')) {
+            error("Unspport '['");
+        }
+        if (next_is('.')) {
+            Token t = lex.next();
+            int _off = 0;
+            for (size_t i = 0; i < node.type.fields.size(); ++i){
+                if (t.getSval() == node.type.fields.at(i)._name)
+                    _off = node.type.fields.at(i)._off;
+            }
+            _stk_quad.push_back(std::to_string(_off));
+            
+            if(lex.peek().getId() == '=')
+                createQuadruple(".&");
+            else 
+                createQuadruple(".");
 		}
 		if (next_is(OP_ARROW)) {
-			/*if (node->ty->kind != KIND_PTR)
-				error("pointer type expected, but got %s %s",
-					ty2s(node->ty), node2s(node));
-			node = ast_uop(AST_DEREF, node->ty->ptr, node);
-			node = read_struct_field(node);
-			continue;*/
+            error("Unspport '->'");
 		}
 		Token tok = lex.peek();
 		// 后置++/--
@@ -429,7 +438,9 @@ Node Parser::primary_expr()
 
 	case FLOAT:
         Lfloat = newLabel("f");
+        float_const.push_back(tok.getSval());
         float_const.push_back(Lfloat);
+        float_const.push_back("4");
 		pushQuadruple(Lfloat);
 		return createFloatNode(tok);
 
@@ -487,9 +498,6 @@ Node Parser::binop(int op, Node &lhs, Node &rhs)
 	if(rhs.type.getType() == '*')
 		return createBinOpNode(rhs.type, op, &lhs, &rhs);
 
-	// 检查
-	//assert(is_arithtype(lhs.type));
-	//assert(is_arithtype(rhs.type));
 	Type r = usual_arith_conv(lhs.type, rhs.type);
 
 	return createBinOpNode(r, op, new Node(wrap(r, lhs)), new Node(wrap(r, rhs)));
@@ -498,22 +506,16 @@ Node Parser::binop(int op, Node &lhs, Node &rhs)
 // 常规算术转换规则
 Type Parser::usual_arith_conv(Type &t, Type &u)
 {
-	//assert(is_arithtype(t));
-	//assert(is_arithtype(u));
-
 	if (t.getType() < u.getType()) {
-		// Make t the larger type
 		Type tmp = t;
 		t = u;
 		u = tmp;
 	}
 	if (is_floattype(t))
 		return t;
-	//assert(is_inttype(t) && t.getSize() >= 4);
-	//assert(is_inttype(u) && u.getSize() >= 4);
 	if (t.getSize() > u.getSize())
 		return t;
-	//assert(t.getSize() == u.getSize());
+
 	if (t.isUnsigned() == u.isUnsigned())
 		return t;
 	Type r = t;

@@ -114,6 +114,106 @@ void Generate::getReg(std::vector<std::string> &_q)
 	else if (_q_0_is("~")) {
         genIncDec(_q1, "notl\t");
 	}
+    else if (_q_0_is(".")) {
+        // 取其他类型的值还有问题，没有通过指针看出原始类型，需要修改
+        getReg("%eax");
+
+        int size = 0;
+        int is_unsig = 0;
+        Node var;
+        if (isLocVar(_q2)) {
+            var = searchLocvar(_q2);
+            for (size_t i = 0; i < var.type.fields.size(); ++i) {
+                if (_q1 == std::to_string(var.type.fields.at(i)._off)) {
+                    size = var.type.fields.at(i)._type->size;
+                    is_unsig = var.type.fields.at(i)._type->isUnsig;
+                }
+            }
+            gas_ins(movXXl(size, is_unsig), std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)", "%eax");
+        }
+        else {
+            var = gloEnv->search(_q2);
+            for (size_t i = 0; i < var.type.fields.size(); ++i) {
+                if (_q1 == std::to_string(var.type.fields.at(i)._off)) {
+                    size = var.type.fields.at(i)._type->size;
+                    is_unsig = var.type.fields.at(i)._type->isUnsig;
+                }
+            }
+            gas_ins(movXXl(size, is_unsig), "_" + var.varName + "+" + _q1, "%eax");
+        }
+        //gas_ins(movXXl(size, is_unsig), _q1 + "(%eax)", "%eax");
+
+        // 保存
+        TempVar _temp(_q3, "%eax");
+        push_back_temp_stk(_temp, _temp._reg);
+    }
+    else if (_q_0_is(".=")) {
+        int size = 0;
+        int is_unsig = 0;
+        Node var = searchLocvar(_q2);
+        for (size_t i = 0; i < var.type.fields.size(); ++i) {
+            if (_q1 == std::to_string(var.type.fields.at(i)._off)) {
+                size = var.type.fields.at(i)._type->size;
+                is_unsig = var.type.fields.at(i)._type->isUnsig;
+            }
+        }
+        gas_ins(mov2stk(size), "$" + _q3, std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)");
+    }
+    else if (_q_0_is(".&")) {
+        // 取其他类型的值还有问题，没有通过指针看出原始类型，需要修改
+        getReg("%eax");
+
+        int size = 0;
+        int is_unsig = 0;
+        Node var;
+        if (isLocVar(_q2)) {
+            var = searchLocvar(_q2);
+            for (size_t i = 0; i < var.type.fields.size(); ++i) {
+                if (_q1 == std::to_string(var.type.fields.at(i)._off)) {
+                    size = var.type.fields.at(i)._type->size;
+                    is_unsig = var.type.fields.at(i)._type->isUnsig;
+                }
+            }
+            gas_ins("leal", std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)" , "%eax");
+        }
+        else {
+            var = gloEnv->search(_q2);
+            for (size_t i = 0; i < var.type.fields.size(); ++i) {
+                if (_q1 == std::to_string(var.type.fields.at(i)._off)) {
+                    size = var.type.fields.at(i)._type->size;
+                    is_unsig = var.type.fields.at(i)._type->isUnsig;
+                }
+            }
+            gas_ins(movXXl(size, is_unsig), "$_" + var.varName + "+" + _q1, "%eax");
+        }
+        //gas_ins(movXXl(size, is_unsig), _q1 + "(%eax)", "%eax");
+
+        // 保存
+        TempVar _temp(_q3, "%eax");
+        push_back_temp_stk(_temp, _temp._reg);
+    }
+    // 浮点运算
+    else if (_q_0_is("=f")) {
+        gas_flo_load(_q1);
+        gas_fstp(_q2);
+    }
+    else if (_q_0_is("+f")) {
+        gas_flo_load(_q1);
+        gas_flo_load(_q2);
+        //gas_tab("fadds");
+        //gas_fstp(_q3);
+        error("Not support operator: '-f' ");
+    }
+    else if (_q_0_is("-f")) {
+        error("Not support operator: '-f' ");
+    }
+    else if (_q_0_is("*f")) {
+        error("Not support operator: '*f' ");
+    }
+    else if (_q_0_is("/f")) {
+        error("Not support operator: '/f' ");
+    }
+    // 不支持的运算
 	else if (_q_0_is("[]")) {
 		error("Not support operator.");
 	}
@@ -168,7 +268,9 @@ void Generate::genMulOrModAsm(std::vector<std::string> &_q)
     gas_tab("cltd");                 // edx + eax ,扩充为64bits
 
 	if (isNumber(_q.at(1))) {
-        gas_tab("idivl\t$" + _q.at(1));
+        getReg("%ecx");
+        gas_ins("movl", "$" + _q.at(1), "%ecx");
+        gas_tab("idivl   %ecx");
 	}
 	else if (isLocVar(_q.at(1))) {
 		LocVar _l = searchLocvar(_q.at(1));
@@ -182,7 +284,7 @@ void Generate::genMulOrModAsm(std::vector<std::string> &_q)
         getReg("%ecx");
         Node var = gloEnv->search(_q.at(1));
         gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, "%ecx");
-        gas_tab("idivl  %eax");
+        gas_tab("idivl  %ecx");
     }
 
 	saveAndClear(_q.at(1), _q.at(2), _q.at(3), _save_reg);

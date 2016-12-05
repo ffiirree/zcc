@@ -30,6 +30,15 @@ void Generate::reg_init()
 	universReg.push_back(Reg("%ecx"));
 	universReg.push_back(Reg("%edx"));
 
+    float_reg.push_back(Reg("st(7)"));
+    float_reg.push_back(Reg("st(6)"));
+    float_reg.push_back(Reg("st(5)"));
+    float_reg.push_back(Reg("st(4)"));
+    float_reg.push_back(Reg("st(3)"));
+    float_reg.push_back(Reg("st(2)"));
+    float_reg.push_back(Reg("st(1)"));
+    float_reg.push_back(Reg("st(0)"));
+
 	// 段寄存器 // 16bits
 	segReg.push_back(Reg("%ecs"));
 	segReg.push_back(Reg("%eds"));
@@ -61,6 +70,9 @@ void Generate::run()
                 case ARRAY: gas_def_arr(n, is_fir_var); break;
                 case K_FLOAT:
                 case K_DOUBLE:gas_def_flo(n.varName, n.type.size, n.lvarinit.at(0).sval, is_fir_var);break;
+                case K_TYPEDEF:
+                case K_STRUCT: gas_custom(n, is_fir_var);break;
+                case K_UNION: error("Unsupport union."); break;
                 default:gas_def_int(n.varName, n.type.size, n.lvarinit.at(0).int_val, is_fir_var);break;
                 }
             }
@@ -78,8 +90,30 @@ void Generate::run()
 		generate(quad);
 	}
 
-    // 标志
     gas(parser->newLabel("FE") + ":");
+
+    // 浮点数
+    std::vector<std::string> floatConst = parser->getFloatConst();
+    if (!floatConst.empty())
+        gas_tab(".section .rdata,\"dr\"");
+
+    for (size_t i = floatConst.size()/3; i > 0; --i) {
+        std::string size = floatConst.back(); floatConst.pop_back();
+        gas_label(floatConst.back()); floatConst.pop_back();
+
+        if (size == "4") {
+            gas_tab(".float " + floatConst.back()); floatConst.pop_back();
+        }
+        else if (size == "8") {
+            gas_tab(".double " + floatConst.back()); floatConst.pop_back();
+        }
+        else {
+            error("unknown flaot size.");
+        }
+    }
+
+    // 标志
+    
     gas("\t.ident \"zcc 0.0.1\"");
 }
 
@@ -148,6 +182,14 @@ void Generate::generate(std::vector<std::string> &_q)
 
         gas_label(_q.at(0));                          // 如果是其他标签，输出
 	}
+    // 每个表达式后都要清空栈
+    else if (_q_0_is("clr")) {
+        for (size_t i = 0; i < universReg.size(); ++i)
+            universReg.at(i)._var.clear();
+
+        for (size_t i = _stk_temp_var.size(); i > 0; --i)
+            _stk_temp_var.pop_back();
+    }
 	else if (_q_0_is("=")) {
         std::string _src, _des;
         int size = 0;
@@ -156,8 +198,16 @@ void Generate::generate(std::vector<std::string> &_q)
 		LocVar var = searchLocvar(_q.at(2));
         if (var.varName.empty()) {
             var = gloEnv->search(_q.at(2));
-            size = var.type.size;
-            _des = "_" + var.varName;
+
+            if (!var.varName.empty()) {
+                size = var.type.size;
+                _des = "_" + var.varName;
+            }
+            else if (isTempVar(_q.at(2))) {
+                TempVar _tem = searchTempvar(_q.at(2));
+                size = 4;
+                _des = "(" + _tem._reg + ")";
+            }
         }
         else {
             size = var.type.size;
@@ -169,19 +219,11 @@ void Generate::generate(std::vector<std::string> &_q)
         if (!_temp._name.empty()) {
             gas_ins(mov2stk(size), reg2stk(_temp._reg, size), _des);
         }
-
-        // 函数返回值
-		if (_q.at(1) == "%eax") {
-            gas_ins(mov2stk(size), reg2stk("%eax", size), _des);
-		}
 		// 第一个参数为数字
 		else if (isNumber(_q.at(1))) {
             gas_ins(mov2stk(size), "$" + _q.at(1), _des);
 		}
 	}
-    else if (_q_0_is("=f")) {
-
-    }
 	else if (_q_0_is("if")) {
 		// 注意出栈和入栈的顺序
 		std::string _q1 = _q.at(3);
@@ -249,6 +291,12 @@ void Generate::generate(std::vector<std::string> &_q)
 			params.pop_back();
 		}
         gas_call(_q.at(1));
+
+        if (_q.size() == 4) {
+            setReg("%eax", _q.at(3));
+            TempVar var(_q.at(3), "%eax");
+            _stk_temp_var.push_back(var);
+        }
 	}
 	else if (_q_0_is("ret")) {
 		if (is_main) is_main = false;         // 退出主函数
@@ -258,7 +306,6 @@ void Generate::generate(std::vector<std::string> &_q)
 		int size = currentFunc.type.retType->getSize();
 
 		// 查找变量
-		// !ERROR 还有可能是全局变量
 		LocVar ret = searchLocvar(_q.at(1));
 
 		if (ret.varName.empty())
@@ -465,6 +512,15 @@ bool Generate::isTempVar(const std::string &_t)
 	}
 	return false;
 }
+
+bool Generate::isReg(const std::string &_t)
+{
+    for (size_t i = 0; i < universReg.size(); ++i) {
+        if (universReg.at(i)._reg == _t)
+            return true;
+    }
+    return false;
+}
 bool Generate::isLocVar(const std::string &_l)
 {
 	LocVar var = searchLocvar(_l);
@@ -485,9 +541,9 @@ char Generate::getVarType(std::string &_v)
 /**
  * @获取节点的数据类型
  */
-std::string Generate::getTypeString(Node &n)
+std::string Generate::getTypeString(Type _t)
 {
-    switch (n.type.type) {
+    switch (_t.type) {
     case K_CHAR:
         return "\t.byte\t";
     case K_SHORT:

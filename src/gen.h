@@ -83,17 +83,21 @@ private:
     inline void gas(const std::string &_s) { out << _s << std::endl; }
     inline void gas_ins(const std::string &_i, const std::string &_src, const std::string &_des) { out << "\t" + _i + "\t" + _src + ", " + _des << std::endl; }
     void gas_def_int(const std::string &n, int size, int init, bool is_fir);
+    void gas_custom(Node &n, bool is_fir);
     void gas_def_flo(const std::string &n, int size, const std::string &init, bool is_fir);
     void gas_def_arr(Node &n, bool is_fir);
     void gas_dec(const std::string &n, int size);
     void gas_jxx(const std::string &op, const std::string &des);
     std::string  gas_load(const std::string &_q);
     bool gas_load(const std::string &_q, const std::string &_reg);
+    std::string Generate::gas_flo_load(const std::string &fl);
+    std::string Generate::searchFLoat(const std::string &fl);
+    std::string gas_fld(int size);
+    std::string gas_fstp(const std::string &name);
 
-    std::string getSrc(std::string &_n);
     
     std::string Generate::getEmptyReg();
-	std::string getTypeString(Node &n);
+	std::string getTypeString(Type _t);
 	// 产生汇编代码
 	void generate(std::vector<std::string> &_q);
 	// 输出文件名称
@@ -122,13 +126,23 @@ private:
 	void setRegConst(std::string &_reg);
 	void getReg(std::vector<std::string> &_q);
 	void glo_var_decl(Node &n);
+
 	void glo_var_define(Node &n, bool is_fir);
+    void push_back_temp_stk(TempVar & tv, const std::string &reg);
+    void pop_back_temp_stk(const std::string &var);
+
+
+    bool isTempVar(const std::string &_t);
+    bool isReg(const std::string &_t);
+    bool isLocVar(const std::string &_l);
+    char getVarType(std::string &_v);
 
 	Parser *parser;
 	Env *gloEnv = nullptr;
 	Env *locEnv = nullptr;
 
 	std::vector<Reg> universReg;
+    std::vector<Reg> float_reg;
 
 	void clearRegTemp(const std::string &var);
 	std::vector<Reg> segReg;
@@ -141,12 +155,7 @@ private:
 
 	// 使用表达式栈来分配寄存器
 	std::vector<TempVar> _stk_temp_var;
-	void push_back_temp_stk(TempVar & tv, const std::string &reg);
-	void pop_back_temp_stk(const std::string &var);
-
-	bool isTempVar(const std::string &_t);
-	bool isLocVar(const std::string &_l);
-	char getVarType(std::string &_v);
+    std::vector<TempVar> _stk_ret_;
 };
 
 #endif // !__ZCC_GEN_H

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <map>
 
 #define _CASE_3(x0,x1,x2) case x0: case x1: case x2
 #define _CASE_6(x0,x1,x2,x3,x4,x5) _CASE_3(x0,x1,x2): _CASE_3(x3,x4,x5)
@@ -174,6 +175,21 @@ bool operator==(const Token &t1, const Token &t2);
 bool operator!=(const Token &t1, const Token &t2);
 
 class Node;
+class Type;
+
+class Field {
+public:
+    Field() {}
+    Field(const std::string &name) :_name(name) {}
+    Field(const std::string &name, Type *_t, int _o) : _name(name), _type(_t), _off(_o){}
+    Field(const Field &f) : _name(f._name), _type(f._type), _off(f._off) {}
+    Field operator=(const Field &f) { _name = f._name;  _type = f._type; _off = f._off; return *this; }
+
+
+    std::string _name;
+    Type *_type = nullptr;
+    int _off = 0;
+};
 
 /**
  * 节点的类型
@@ -185,13 +201,10 @@ public:
 	Type(int ty, int s, bool isunsig) :type(ty), size(s), isUnsig(isunsig) { }
 	Type(int ty, Type *ret, std::vector<Node> _params) : type(ty), retType(ret), params(_params) { }
 
-	Type(const Type &t):type(t.type), size(t.size), isUnsig(t.isUnsig), 
-		isSta(t.isSta), ptr(t.ptr), len(t.len), retType(t.retType), params(t.params), _all_len(t._all_len){}
-	inline Type operator=(const Type &t) { type = t.type;size = t.size; isUnsig = t.isUnsig;
-    isSta = t.isSta; ptr = t.ptr; len = t.len; retType = t.retType; params = t.params; _all_len = t._all_len; return *this; }
+    Type(const Type &t) { coping(t); }
+    inline Type operator=(const Type &t) { coping(t); return *this; }
 
 	inline Type create(int ty, int s, bool isuns) { type = ty, size = s, isUnsig = isuns; return *this; }
-
 
 	inline int getType() const { return type; }
 	inline bool isUnsigned() { return isUnsig; }
@@ -206,16 +219,23 @@ public:
 	bool isUnsig = false;
 	bool isSta = false;
 
-	// pointer or array
+	// 指针或者数组，中保存的数据类型
 	Type *ptr = nullptr;
 
 	// array length
 	int _all_len = 0;
 	std::vector<int> len;
 
+    // struct or union
+    std::vector<Field> fields;      // 每个成员的名字， 类型， 偏移
+    bool is_struct = true;                       // struct or union
+
 	//function
 	Type *retType= nullptr;
 	std::vector<Node> params;
+
+private:
+    inline void coping(const Type &t);
 };
 
 enum NodeKind{
@@ -342,6 +362,8 @@ public:
 
 	// Compound statement
 	std::vector<Node> stmts;
+
+    // struct
 
 private:
 	inline void copying(const Node &n);

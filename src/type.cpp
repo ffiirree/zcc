@@ -66,7 +66,21 @@ void Token::copyUnion(const Token &t)
 /**
  * Type
  */
+void Type::coping(const Type &t)
+{
+    type = t.type;
+    size = t.size;
+    isUnsig = t.isUnsig;
+    isSta = t.isSta;
+    ptr = t.ptr;
+    len = t.len;
+    retType = t.retType;
+    params = t.params;
+    _all_len = t._all_len;
 
+    fields = t.fields;
+    is_struct = t.is_struct;
+}
 
 /**
  * Node

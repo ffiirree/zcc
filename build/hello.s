@@ -1,11 +1,7 @@
 	.file	"hello.qd"
 	.section  .rdata,"dr"
-.LLSTR4:
+.LLSTR3:
 	.ascii "%d\n\0"
-	.globl	_b
-	.data
-_b:
-	.byte	8
 	.def	__main;	.scl	2;	.type	32;	.endef
 	.text
 	.globl	_main
@@ -17,23 +13,22 @@ _main:
 	.cfi_offset 5, -8
 	movl	%esp, %ebp
 	.cfi_def_cfa_register 5
-	subl	$24, %esp
+	subl	$25, %esp
 	call	___main
-	movl	$_b, %eax
-	movl	%eax, -4(%ebp)
-	movl	%eax, %ebx
-	movl	-4(%ebp), %eax
-	movl	0(%eax), %eax
-	movl	%eax, -8(%ebp)
-	movl	$.LLSTR4, 0(%esp)
-	movsbl	_b, %eax
+	movl	$4, -4(%ebp)
+	movl	$3, -8(%ebp)
+	movb	$2, -9(%ebp)
+	leal	-8(%ebp), %eax
+	movl	$5, (%eax)
+	movl	-8(%ebp), %eax
+	movl	$.LLSTR3, 0(%esp)
 	movl	%eax, 4(%esp)
 	call	_printf
-	movl	8(%ebp), %eax
+	movl	$0, %eax
 	leave
 	.cfi_restore 5
 	.cfi_def_cfa 4, 4
 	ret
 	.cfi_endproc
-.LFE6:
+.LFE7:
 	.ident "zcc 0.0.1"

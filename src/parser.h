@@ -1,6 +1,7 @@
 #ifndef _ZCC_PARSER_H
 #define _ZCC_PARSER_H
 
+#include <map>
 #include "lex.h"
 
 
@@ -16,7 +17,7 @@ public:
 	Node &back() { return nodes.back(); }
 	Node &search(const std::string &key);
    
-	void set(std::string &_name, int ty, Node *_body);
+    void setFuncDef(Node &_def);
 
 	inline Env *pre() { return _pre; }
 	inline std::vector<Env *> getNext() { return _next; }
@@ -110,6 +111,8 @@ public:
 	Env *getLocEnv() { return localenv; }
 	std::vector<StrCard> getStrTbl() { return const_string; }
 	std::string newLabel(const std::string &_l);
+
+    inline std::vector<std::string> getFloatConst() { return float_const; }
 
 private:
     bool cheak_redefined(Env *_env, const std::string &_name);
@@ -206,7 +209,6 @@ private:
 	Node return_stmt();
 	Node case_stmt();
 	Node default_stmt();
-	Node label_stmt();
 	Node break_stmt();
 
 	/**
@@ -217,7 +219,6 @@ private:
 	Node comma_expr();
 	Node assignment_expr();
 	Node conditional_expr();
-	Node do_cond_expr();
 	Node logical_or_expr();
 	Node logical_and_expr();
 	Node bit_or_expr();
@@ -242,7 +243,6 @@ private:
 
 	Node sizeof_operand();
 	Node unary_incdec(int ty);
-	Node label_addr(Token &t);
 	Node unary_addr();
 	Node unary_deref(Token &t);
 	Node unary_minus();
@@ -265,7 +265,6 @@ private:
 	Env *funcCall = nullptr;               // 记录函数调用
 	Label labels;                          // 源程序中的Label
 	std::vector<StrCard> const_string;     // 字符串常量
-	//std::vector<std::string> const_num;    // 数字常量
     std::vector<std::string> float_const;  // 浮点数常量
 
 	std::string label_break;
@@ -282,6 +281,9 @@ private:
 	std::vector<std::string> _stk_quad;
 	std::vector<std::string> _stk_incdec;
 	std::vector<BoolLabel> boolLabel;
+    std::map<std::string, Type> custom_type_tbl;
+    Type getCustomType(const std::string &_n);
+    Type struct_def();
 };
 
 

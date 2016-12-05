@@ -186,7 +186,9 @@ Token Lex::read_id(char fir)
 	return Token(ID, str);
 }
 
-
+/**
+ * @attention 不能识别0.0
+ */
 Token Lex::read_num(char fir)
 {
 	char c = fir;
