@@ -93,7 +93,8 @@ Node Parser::if_stmt()
 
 	_if._true = newLabel("ift");
 	_if._false = newLabel("iff");
-	boolLabel.back() = _if;
+	boolLabel.back()._true = _if._true;
+	boolLabel.back()._false = _if._false;
 	generateIfGoto();
 	out << _if._true << ":" << std::endl;   
 
@@ -137,7 +138,8 @@ Node Parser::while_stmt()
 	Node node = expr();                    
 	expect(')');
 
-	boolLabel.back() = _while;             
+	boolLabel.back()._true = _while._true;
+	boolLabel.back()._false = _while._false;           
 	generateIfGoto();                      // B.code
 	out << _while._true << ":" << std::endl;           // Label(B.true)
 
@@ -174,7 +176,8 @@ Node Parser::do_stmt()
 	expect(')');
 	expect(';');
 
-	boolLabel.back() = _do;
+	boolLabel.back()._true = _do._true;
+	boolLabel.back()._false = _do._false;
 	generateIfGoto();                      // B.code
 
 	out << _snext << ":" << std::endl;

@@ -330,9 +330,11 @@ Node Parser::unary_expr()
             r = unary_bitnot(tok);
             createUnaryQuadruple("~");
             return r;
+
         case '!':
             r = unary_lognot();
-            //createUnaryQuadruple("!");
+			//boolLabel.push_back(BoolLabel());
+			//_stk_if_goto_op.push_back("!");
             return r;
         }
     }
@@ -376,7 +378,12 @@ Node Parser::postfix_expr_tail(Node &node)
             createFuncQuad(parms);
         }
         if (next_is('[')) {
-            error("Unspport '['");
+			expr();
+			expect(']');
+			if (lex.peek().getId() == '=')
+				createQuadruple(".&");
+			else
+				createQuadruple(".");
         }
         if (next_is('.')) {
             Token t = lex.next();

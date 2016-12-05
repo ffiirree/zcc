@@ -51,6 +51,24 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
                         createQuadruple("=f");
                     else if(var.type.type == K_DOUBLE)
                         createQuadruple("=d");
+					else if (var.type.type == ARRAY) {
+						int _off = 0;
+
+						for (size_t i = 0; i < var.type._all_len; ++i) {
+							std::string init_val = _stk_quad.back(); 
+
+							if (init_val != var.varName) {
+								_stk_quad.push_back(var.varName);
+								_stk_quad.push_back(std::to_string(i * var.type.size));
+								createQuadruple(".=");
+							}
+							else {
+								_stk_quad.pop_back();
+								break;
+							}
+						}
+						
+					}
                     else if (var.type.type == K_STRUCT || var.type.type == K_TYPEDEF) {
                         // 需要全部初始化
                         int _off = 0;

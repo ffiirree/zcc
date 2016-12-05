@@ -647,8 +647,16 @@ void Parser::generateIfGoto()
 	BoolLabel b, b1, b2;
 	std::vector<std::string>  _temp;
 
-	if (_stk_if_goto.size() == 1) {
+	if (_stk_if_goto.size() == 1 && _stk_if_goto_op.size() == 0) {
 		b = boolLabel.back();boolLabel.pop_back();
+
+		if (_stk_if_goto_op.back() == "!") {
+			b1 = b;
+			boolLabel.pop_back();
+			b1._true = b._false;
+			b1._false = b._true;
+		}
+
 		_stk_if_goto_out.push_back(_stk_if_goto.back() + b._true);
 		_stk_if_goto_out.push_back("goto " + b._false);
 		_stk_if_goto.pop_back();
@@ -661,6 +669,7 @@ void Parser::generateIfGoto()
 
 	for (int i = _stk_if_goto_op.size(); i > 0; --i) {
 		std::string op = _stk_if_goto_op.back(); _stk_if_goto_op.pop_back();
+	
 		b = boolLabel.back();boolLabel.pop_back();
 		b2 = boolLabel.back();boolLabel.pop_back();
 		b1 = boolLabel.back();boolLabel.pop_back();
@@ -694,8 +703,6 @@ void Parser::generateIfGoto()
 			_temp.pop_back();
 		}
 
-		
-
 		if(!b2._leaf)
 			boolLabel.push_back(b2);
 
@@ -717,7 +724,6 @@ void Parser::createBoolGenQuadruple(const std::string &op)
 	//_b._true = newLabel("true");
 	//_b._false = newLabel("false");
 	boolLabel.push_back(_b);
-
 
 	std::string str;
 	std::string var1 = _stk_quad.back(); _stk_quad.pop_back();

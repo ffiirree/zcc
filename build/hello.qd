@@ -1,40 +1,17 @@
 main:
-=	6	c
-=	0	d
+.=	0	a	8
+.=	4	a	9
+.=	8	a	0
 clr
-
-param d
-param c
-call           max@ii         2	.Lret2
-=	.Lret2	a
+.&	4	a	.Lvar2
+=	9	.Lvar2
 clr
+.	4	a	.Lvar4
 
-param a
+param .Lvar4
 param .LLSTR3
-call           printf         2	.Lret4
+call           printf         2	.Lret5
 clr
 ret	0
-clr
-.end
-max@ii:
-if	i > b	goto .Lift7
-goto .Liff8
-.Lift7:
-ret	i
-goto	.Lsn6
-.Liff8:
-ret	b
-.Lsn6:
-clr
-.end
-max@cs:
-if	c > d	goto .Lift11
-goto .Liff12
-.Lift11:
-ret	c
-goto	.Lsn10
-.Liff12:
-ret	c
-.Lsn10:
 clr
 .end

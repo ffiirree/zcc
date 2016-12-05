@@ -123,13 +123,20 @@ void Generate::getReg(std::vector<std::string> &_q)
         Node var;
         if (isLocVar(_q2)) {
             var = searchLocvar(_q2);
-            for (size_t i = 0; i < var.type.fields.size(); ++i) {
-                if (_q1 == std::to_string(var.type.fields.at(i)._off)) {
-                    size = var.type.fields.at(i)._type->size;
-                    is_unsig = var.type.fields.at(i)._type->isUnsig;
-                }
-            }
-            gas_ins(movXXl(size, is_unsig), std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)", "%eax");
+			if (var.type.type == K_STRUCT || var.type.type == K_TYPEDEF) {
+				for (size_t i = 0; i < var.type.fields.size(); ++i) {
+					if (_q1 == std::to_string(var.type.fields.at(i)._off)) {
+						size = var.type.fields.at(i)._type->size;
+						is_unsig = var.type.fields.at(i)._type->isUnsig;
+						gas_ins(movXXl(size, is_unsig), std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)", "%eax");
+					}
+				}
+			}
+			else if (var.type.type == ARRAY) {
+				size = var.type.size;
+				is_unsig = var.type.isUnsig;
+				gas_ins(movXXl(size, is_unsig), std::to_string(var._off + var.type.size * atoi(_q1.c_str())) + "(%ebp)", "%eax");
+			} 
         }
         else {
             var = gloEnv->search(_q2);
@@ -151,12 +158,18 @@ void Generate::getReg(std::vector<std::string> &_q)
         int size = 0;
         int is_unsig = 0;
         Node var = searchLocvar(_q2);
-        for (size_t i = 0; i < var.type.fields.size(); ++i) {
-            if (_q1 == std::to_string(var.type.fields.at(i)._off)) {
-                size = var.type.fields.at(i)._type->size;
-                is_unsig = var.type.fields.at(i)._type->isUnsig;
-            }
-        }
+		if (var.type.type == K_STRUCT || var.type.type == K_TYPEDEF) {
+			for (size_t i = 0; i < var.type.fields.size(); ++i) {
+				if (_q1 == std::to_string(var.type.fields.at(i)._off)) {
+					size = var.type.fields.at(i)._type->size;
+					is_unsig = var.type.fields.at(i)._type->isUnsig;
+				}
+			}
+		}
+		else if(var.type.type ==ARRAY) {
+			size = var.type.size;
+			is_unsig = var.type.isUnsig;
+		}
         gas_ins(mov2stk(size), "$" + _q3, std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)");
     }
     else if (_q_0_is(".&")) {
@@ -167,14 +180,22 @@ void Generate::getReg(std::vector<std::string> &_q)
         int is_unsig = 0;
         Node var;
         if (isLocVar(_q2)) {
-            var = searchLocvar(_q2);
-            for (size_t i = 0; i < var.type.fields.size(); ++i) {
-                if (_q1 == std::to_string(var.type.fields.at(i)._off)) {
-                    size = var.type.fields.at(i)._type->size;
-                    is_unsig = var.type.fields.at(i)._type->isUnsig;
-                }
-            }
-            gas_ins("leal", std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)" , "%eax");
+			var = searchLocvar(_q2);
+			if (var.type.type == K_STRUCT || var.type.type == K_TYPEDEF) {
+				for (size_t i = 0; i < var.type.fields.size(); ++i) {
+					if (_q1 == std::to_string(var.type.fields.at(i)._off)) {
+						size = var.type.fields.at(i)._type->size;
+						is_unsig = var.type.fields.at(i)._type->isUnsig;
+						gas_ins("leal", std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)", "%eax");
+					}
+				}
+			}
+			else if (var.type.type == ARRAY) {
+				size = var.type.size;
+				is_unsig = var.type.isUnsig;
+				gas_ins("leal", std::to_string(var._off + atoi(_q1.c_str()) * var.type.size) + "(%ebp)", "%eax");
+			}
+           
         }
         else {
             var = gloEnv->search(_q2);
