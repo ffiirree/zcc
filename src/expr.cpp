@@ -469,11 +469,15 @@ Node Parser::var_or_func(Token &t)
 
 	if (r.kind == NODE_GLO_VAR || r.kind == NODE_LOC_VAR)
 		pushQuadruple(r.varName);
+#ifdef _OVERLOAD_
+	else 
+		pushQuadruple(t.getSval());
+#elif
 	else if (r.kind == NODE_FUNC || r.kind == NODE_FUNC_DECL)
 		pushQuadruple(t.getSval());
-
 	if (r.kind == NODE_NULL)
 		error("undefined var : %s！", t.getSval().c_str());
+#endif // _OVERLOAD_
 
 	return r;
 }

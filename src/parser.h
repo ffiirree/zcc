@@ -4,6 +4,7 @@
 #include <map>
 #include "lex.h"
 
+#define _OVERLOAD_
 
 #define __IN_SCOPE__(localEnv, preEnv) do{ Env *old = preEnv; localEnv = new Env(old); old->setNext(localEnv);}while(0)
 #define __OUT_SCOPE__(localEnv, _name) do{localEnv->setName(_name); localEnv = localEnv->pre(); }while(0)
@@ -284,6 +285,10 @@ private:
     std::map<std::string, Type> custom_type_tbl;
     Type getCustomType(const std::string &_n);
     Type struct_def();
+
+#ifdef _OVERLOAD_
+	std::string getOverLoadName(const std::string &name, std::vector<Node> &_p);
+#endif
 };
 
 

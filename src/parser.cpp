@@ -143,6 +143,10 @@ Node Parser::funcDef()
 		error("Ptr not can be function.");
 	}
 
+#if defined(_OVERLOAD_)
+	funcName = getOverLoadName(funcName, params);
+#endif
+
 	out << funcName << ":" << std::endl;
 
 	functype.setStatic(current_class == K_STATIC);                          // 函数是否是static
@@ -892,7 +896,13 @@ void Parser::createFuncQuad(std::vector<Node> &params)
 		out << "param " << _stk_quad.back() << std::endl; _stk_quad.pop_back();
 	}
 
-	Node fn = localenv->search(_stk_quad.back());
+	std::string func_name;
+	func_name = _stk_quad.back();
+#ifdef _OVERLOAD_
+	func_name = getOverLoadName(func_name, params);
+#endif // _OVERLOAD_
+
+	Node fn = localenv->search(func_name);
 	_stk_quad.pop_back();
 
 	// 检查参数个数
@@ -955,3 +965,38 @@ Type Parser::getCustomType(const std::string &_n)
     }
     return Type();
 }
+
+#ifdef _OVERLOAD_
+std::string Parser::getOverLoadName(const std::string &name, std::vector<Node> &_p)
+{
+	if (name == "main")
+		return name;
+	if (name == "printf")
+		return name;
+	if (name == "puts")
+		return name;
+
+	std::string _name_r;
+	_name_r += name + "@";
+
+	for (size_t i = 0; i < _p.size(); ++i) {
+		switch (_p.at(i).type.type)
+		{
+		case K_INT: _name_r += "i";break;
+		case K_CHAR: _name_r += "c";break;
+		case K_SHORT:_name_r += "s";break;
+		case K_LONG: _name_r += "l";break;
+		case K_FLOAT: _name_r += "f";break;
+		case K_DOUBLE: _name_r += "d";break;
+		case K_STRUCT: 
+		case K_TYPEDEF:
+			error("Unspport struct and typedef overload.");
+			break;
+		default:
+			error("Unspport type overload.");
+			break;
+		}
+	}
+	return _name_r;
+}
+#endif

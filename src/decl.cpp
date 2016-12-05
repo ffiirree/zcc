@@ -27,6 +27,10 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
             error("Do not support static.");
 		}
 		else if (params.size() != 0) {
+#ifdef _OVERLOAD_
+			name = getOverLoadName(name, params);
+#endif // _OVERLOAD_
+
 			createFuncDecl(baseType, name, params);
 		}
 		else {

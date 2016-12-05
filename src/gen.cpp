@@ -677,6 +677,7 @@ std::vector<std::string> Generate::getQuad()
         case '_':
         case '[':
         case ']':
+		case '@':
         case_op:
             _name.push_back(c);
             _is_push = false;
