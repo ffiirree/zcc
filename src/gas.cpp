@@ -4,34 +4,45 @@
 /**
  * @加载浮点数到内存中
  */
-std::string Generate::gas_flo_load(const std::string &name)
+int Generate::gas_flo_load(const std::string &name)
 {
     std::string _src;
+
     // 如果是常量
     std::string fn = searchFLoat(name);
     if (!fn.empty()) {
         gas_tab(gas_fld(4) + "\t" + name);
-        return std::string();
+		return K_DOUBLE;
     }
+
+	if (isNumber(name)) {
+		gas_tab("fild	" + name);
+		return K_FLOAT;
+	}
 
     // 寄存器、局部和全局
     Node var = gloEnv->search(name);
     if (!var.varName.empty()) {
         gas_tab(gas_fld(var.type.size) + "\t" + "_" + var.varName);
+		return var.type.type;
     }
-    else if (isTempVar(name)) {
-        TempVar var = searchTempvar(name);
-        error("error");
+    else if (isFloatTemVar(name)) {
+		TempVar temp = searchFloatTempvar(name);
+		return temp.type;
     }
-    else {
+    else if(isLocVar(name)) {
         var = searchLocvar(name);
         gas_tab(gas_fld(var.type.size) + "\t" + loc_var_val(var._off));
+		return var.type.type;
     }
-    return std::string();
+	else {
+		error("error float number.");
+	}
 }
 
-std::string Generate::gas_fstp(const std::string &name)
+Type Generate::gas_fstp(const std::string &name)
 {
+	Type _r;
     int  _size = 0;
     std::string _ins, _des;
     Node var;
@@ -56,7 +67,7 @@ std::string Generate::gas_fstp(const std::string &name)
 
     gas_tab(_ins + "\t" + _des);
 
-    return std::string();
+	return _r;
 }
 
 std::string Generate::gas_fld(int size)
@@ -148,6 +159,9 @@ void Generate::gas_def_arr(Node &n, bool is_fir)
     out << "\t.space\t" << (n.type._all_len - i) * n.type.size << std::endl;
 }
 
+/**
+ * 自定义数据类型结构体
+ */
 void Generate::gas_custom(Node &n, bool is_fir)
 {
     gas_tab(".globl\t_" + n.varName);
@@ -162,45 +176,65 @@ void Generate::gas_custom(Node &n, bool is_fir)
     if(_initsize < n.type.size)
         out << "\t.space\t" << n.type.size - _initsize << std::endl;
 }
-/**
- * 加载数据到寄存器
- */
-std::string  Generate::gas_load(const std::string &_q)
-{
-    std::string _des = getEmptyReg();
-    gas_load(_q, _des);
-    return _des;
-}
 
 /**
  * 加载数据到寄存器
  * @ret 是否为有符号数
  */
-bool Generate::gas_load(const std::string &_q, const std::string &_reg)
+Type Generate::gas_load(const std::string &_q, const std::string &_reg)
 {
     // 加载立即数
     if (isNumber(_q)) {
         gas_ins("movl", "$" + _q, _reg);
         setReg(_reg, _q);
-        return false;
+        return Type(K_INT, 4, false);
+    }
+
+    if (isEnumConst(_q)) {
+        gas_ins("movl", "$" + parser->searchEnum(_q), _reg);
+        setReg(_reg, parser->searchEnum(_q));
+        return Type(K_INT, 4, false);
     }
 
     // 加载局部变量
     Node var;
     if (isLocVar(_q)) {
         var = searchLocvar(_q);
+		// 加载浮点数
+		if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
+			gas_flo_load(_q);
+			// 没有使用通用，释放掉
+			clearRegTemp(_q);
+			return Type(var.type.type, var.type.size, var.type.isUnsig);
+		}
+
         gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), _reg);
         setReg(_reg, _q);
-        return var.type.isUnsig;
+        return Type(var.type.type, var.type.size, var.type.isUnsig);
     }
 
     // 加载全局变量
     var = gloEnv->search(_q);
     if (!var.varName.empty()) {
+		// 加载浮点数
+		if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
+			gas_flo_load(_q);
+			// 没有使用通用，释放掉
+			clearRegTemp(_q);
+			return Type(var.type.type, var.type.size, var.type.isUnsig);
+		}
+
         gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, _reg);
         setReg(_reg, _q);
-        return var.type.isUnsig;
+		return Type(var.type.type, var.type.size, var.type.isUnsig);
     }
+
+	std::string _f = searchFLoat(_q);
+	if (!_f.empty()) {
+		gas_flo_load(_q);
+		clearRegTemp(_q);
+		return Type(K_FLOAT, 4, false);
+	}
 
     // 加载临时变量
     if (isTempVar(_q)) {
@@ -208,26 +242,129 @@ bool Generate::gas_load(const std::string &_q, const std::string &_reg)
         gas_ins("movl", var._reg, _reg);
         clearRegTemp(_q);
         setReg(_reg, _q);
-        return var._isUnsig;
+		return Type(var.type, var._size, var._isUnsig);
     }
+	else if (isFloatTemVar(_q)) {
+		TempVar  f = searchFLoat(_q);
+		return Type(f.type, f._size, f._isUnsig);
+	}
     else {
         error("unknown data.");
         return false;
     }
 }
 
-void Generate::gas_jxx(const std::string &op, const std::string &des)
+void Generate::gas_jxx(const std::string &op, const std::string &des, Type &_t)
 {
-    if (op == ">")
-        gas_tab(("jg\t" + des));
-    else if (op == "<")
-        gas_tab(("jl\t" + des));
-    else if (op == ">=")
-        gas_tab(("jge\t" + des));
-    else if (op == "<=")
-        gas_tab(("jle\t" + des));
+	if (op == ">") {
+		if(_t.isUnsig || _t.type == K_FLOAT || _t.type == K_DOUBLE)
+			gas_tab(("ja\t" + des));
+		else 
+			gas_tab(("jg\t" + des));
+	}
+	else if (op == "<") {
+		if (_t.isUnsig || _t.type == K_FLOAT || _t.type == K_DOUBLE)
+			gas_tab(("jb\t" + des));
+		else
+			gas_tab(("jl\t" + des));
+	}
+	else if (op == ">=") {
+		if (_t.isUnsig || _t.type == K_FLOAT || _t.type == K_DOUBLE)
+			gas_tab(("jae\t" + des));
+		else
+			gas_tab(("jge\t" + des));
+	}
+	else if (op == "<=") {
+		if (_t.isUnsig || _t.type == K_FLOAT || _t.type == K_DOUBLE)
+			gas_tab(("jbe\t" + des));
+		else
+			gas_tab(("jle\t" + des));
+	}
     else if (op == "==")
         gas_tab(("je\t" + des));
     else if (op == "!=")
         gas_tab(("jne\t" + des));
+}
+
+/**
+ * @berif 保存临时变量
+ */
+void Generate::temp_save(const std::string &_n, int type, bool is_unsig, const std::string &_reg)
+{
+	TempVar _t_save(_n);
+	_t_save._isUnsig = is_unsig;
+	_t_save.type = type;
+	switch (type) {
+	case K_CHAR:	_t_save._size = 1; break;
+	case K_SHORT:	_t_save._size = 2; break;
+	case K_INT:		_t_save._size = 4; break;
+	case K_LONG:	_t_save._size = 4; break;
+	case K_FLOAT:	_t_save._size = 4; break;
+	case K_DOUBLE:	_t_save._size = 8; break;
+	default:		_t_save._size = 0; break;
+	}
+	_t_save._reg = _reg;
+
+	if (type == K_FLOAT || type == K_DOUBLE)
+		_stk_float_temp_var.push_back(_t_save);
+	else
+		_stk_temp_var.push_back(_t_save);
+}
+
+void Generate::temp_save(const std::string &_n, Type &_t, const std::string &_reg)
+{
+	TempVar _t_save(_n);
+	_t_save._isUnsig = _t.isUnsig;
+	_t_save.type = _t.type;
+	switch (_t_save.type) {
+	case K_CHAR:	_t_save._size = 1; break;
+	case K_SHORT:	_t_save._size = 2; break;
+	case K_INT:		_t_save._size = 4; break;
+	case K_LONG:	_t_save._size = 4; break;
+	case K_FLOAT:	_t_save._size = 4; break;
+	case K_DOUBLE:	_t_save._size = 8; break;
+	default:		_t_save._size = 0; break;
+	}
+	_t_save._reg = _reg;
+	if (_t_save.type == K_FLOAT || _t_save.type == K_DOUBLE)
+		_stk_float_temp_var.push_back(_t_save);
+	else
+		_stk_temp_var.push_back(_t_save);
+}
+
+/**
+ * @berif 无限制(寄存器等)二元操作符
+ */
+void Generate::unlimited_binary_op(std::vector<std::string> &_q, const std::string &op)
+{
+	Type _save, _t;
+	std::string _q1_reg, _q2_reg;
+
+	_q1_reg = getEmptyReg();
+	_t = gas_load(_q.at(1), _q1_reg); _save.type < _t.type ? _save = _t : true;
+	_q2_reg = getEmptyReg();
+	_t = gas_load(_q.at(2), _q2_reg); _save.type < _t.type ? _save = _t : true;
+
+	gas_ins(op, _q1_reg, _q2_reg);
+
+	temp_clear(_q.at(1), _q.at(2));
+	temp_save(_q.at(3), _save, _q2_reg);
+}
+
+/**
+ * @berif 移位操作符
+ */
+void Generate::shift_op(std::vector<std::string> &_q, const std::string &op)
+{
+	Type _save, _t;
+
+	getReg("%edx");
+	getReg("%ecx");
+
+	_t = gas_load(_q.at(1), "%ecx"); _save.type < _t.type ? _save = _t : true;
+	_t = gas_load(_q.at(2), "%edx"); _save.type < _t.type ? _save = _t : true;
+	gas_ins(op, "%cl", "%edx");
+
+	temp_clear(_q.at(1), _q.at(2));
+	temp_save(_q.at(3), _save, "%edx");
 }

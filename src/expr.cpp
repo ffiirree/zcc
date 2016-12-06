@@ -54,14 +54,29 @@ Node Parser::assignment_expr()
 		if (cop) {
 			_temp = binop(cop, conv(*node), value);
 			pushQuadruple((*node).varName);
+			// 交换后两个的顺序，-= 和 -生成的操作数顺序不统一
+			std::string _1, _2;
+			_1 = _stk_quad.back(); _stk_quad.pop_back();
+			_2 = _stk_quad.back(); _stk_quad.pop_back();
+			_stk_quad.push_back(_1);
+			_stk_quad.push_back(_2);
 
-			createQuadruple(get_compound_assign_op_signal(t));
-			createQuadruple("=");
+			if (_temp.type.type == K_DOUBLE || _temp.type.type == K_FLOAT) {
+				createQuadruple(get_compound_assign_op_signal(t)+ "f");
+				createQuadruple("=f");
+			}
+			else {
+				createQuadruple(get_compound_assign_op_signal(t));
+				createQuadruple("=");
+			}
+				
 		}
 		else {
 			_temp = value;
-
-			createQuadruple("=");
+			if (_temp.type.type == K_DOUBLE || _temp.type.type == K_FLOAT)
+				createQuadruple("=f");
+			else
+				createQuadruple("=");
 		}
 		Node *right = new Node(_temp);
 
@@ -445,9 +460,9 @@ Node Parser::primary_expr()
 
 	case FLOAT:
         Lfloat = newLabel("f");
-        float_const.push_back(tok.getSval());
+		float_const.push_back(tok.getSval());
         float_const.push_back(Lfloat);
-        float_const.push_back("4");
+        float_const.push_back("4f");
 		pushQuadruple(Lfloat);
 		return createFloatNode(tok);
 

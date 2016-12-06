@@ -18,7 +18,11 @@
 #define gas_jmp(des)          gas("\tjmp\t" + des);
 #define gas_call(des)         gas("\tcall\t_" + std::string(des));
 
-
+#define temp_clear(_q1_, _q2_)  do {\
+										pop_back_temp_stk(_q1_);\
+										pop_back_temp_stk(_q2_);\
+										pop_back_temp_stk(_q1_);\
+							    }while(0);
 
 #define loc_var_val(pos)      (std::to_string(pos) + "(%ebp)")
 /**
@@ -41,8 +45,8 @@ public:
 class TempVar {
 public:
 	TempVar() :_name() {  }
-    TempVar(const std::string &_n, const std::string &_r) :_name(_n), _reg(_r) {  }
 	TempVar(const std::string &_r) :_name(_r) {}
+    TempVar(const std::string &_n, const std::string &_r) :_name(_n), _reg(_r) {  }
 	TempVar(const std::string &_r, int _v) :_name(_r), _size(_v) {  }
 	TempVar(const TempVar& r) :_name(r._name), _size(r._size),  _reg(r._reg), type(r.type){ }
     TempVar operator= (const TempVar &r) { _name = r._name; _size = r._size;  _reg = r._reg;type = r.type; return *this; }
@@ -69,14 +73,11 @@ public:
 	std::vector<std::string> getQuad();
 
 private:
-	//
-	void saveAndClear(std::string &_q1, std::string &_q2, std::string &_q3, const std::string &_reg);
 	void genMulOrModAsm(std::vector<std::string> &_q);
     void genIncDec(const std::string &_obj, const std::string &op);
 
     std::string mov2stk(int size);
     std::string movXXl(int size, bool isz);
-    std::string reg2reg(int size);
     std::string reg2stk(const std::string &_reg, int size);
     std::string mul(int size, bool isunsig);
 
@@ -87,13 +88,12 @@ private:
     void gas_def_flo(const std::string &n, int size, const std::string &init, bool is_fir);
     void gas_def_arr(Node &n, bool is_fir);
     void gas_dec(const std::string &n, int size);
-    void gas_jxx(const std::string &op, const std::string &des);
-    std::string  gas_load(const std::string &_q);
-    bool gas_load(const std::string &_q, const std::string &_reg);
-    std::string Generate::gas_flo_load(const std::string &fl);
+    void gas_jxx(const std::string &op, const std::string &des, Type &_t);
+    Type gas_load(const std::string &_q, const std::string &_reg);
+    int Generate::gas_flo_load(const std::string &fl);
     std::string Generate::searchFLoat(const std::string &fl);
     std::string gas_fld(int size);
-    std::string gas_fstp(const std::string &name);
+    Type gas_fstp(const std::string &name);
 
     
     std::string Generate::getEmptyReg();
@@ -106,8 +106,6 @@ private:
 	void reg_init();
 	// 字符串常量生成汇编代码
 	void const_str();
-	// 生成变量声明的汇编代码
-	void var_decl(Node &n, bool is_fir);
 	// 生成函数的汇编，函数名需要改
 	void func_decl(Node &n);
 	// 获取该作用域所有局部变量的大小，包括函数调用的size
@@ -120,22 +118,21 @@ private:
     LocVar &searchLocvar(const std::string &name);
     void setLocEnv(const std::string &envName);
     TempVar &searchTempvar(const std::string &name);
+	TempVar &searchFloatTempvar(const std::string &name);
     void envUp2DownSearch(Env * _env, const std::string &name, LocVar &var, bool *isfind);
 	std::string Generate::getReg(const std::string &_reg);
 	void setReg(const std::string &_reg, const std::string &_var);
-	void setRegConst(std::string &_reg);
 	void getReg(std::vector<std::string> &_q);
-	void glo_var_decl(Node &n);
 
-	void glo_var_define(Node &n, bool is_fir);
     void push_back_temp_stk(TempVar & tv, const std::string &reg);
     void pop_back_temp_stk(const std::string &var);
 
 
     bool isTempVar(const std::string &_t);
+	bool isFloatTemVar(const std::string &_t);
     bool isReg(const std::string &_t);
     bool isLocVar(const std::string &_l);
-    char getVarType(std::string &_v);
+    bool isEnumConst(const std::string &_l);
 
 	Parser *parser;
 	Env *gloEnv = nullptr;
@@ -155,7 +152,15 @@ private:
 
 	// 使用表达式栈来分配寄存器
 	std::vector<TempVar> _stk_temp_var;
+	std::vector<TempVar> _stk_float_temp_var;
     std::vector<TempVar> _stk_ret_;
+
+	bool finit = true;                   // FPU是否初始化过
+
+	void temp_save(const std::string &_n, int type, bool is_unsig = false, const std::string &_reg = "%st");
+	void temp_save(const std::string &_n, Type &_t, const std::string &_reg);
+	void unlimited_binary_op(std::vector<std::string> &_q, const std::string &op);
+	void shift_op(std::vector<std::string> &_q, const std::string &op);
 };
 
 #endif // !__ZCC_GEN_H

@@ -41,30 +41,32 @@
 
 #define KEYWORD_MAP keyword(K_AUTO, "auto", true)\
 					keyword(K_BOOL, "_Bool", true)\
+					\
+					keyword(K_CHAR, "char", true)\
+					keyword(K_SHORT, "short", true)\
+					keyword(K_INT, "int", true)\
+					keyword(K_LONG, "long", true)\
+					keyword(K_FLOAT, "float", true)\
+					keyword(K_DOUBLE, "double", true)\
+					\
 					keyword(K_BREAK, "break", false)\
 					keyword(K_CASE, "case", false)\
-					keyword(K_CHAR, "char", true)\
 					keyword(K_COMPLEX, "_Complex", true)\
 					keyword(K_CONST, "const", true)\
 					keyword(K_CONTINUE, "continue", false)\
 					keyword(K_DEFAULT, "default", false)\
 					keyword(K_DO, "do", false)\
-					keyword(K_DOUBLE, "double", true)\
 					keyword(K_ELSE, "else", false)\
 					keyword(K_ENUM, "enum", true)\
 					keyword(K_EXTERN, "extern", true)\
-					keyword(K_FLOAT, "float", true)\
 					keyword(K_FOR, "for", false)\
 					keyword(K_GOTO, "goto", false)\
 					keyword(K_IF, "if", false)\
 					keyword(K_IMAGINARY, "_Imaginary", true)\
 					keyword(K_INLINE, "inline", true)\
-					keyword(K_INT, "int", true)\
-					keyword(K_LONG, "long", true)\
 					keyword(K_REGISTER, "register", true)\
 					keyword(K_RESTRICT, "restrict", true)\
 					keyword(K_RETURN, "return", false)\
-					keyword(K_SHORT, "short", true)\
 					keyword(K_SIGNED, "signed", true)\
 					keyword(K_SIZEOF, "sizeof", false)\
 					keyword(K_STATIC, "static", true)\
@@ -197,8 +199,9 @@ public:
 class Type {
 public:
 	Type() {}
+    Type(int ty) :type(ty) {}
 	Type(int ty, int _s, std::vector<int> _l) :type(ty), _all_len(_s), len(_l) {}
-	Type(int ty, int s, bool isunsig) :type(ty), size(s), isUnsig(isunsig) { }
+	Type(int ty, int s, bool isunsig) :type(ty), size(s), isUnsig(isunsig), len(0), fields(), params(){ }
 	Type(int ty, Type *ret, std::vector<Node> _params) : type(ty), retType(ret), params(_params) { }
 
     Type(const Type &t) { coping(t); }

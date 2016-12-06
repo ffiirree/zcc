@@ -650,13 +650,6 @@ void Parser::generateIfGoto()
 	if (_stk_if_goto.size() == 1 && _stk_if_goto_op.size() == 0) {
 		b = boolLabel.back();boolLabel.pop_back();
 
-		if (_stk_if_goto_op.back() == "!") {
-			b1 = b;
-			boolLabel.pop_back();
-			b1._true = b._false;
-			b1._false = b._true;
-		}
-
 		_stk_if_goto_out.push_back(_stk_if_goto.back() + b._true);
 		_stk_if_goto_out.push_back("goto " + b._false);
 		_stk_if_goto.pop_back();
@@ -802,11 +795,21 @@ void Parser::createUnaryQuadruple(const std::string &op)
 		return;
 	}
 
-	if ((op == "-U" || op == "+U")&& isNumber(_stk_quad.back())) {
-		std::string num = _stk_quad.back(); _stk_quad.pop_back();
-		num = "-" + num;
-		_stk_quad.push_back(num);
-		return;
+	if ((op == "-U" || op == "+U")) {
+		
+		std::string num = _stk_quad.back(); 
+		for (size_t i = 0;i < float_const.size(); ++i) {
+			if (num == float_const.at(i)) {
+				float_const.at(i-1) = op.at(0) + float_const.at(i-1);
+				return;
+			}
+		}
+		if (isNumber(_stk_quad.back())) {
+			_stk_quad.pop_back();
+			num = "-" + num;
+			_stk_quad.push_back(num);
+			return;
+		}
 	}
 
 	if (op == "~" && isNumber(_stk_quad.back())) {
@@ -848,7 +851,19 @@ void Parser::createQuadruple(const std::string &op)
         std::string v1, v2;
 
         v1 = _stk_quad.back(); _stk_quad.pop_back();
+		if (isNumber(v1)) {
+			float_const.push_back(v1);
+			v1 = newLabel("f");
+			float_const.push_back(v1);
+			float_const.push_back("4f");
+		}
         v2 = _stk_quad.back(); _stk_quad.pop_back();
+		if (isNumber(v2)) {
+			float_const.push_back(v2);
+			v2 = newLabel("f");
+			float_const.push_back(v2);
+			float_const.push_back("4f");
+		}
 
         _out_str += "\t" + v1;
         _out_str += "\t" + v2;

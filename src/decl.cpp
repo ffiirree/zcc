@@ -46,6 +46,22 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 
 			if (next_is('=')) {
 				list.push_back(createDeclNode(var, decl_init(ty)));
+
+				// 初始化浮点数
+				// 直接是整数常量无法初始化浮点数
+				if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
+					std::string _i2f = _stk_quad.back();
+					if (isNumber(_i2f)) {
+						_stk_quad.pop_back();
+						float_const.push_back(_i2f);
+						_i2f = newLabel("f");
+						float_const.push_back(_i2f);
+						float_const.push_back("4f");
+						_stk_quad.push_back(_i2f);
+					}
+				}
+
+
                 if (!isGlo) {
                     if(var.type.type == K_FLOAT)
                         createQuadruple("=f");
@@ -54,20 +70,26 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 					else if (var.type.type == ARRAY) {
 						int _off = 0;
 
-						for (size_t i = 0; i < var.type._all_len; ++i) {
+                        std::vector<std::string> arr_init;
+						for (int i = 0; i < var.type._all_len; ++i) {
 							std::string init_val = _stk_quad.back(); 
 
 							if (init_val != var.varName) {
-								_stk_quad.push_back(var.varName);
-								_stk_quad.push_back(std::to_string(i * var.type.size));
-								createQuadruple(".=");
+                                arr_init.push_back(init_val);
+                                _stk_quad.pop_back();
 							}
 							else {
 								_stk_quad.pop_back();
 								break;
 							}
 						}
-						
+                        if(!arr_init.empty())
+                            for (size_t i = 0;i < arr_init.size(); ++i) {
+                                _stk_quad.push_back(arr_init.at(arr_init.size() - i - 1));
+                                _stk_quad.push_back(var.varName);
+                                _stk_quad.push_back(std::to_string(i * var.type.size));
+                                createQuadruple(".=");
+                            }
 					}
                     else if (var.type.type == K_STRUCT || var.type.type == K_TYPEDEF) {
                         // 需要全部初始化
@@ -272,7 +294,7 @@ Type Parser::decl_specifiers(int *rsclass)
             custom_type = getCustomType(t.getSval());
             lex.next();
             if (custom_type.type == 0)
-                error("Undefined type: ", t.getSval());
+                error("Undefined type: %s", t.getSval().c_str());
 		}
 
 		if (t.getType()!= KEYWORD) {
@@ -307,7 +329,7 @@ Type Parser::decl_specifiers(int *rsclass)
 		case K_IMAGINARY: // do something ..
 
 
-		case K_ENUM: _log_("no enum."); break;
+        case K_ENUM: custom_type = enum_def(); break;
         case K_STRUCT: if (custom_type.type != 0) error("error struct specifier."); custom_type = struct_def(); break;
 		case K_UNION: _log_("no union."); break;
 
@@ -363,6 +385,68 @@ std::vector<Node> Parser::initializer(Type &ty)
 {
 	std::vector<Node> list;
 	return list;
+}
+
+Type Parser::enum_def()
+{
+    if (lex.peek().getType() == ID)
+        lex.next();
+
+    expect('{');
+
+    Token t;
+    int _val = 0;
+    std::string _v;
+    std::string _n;
+    do {
+        t = lex.next();
+        if (t.getType() == ID) {
+            // 常量名
+            _n = t.getSval();
+            Node n = globalenv->search(_n);
+            if (!n.varName.empty())
+                error("redefined var : %s", _n.c_str());
+            if(!searchEnum(_n).empty())
+                error("redefined var : %s", _n.c_str());
+
+            // 常量值
+            if (next_is('=')) {
+                t = lex.next();
+
+                if (t.getType() == INTEGER) {
+                    if (atoi(t.getSval().c_str()) < _val)
+                        error("Inc val.");
+                    _val = atoi(t.getSval().c_str()) + 1;
+                    _v = t.getSval();
+                }
+                else {
+                    error("need interger");
+                }
+
+            }
+            else {
+                _v = std::to_string(_val);
+                _val++;
+            }
+        }
+        else
+            error("need a name.");
+
+        enum_const.insert(std::pair<std::string, std::string>(_n, _v));
+    } while (next_is(',') && lex.peek().getId() != '}');
+    expect('}');
+
+    return Type(K_ENUM);
+}
+
+std::string Parser::searchEnum(const std::string &key)
+{
+	if (enum_const.empty())
+		return std::string();
+    std::map<std::string, std::string>::iterator iter = enum_const.find(key);
+    if (iter != enum_const.end())
+        return iter->second;
+    return std::string();
 }
 
 Type Parser::struct_def()

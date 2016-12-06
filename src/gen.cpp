@@ -101,10 +101,10 @@ void Generate::run()
         std::string size = floatConst.back(); floatConst.pop_back();
         gas_label(floatConst.back()); floatConst.pop_back();
 
-        if (size == "4") {
+        if (size == "4f") {
             gas_tab(".float " + floatConst.back()); floatConst.pop_back();
         }
-        else if (size == "8") {
+        else if (size == "8f") {
             gas_tab(".double " + floatConst.back()); floatConst.pop_back();
         }
         else {
@@ -189,6 +189,13 @@ void Generate::generate(std::vector<std::string> &_q)
 
         for (size_t i = _stk_temp_var.size(); i > 0; --i)
             _stk_temp_var.pop_back();
+
+		// FPU
+		if (!finit) {
+			gas_tab("finit");
+			_stk_float_temp_var.clear();
+			finit = true;
+		}
     }
 	else if (_q_0_is("=")) {
         std::string _src, _des;
@@ -198,6 +205,11 @@ void Generate::generate(std::vector<std::string> &_q)
 		LocVar var = searchLocvar(_q.at(2));
         if (var.varName.empty()) {
             var = gloEnv->search(_q.at(2));
+
+			if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
+				gas_fstp(var.varName); 
+				return;
+			}
 
             if (!var.varName.empty()) {
                 size = var.type.size;
@@ -210,11 +222,15 @@ void Generate::generate(std::vector<std::string> &_q)
             }
         }
         else {
+			if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
+				gas_fstp(var.varName);
+				return;
+			}
             size = var.type.size;
             _des = loc_var_val(var._off);
         }
 
-        // 或为临时变量
+        // 源 为临时变量
         TempVar _temp = searchTempvar(_q.at(1));
         if (!_temp._name.empty()) {
             gas_ins(mov2stk(size), reg2stk(_temp._reg, size), _des);
@@ -223,8 +239,12 @@ void Generate::generate(std::vector<std::string> &_q)
 		else if (isNumber(_q.at(1))) {
             gas_ins(mov2stk(size), "$" + _q.at(1), _des);
 		}
+        else if (isEnumConst(_q.at(1))) {
+            gas_ins(mov2stk(size), "$" + parser->searchEnum(_q.at(1)), _des);
+        }
 	}
 	else if (_q_0_is("if")) {
+		Type _t1, _t2;
 		// 注意出栈和入栈的顺序
 		std::string _q1 = _q.at(3);
 		std::string _q2 = _q.at(1);
@@ -232,15 +252,25 @@ void Generate::generate(std::vector<std::string> &_q)
 		std::string _q1_reg;
 		std::string _q2_reg;
 
-        _q1_reg = gas_load(_q1);
-		_q2_reg = gas_load(_q2);
+		_q1_reg = getEmptyReg();
+		_t1 = gas_load(_q1, _q1_reg);
+		_q2_reg = getEmptyReg();
+		_t2 = gas_load(_q2, _q2_reg); _t1.type < _t2.type ? _t1 = _t2 : true;
 
-        gas_ins("cmpl", _q1_reg, _q2_reg);
-        gas_jxx(_q.at(2), _q.at(5));
-
-		// 先将临时变量和常数出栈
-		pop_back_temp_stk(_q1);
-		pop_back_temp_stk(_q2);
+		if (_t1.type == K_FLOAT || _t1.type == K_DOUBLE) {
+			if (isFloatTemVar(_q2))
+				gas_tab("fxch	%st(1)");
+			gas_tab("fucompp");
+			getReg("%eax");
+			gas_tab("fnstsw	%ax");
+			gas_tab("sahf");
+			gas_jxx(_q.at(2), _q.at(5), _t1);
+		}
+		else {
+			gas_ins("cmpl", _q1_reg, _q2_reg);
+			gas_jxx(_q.at(2), _q.at(5), _t1);
+		}
+		temp_clear(_q1, _q2);
 	}
 	else if (_q_0_is("goto")) {
         gas_jmp(_q.at(1));
@@ -271,12 +301,22 @@ void Generate::generate(std::vector<std::string> &_q)
 			LocVar _loc = searchLocvar(params.back());
 			if (!_loc.varName.empty()) {
                 getReg("%eax");
+
+				if (_loc.type.type == K_FLOAT || _loc.type.type == K_DOUBLE) {
+					gas_tab(gas_fld(4) + "\t" + std::to_string(_loc._off) + "(%ebp)");
+					gas_tab("fstpl\t"+ _des);
+					continue;
+				}
+
                 gas_ins(movXXl(_loc.type.size, _loc.type.isUnsig), std::to_string(_loc._off) + "(%ebp)", "%eax");
                 _src = reg2stk("%eax", param_size);
 			}
 			else if(isNumber(params.back())){
                 _src = "$" + params.back();
 			}
+            else if (isEnumConst(params.back())) {
+                _src = "$" + parser->searchEnum(params.back());
+            }
 			else if(isTempVar(params.back())){
 				TempVar _te = searchTempvar(params.back());
                 _src = reg2stk(_te._reg, param_size);
@@ -315,6 +355,9 @@ void Generate::generate(std::vector<std::string> &_q)
 
         if (isNumber(_q.at(1))) {
             gas_ins(movXXl(4, false), "$" + _q.at(1), "%eax");
+        }
+        else if (isEnumConst(_q.at(1))) {
+            gas_ins(movXXl(4, false), "$" + parser->searchEnum(_q.at(1)), "%eax");
         }
         else if (isTempVar(_q.at(1))) {
             TempVar var = searchTempvar(_q.at(1));
@@ -370,6 +413,7 @@ std::string Generate::movXXl(int size, bool isz)
     case 1:if (isz) return "movzbl";else return "movsbl";
     case 2:if (isz) return "movzwl";else return "movswl";
     case 4:return "movl";
+
     default:
         error("Var size error.");
         return std::string();
@@ -464,6 +508,7 @@ std::string Generate::getReg(const std::string &_reg)
 		if (_reg != universReg.at(i)._reg && universReg.at(i)._var.empty()) {
 			universReg.at(i)._var = _var;
 			_tem._reg = universReg.at(i)._reg;
+
 			TempVar _pus = _tem;
 			_stk_temp_var.pop_back();
 			_stk_temp_var.push_back(_pus);
@@ -497,6 +542,8 @@ void Generate::pop_back_temp_stk(const std::string &var)
 
 	if (isNumber(var))
 		return;
+    if (isEnumConst(var))
+        return;
 	if (_stk_temp_var.empty())
 		return;
 
@@ -507,6 +554,14 @@ void Generate::pop_back_temp_stk(const std::string &var)
 bool Generate::isTempVar(const std::string &_t)
 {
 	TempVar _var = searchTempvar(_t);
+	if (!_var._name.empty()) {
+		return true;
+	}
+	return false;
+}
+bool Generate::isFloatTemVar(const std::string &_t)
+{
+	TempVar _var = searchFloatTempvar(_t);
 	if (!_var._name.empty()) {
 		return true;
 	}
@@ -529,14 +584,14 @@ bool Generate::isLocVar(const std::string &_l)
     
     return false;
 }
-
-char Generate::getVarType(std::string &_v)
+bool Generate::isEnumConst(const std::string &_l)
 {
-    if (isNumber(_v)) return 'n';
-    else if (isLocVar(_v)) return 'l';
-    else if (isTempVar(_v)) return 't';
-    return 0;
+    std::string enu = parser->searchEnum(_l);
+    if (!enu.empty())
+        return true;
+    return false;
 }
+
 
 /**
  * @获取节点的数据类型
@@ -723,7 +778,16 @@ TempVar &Generate::searchTempvar(const std::string &name)
     TempVar *var = new TempVar();
     return *var;
 }
-
+TempVar &Generate::searchFloatTempvar(const std::string &name)
+{
+	for (size_t i = 0; i < _stk_float_temp_var.size(); ++i) {
+		if (_stk_float_temp_var.at(i)._name == name) {
+			return _stk_float_temp_var.at(i);
+		}
+	}
+	TempVar *var = new TempVar();
+	return *var;
+}
 LocVar &Generate::searchLocvar(const std::string &name)
 {
     LocVar *var = new LocVar();

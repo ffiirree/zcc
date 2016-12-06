@@ -196,7 +196,7 @@ Token Lex::read_num(char fir)
 	int pos = 0;
 	std::string str;
 
-	if (c > '0') {
+	if (c > '0' || (f.peek() == '.')) {
 		do {
 			str.push_back(c);
 			c = f.next();

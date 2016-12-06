@@ -114,7 +114,7 @@ public:
 	std::string newLabel(const std::string &_l);
 
     inline std::vector<std::string> getFloatConst() { return float_const; }
-
+    std::string searchEnum(const std::string &key);
 private:
     bool cheak_redefined(Env *_env, const std::string &_name);
 	Type conv2ptr(Type ty);
@@ -267,6 +267,8 @@ private:
 	Label labels;                          // 源程序中的Label
 	std::vector<StrCard> const_string;     // 字符串常量
     std::vector<std::string> float_const;  // 浮点数常量
+    //std::vector<std::string> enum_const;   // 枚举常量表
+    std::map<std::string, std::string> enum_const;
 
 	std::string label_break;
 	std::vector<std::string> _stk_if_goto;
@@ -285,13 +287,15 @@ private:
     std::map<std::string, Type> custom_type_tbl;
     Type getCustomType(const std::string &_n);
     Type struct_def();
-
+    Type enum_def();
 #ifdef _OVERLOAD_
 	std::string getOverLoadName(const std::string &name, std::vector<Node> &_p);
 #endif
 };
 
-
+/**
+ * @berif 语法分析过程中，浮点常量已经被剔除，所以只有整数
+ */
 inline bool isNumber(const std::string &str)
 {
 	if (str.empty())
@@ -301,7 +305,7 @@ inline bool isNumber(const std::string &str)
 		|| (str.at(0) == '-' || str.at(0) == '+')))
 		return false;
 
-	// 添加检测float
+	// 且浮点数
 	bool _has_dot = false;
 	for (size_t i = 1; i < str.size();++i) {
 		if (!((str.at(i) >= '0' && str.at(i) <= '9') || (str.at(i) == '.' && _has_dot == false)))

@@ -1,17 +1,56 @@
 main:
-.=	0	a	8
-.=	4	a	9
-.=	8	a	0
+=f	.Lf6	y	.Lvar7
+.Lforb3:
+if	y > .Lf8	goto .Lfort5
+goto .Lforn2
+.Lfe34:
+-f	.Lf9	y	.Lvar10
+=f	.Lvar10	y	.Lvar11
+goto .Lforb3
+.Lfort5:
+=f	.Lf16	x	.Lvar17
+.Lforb13:
+if	x < .Lf18	goto .Lfort15
+goto .Lforn12
+.Lfe314:
++f	.Lf19	x	.Lvar20
+=f	.Lvar20	x	.Lvar21
+goto .Lforb13
+.Lfort15:
+*f	x	x	.Lvar22
+*f	y	y	.Lvar23
++f	.Lvar23	.Lvar22	.Lvar24
+-f	.Lf25	.Lvar24	.Lvar26
+=f	.Lvar26	a	.Lvar27
 clr
-.&	4	a	.Lvar2
-=	9	.Lvar2
-clr
-.	4	a	.Lvar4
+*f	a	a	.Lvar29
+*f	a	.Lvar29	.Lvar30
+*f	x	x	.Lvar31
+*f	y	.Lvar31	.Lvar32
+*f	y	.Lvar32	.Lvar33
+*f	y	.Lvar33	.Lvar34
+-f	.Lvar34	.Lvar30	.Lvar35
+if	.Lvar35 <= .Lf36	goto .Lift37
+goto .Liff38
+.Lift37:
 
-param .Lvar4
-param .LLSTR3
-call           printf         2	.Lret5
+param .LLSTR39
+call           printf         1	.Lret40
+goto	.Lsn28
+.Liff38:
+
+param .LLSTR41
+call           printf         1	.Lret42
+.Lsn28:
 clr
-ret	0
+goto .Lfe314
+.Lforn12:
+clr
+
+param .LLSTR44
+call           printf         1	.Lret45
+clr
+goto .Lfe34
+.Lforn2:
 clr
 .end
