@@ -4,20 +4,12 @@
 
 
 Lex::Lex(const std::string &filename):
-	f(filename), index(0)
+	f(filename)
 {
 #define keyword(ty, name, _) keywords.push_back(std::string(name));
-	KEYWORD_MAP
+    KEYWORD_MAP
 #undef keyword
-
-	Token t;
-	int counter = 0;
-	do {
-		t = readToken();
-		t.setPos(f.getPos());
-		t.setCounter(++counter);
-		tokens.push_back(t);
-	} while (t.getType() != K_EOF);
+        scan(filename);
 }
 
 void Lex::scan(const std::string &filename)
@@ -25,9 +17,12 @@ void Lex::scan(const std::string &filename)
 	f.open(filename);
 
 	Token t;
+    int counter = 0;
 	do {
-		t = readToken();
-		tokens.push_back(t);
+        t = readToken();
+        t.setPos(f.getPos());
+        t.setCounter(++counter);
+        tokens.push_back(t);
 	} while (t.getType() != K_EOF);
 
 	index = 0;

@@ -120,7 +120,7 @@ enum {
 };
 
 
-
+std::string getOnlyFileName(const std::string &_fn);
 
 class Pos {
 public:

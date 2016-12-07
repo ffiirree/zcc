@@ -21,19 +21,20 @@ int Generate::gas_flo_load(const std::string &name)
 	}
 
     // 寄存器、局部和全局
-    Node var = gloEnv->search(name);
     if (isFloatTemVar(name)) {
         TempVar temp = searchFloatTempvar(name);
         return temp.type;
     }
     else  if (isLocVar(name)) {
-        var = searchLocvar(name);
-        gas_tab(gas_fld(var.type.size, var.type.type) + "\t" + loc_var_val(var._off));
-        return var.type.type;
-    }
-    else if (!var.varName.empty()) {
-        gas_tab(gas_fld(var.type.size, var.type.type) + "\t" + "_" + var.varName);
-		return var.type.type;
+        Node var = searchLocvar(name);
+        if (var.kind == NODE_GLO_VAR) {
+            gas_tab(gas_fld(var.type.size, var.type.type) + "\t" + "_" + var.varName);
+            return var.type.type;
+        }
+        else if (var.kind == NODE_LOC_VAR) {
+            gas_tab(gas_fld(var.type.size, var.type.type) + "\t" + loc_var_val(var._off));
+            return var.type.type;
+        }
     }
 	else {
 		error("error float number.");
@@ -206,7 +207,7 @@ Type Generate::gas_load(const std::string &_q, const std::string &_reg)
         return Type(K_INT, 4, false);
     }
 
-    // 加载局部变量
+    // 加载变量
     Node var;
     if (isLocVar(_q)) {
         var = searchLocvar(_q);
@@ -217,26 +218,16 @@ Type Generate::gas_load(const std::string &_q, const std::string &_reg)
 			clearRegTemp(_q);
 			return Type(var.type.type, var.type.size, var.type.isUnsig);
 		}
-
-        gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), _reg);
-        setReg(_reg, _q);
-        return Type(var.type.type, var.type.size, var.type.isUnsig);
-    }
-
-    // 加载全局变量
-    var = gloEnv->search(_q);
-    if (!var.varName.empty()) {
-		// 加载浮点数
-		if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
-			gas_flo_load(_q);
-			// 没有使用通用，释放掉
-			clearRegTemp(_q);
-			return Type(var.type.type, var.type.size, var.type.isUnsig);
-		}
-
-        gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, _reg);
-        setReg(_reg, _q);
-		return Type(var.type.type, var.type.size, var.type.isUnsig);
+        else if (var.kind == NODE_GLO_VAR) {
+            gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, _reg);
+            setReg(_reg, _q);
+            return Type(var.type.type, var.type.size, var.type.isUnsig);
+        }
+        else if (var.kind == NODE_LOC_VAR) {
+            gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), _reg);
+            setReg(_reg, _q);
+            return Type(var.type.type, var.type.size, var.type.isUnsig);
+        }
     }
 
 	std::string _f = searchFLoat(_q);
@@ -393,27 +384,31 @@ void Generate::gas_addr(Node &_var, const std::string &_off, std::string &_des_r
         gas_ins(movXXl(size, is_unsig), std::to_string(_var._off + _var.type.size * atoi(parser->searchEnum(_off).c_str())) + "(%ebp)", "%eax");
     else if (isLocVar(_off)) {
         Node _loc = searchLocvar(_off);
-        getReg("%ecx");
-        gas_ins("leal", std::to_string(_var._off) + "(%ebp)", "%eax");
-        gas_ins("movl", loc_var_val(_loc._off), "%ecx");
-        gas_ins("imull", "$" + std::to_string(_var.type.size), "%ecx");
-        gas_ins("addl", "%ecx", "%eax");
-        gas_ins(movXXl(size, is_unsig), "(%eax)", "%eax");
+
+        if (_loc.kind == NODE_GLO_VAR) {
+            Node _glo = gloEnv->search(_off);
+            getReg("%edx");
+            gas_ins("leal", std::to_string(_var._off) + "(%ebp)", "%eax");
+            gas_ins("movl", "_" + _glo.varName, "%edx");
+            gas_ins("imull", "$" + std::to_string(_var.type.size), "%edx");
+            gas_ins("addl", "%edx", "%eax");
+            gas_ins(movXXl(size, is_unsig), "(%eax)", "%eax");
+        }
+        else if (_loc.kind == NODE_LOC_VAR) {
+            getReg("%ecx");
+            gas_ins("leal", std::to_string(_var._off) + "(%ebp)", "%eax");
+            gas_ins("movl", loc_var_val(_loc._off), "%ecx");
+            gas_ins("imull", "$" + std::to_string(_var.type.size), "%ecx");
+            gas_ins("addl", "%ecx", "%eax");
+            gas_ins(movXXl(size, is_unsig), "(%eax)", "%eax");
+        }
+        
     }
     else if (isTempVar(_off)) {
         TempVar _loc = searchTempvar(_off);
         gas_ins("leal", std::to_string(_var._off) + "(%ebp)", "%eax");
         gas_ins("imull", "$" + std::to_string(_var.type.size), _loc._reg);
         gas_ins("addl", _loc._reg, "%eax");
-        gas_ins(movXXl(size, is_unsig), "(%eax)", "%eax");
-    }
-    else {
-        Node _glo = gloEnv->search(_off);
-        getReg("%edx");
-        gas_ins("leal", std::to_string(_var._off) + "(%ebp)", "%eax");
-        gas_ins("movl", "_" + _glo.varName, "%edx");
-        gas_ins("imull", "$" + std::to_string(_var.type.size), "%edx");
-        gas_ins("addl", "%edx", "%eax");
         gas_ins(movXXl(size, is_unsig), "(%eax)", "%eax");
     }
 }

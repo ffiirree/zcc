@@ -211,32 +211,33 @@ void Generate::generate(std::vector<std::string> &_q)
         // 目的地
         if (isLocVar(_q.at(2))) {
             LocVar var = searchLocvar(_q.at(2));
-            if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
-                gas_fstp(var.varName);
-                return;
+
+            if (var.kind == NODE_GLO_VAR) {
+                if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
+                    gas_fstp(var.varName);
+                    return;
+                }
+
+                if (!var.varName.empty()) {
+                    _des_size = var.type.size;
+                    _des = "_" + var.varName;
+                }
             }
-            else {
-                _des_size = var.type.size;
-                _des = loc_var_val(var._off);
+            else if (var.kind == NODE_LOC_VAR) {
+                if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
+                    gas_fstp(var.varName);
+                    return;
+                }
+                else {
+                    _des_size = var.type.size;
+                    _des = loc_var_val(var._off);
+                }
             }
         }
-        else {
-            Node var = gloEnv->search(_q.at(2));
-
-            if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
-                gas_fstp(var.varName);
-                return;
-            }
-
-            if (!var.varName.empty()) {
-                _des_size = var.type.size;
-                _des = "_" + var.varName;
-            }
-            else if (isTempVar(_q.at(2))) {
-                TempVar _tem = searchTempvar(_q.at(2));
-                _des_size = 4;
-                _des = "(" + _tem._reg + ")";
-            }
+        else if (isTempVar(_q.at(2))) {
+            TempVar _tem = searchTempvar(_q.at(2));
+            _des_size = 4;
+            _des = "(" + _tem._reg + ")";
         }
 
         // 源 为临时变量
@@ -252,16 +253,18 @@ void Generate::generate(std::vector<std::string> &_q)
             gas_ins(mov2stk(_des_size), "$" + parser->searchEnum(_q.at(1)), _des);
         }
         else if (isLocVar(_q.at(1))) {
-            Node _loc = searchLocvar(_q.at(1));
-            std::string _reg = getEmptyReg();
-            gas_ins(movXXl(_loc.type.size, _loc.type.isUnsig), loc_var_val(_loc._off), _reg);
-            gas_ins(mov2stk(_des_size), reg2stk(_reg, _des_size), _des);
-        }
-        else {
-            Node var = gloEnv->search(_q.at(1));
-            std::string _reg = getEmptyReg();
-            gas_ins(movXXl(var.type.size, var.type.isUnsig), "$_" + var.varName, _reg);
-            gas_ins(mov2stk(_des_size), reg2stk(_reg, _des_size), _des);
+            Node var = searchLocvar(_q.at(1));
+
+            if (var.kind == NODE_GLO_VAR) {
+                std::string _reg = getEmptyReg();
+                gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, _reg);
+                gas_ins(mov2stk(_des_size), reg2stk(_reg, _des_size), _des);
+            }
+            else if (var.kind == NODE_LOC_VAR) {
+                std::string _reg = getEmptyReg();
+                gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), _reg);
+                gas_ins(mov2stk(_des_size), reg2stk(_reg, _des_size), _des);
+            }
         }
 	}
 	else if (_q_0_is("if")) {
@@ -319,18 +322,26 @@ void Generate::generate(std::vector<std::string> &_q)
             }
 
 			std::string _out_str;
-			LocVar _loc = searchLocvar(params.back());
-			if (!_loc.varName.empty()) {
-                getReg("%eax");
+			
+			if (isLocVar(params.back())) {
+                LocVar var = searchLocvar(params.back());
 
-				if (_loc.type.type == K_FLOAT || _loc.type.type == K_DOUBLE) {
-					gas_tab(gas_fld(_loc.type.size, _loc.type.type) + "\t" + std::to_string(_loc._off) + "(%ebp)");
-					gas_tab("fstpl\t"+ _des);
-					continue;
-				}
+                if (var.kind == NODE_GLO_VAR) {
+                    gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, "%eax");
+                    _src = reg2stk("%eax", param_size);
+                }
+                else if (var.kind == NODE_LOC_VAR) {
+                    getReg("%eax");
+                    if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
+                        gas_tab(gas_fld(var.type.size, var.type.type) + "\t" + std::to_string(var._off) + "(%ebp)");
+                        gas_tab("fstpl\t" + _des);
+                        continue;
+                    }
 
-                gas_ins(movXXl(_loc.type.size, _loc.type.isUnsig), std::to_string(_loc._off) + "(%ebp)", "%eax");
-                _src = reg2stk("%eax", param_size);
+                    gas_ins(movXXl(var.type.size, var.type.isUnsig), std::to_string(var._off) + "(%ebp)", "%eax");
+                    _src = reg2stk("%eax", param_size);
+                }
+                
 			}
 			else if(isNumber(params.back())){
                 _src = "$" + params.back();
@@ -342,11 +353,6 @@ void Generate::generate(std::vector<std::string> &_q)
 				TempVar _te = searchTempvar(params.back());
                 _src = reg2stk(_te._reg, param_size);
 			}
-            else {
-                Node var = gloEnv->search(params.back());
-                gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, "%eax");
-                _src = reg2stk("%eax", param_size);
-            }
 
             gas_ins(mov2stk(param_size), _src, _des);
 			params.pop_back();
@@ -386,12 +392,15 @@ void Generate::generate(std::vector<std::string> &_q)
         }
         else if (isLocVar(_q.at(1))) {
             LocVar var = searchLocvar(_q.at(1));
-            _src = loc_var_val(var._off);
-            gas_ins(movXXl(var.type.size, var.type.isUnsig), _src, "%eax");
-        }
-        else {
-            Node var = gloEnv->search(_q.at(1));
-            gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, "%eax");
+
+            if (var.kind == NODE_GLO_VAR) {
+                gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, "%eax");
+            }
+            else if (var.kind == NODE_LOC_VAR) {
+                _src = loc_var_val(var._off);
+                gas_ins(movXXl(var.type.size, var.type.isUnsig), _src, "%eax");
+            }
+           
         }
 
         gas_tab("leave");
@@ -788,6 +797,7 @@ TempVar &Generate::searchTempvar(const std::string &name)
     TempVar *var = new TempVar();
     return *var;
 }
+
 TempVar &Generate::searchFloatTempvar(const std::string &name)
 {
 	for (size_t i = 0; i < _stk_float_temp_var.size(); ++i) {
@@ -798,35 +808,10 @@ TempVar &Generate::searchFloatTempvar(const std::string &name)
 	TempVar *var = new TempVar();
 	return *var;
 }
+
 LocVar &Generate::searchLocvar(const std::string &name)
 {
     return locEnv->search(name);
-    /*LocVar *var = new LocVar();
-    bool isfind = false;
-    envUp2DownSearch(locEnv, name, *var, &isfind);
-    return *var;*/
-}
-
-/**
- * 广度优先搜索
- */
-void Generate::envUp2DownSearch(Env *_env, const std::string &name, LocVar &var, bool *isfind)
-{
-    if (!_env) return;
-
-    for (size_t i = 0; i < _env->size(); ++i) {
-        if (name == _env->at(i).varName) {
-            var = _env->at(i);
-            *isfind = true;
-            return;
-        }
-    }
-
-    std::vector<Env *> _env_vec = _env->getNext();
-    for (size_t i = 0; i < _env_vec.size(); ++i) {
-        envUp2DownSearch(_env_vec.at(i), name, var, isfind);
-        if (*isfind) return;
-    }
 }
 
 

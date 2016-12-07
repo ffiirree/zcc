@@ -60,7 +60,8 @@ int main(int argc, char *argv[])
 		gen.run();
 	}
 
-	std::string runGccSys = "gcc hello.s";
+    std::string _fn = getOnlyFileName(args.at(1));
+	std::string runGccSys = "gcc " + _fn + ".s";
 	auto ret = system(runGccSys.c_str());
 
 	return 0;

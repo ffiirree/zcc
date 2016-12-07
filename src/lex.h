@@ -13,6 +13,7 @@ public:
 	Lex(const Lex &lex) :f(lex.f), keywords(lex.keywords), tokens(lex.tokens), index(index) {  }
 	inline Lex operator=(const Lex &lex) { f = lex.f; keywords = lex.keywords; tokens = lex.tokens; index = lex.index; return *this; }
 
+    Token push_back(const Token &_t) { tokens.push_back(_t); }
 	Token next();
 	void back();
 	Token peek();
@@ -43,7 +44,7 @@ private:
 	File f;
 	std::vector<std::string> keywords;
 	std::vector<Token> tokens;
-	int index;
+    int index = 0;
 };
 
 

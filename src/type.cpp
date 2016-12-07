@@ -136,3 +136,23 @@ inline void Node::copying(const Node &n)
 	retval = n.retval;
 	stmts = n.stmts;
 }
+
+
+std::string getOnlyFileName(const std::string &_fn)
+{
+    size_t _index_separator = 0;
+    size_t _index_dot = 0;
+    for (size_t i = 0; i < _fn.length(); ++i) {
+        if (_fn.at(i) == '/' || _fn.at(i) == '\\')
+            _index_separator = i + 1;
+        if (_fn.at(i) == '.')
+            _index_dot = i;
+    }
+    if (_index_dot <= _index_separator && _fn.length() > 0) _index_dot = _fn.length() - 1;
+
+    std::string _rfn;
+    for (size_t i = _index_separator; i < _index_dot; ++i)
+        _rfn.push_back(_fn.at(i));
+
+    return _rfn;
+}

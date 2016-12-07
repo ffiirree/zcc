@@ -1,16 +1,10 @@
-int printf(char *s);
+int printf(char *s, int a);
 
-
+int c = 39;
 int main() 
 {
-    for (float y = 1.5; y > -1.5; y -= 0.1) {
-        for (float x = -1.5; x < 1.5; x += 0.05) {
-            float a = x * x + y * y - 1;
-            if(a * a * a - x * x * y * y * y <= 0.0)
-                printf("*");
-            else 
-                printf(" ");
-        }
-        printf("\n");
-    }
+    int a = c;
+
+    printf("%d\n", c);
+    return 0;
 }

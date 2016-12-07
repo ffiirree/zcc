@@ -10,7 +10,6 @@ public:
 	Preprocessor(Lex &l) :lex(l){}
 	Preprocessor(const Preprocessor &) = delete;
 	Preprocessor operator= (const Preprocessor &) = delete;
-	~Preprocessor();
 
 	void read_header_name();
 	void group();
