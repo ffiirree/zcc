@@ -7,7 +7,7 @@
         中间代码输出:`build/hello.qd`
         AT&T汇编输出:`build/hello.s`
 
-![效果](https://github.com/ffiirree/zcc/blob/master/simple/simple/dis.png)
+![效果](https://github.com/ffiirree/zcc/blob/master/simple/dis.png)
 
 ## 二、 支持语法
 ### 2.1 数据类型
