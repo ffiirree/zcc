@@ -57,7 +57,7 @@ void Generate::run()
     const_str();
 
     // 全局变量
-    gloEnv = parser->getGloEnv();
+    locEnv = gloEnv = parser->getGloEnv();
     bool is_fir_var = true;
     for (size_t i = 0; i < gloEnv->size(); ++i) {
         Node n = gloEnv->at(i);
@@ -173,7 +173,7 @@ void Generate::generate(std::vector<std::string> &_q)
 		Node r = parser->getGloEnv()->search(_q.at(0));
 
 		if (r.kind == NODE_FUNC) {
-            setLocEnv(r.funcName);                    // 作用域为当前函数
+            //setLocEnv(r.funcName);                    // 作用域为当前函数
 
 			currentFunc = r;
 			func_decl(r);
@@ -182,6 +182,13 @@ void Generate::generate(std::vector<std::string> &_q)
 
         gas_label(_q.at(0));                          // 如果是其他标签，输出
 	}
+    else if (_q_0_is(".inscope")) {
+        setLocEnv(_q.at(1));
+    }
+    else if (_q_0_is(".outscope")) {
+        if(locEnv->pre() != nullptr)
+            locEnv = locEnv->pre();
+    }
     // 每个表达式后都要清空栈
     else if (_q_0_is("clr")) {
         for (size_t i = 0; i < universReg.size(); ++i)
@@ -199,48 +206,62 @@ void Generate::generate(std::vector<std::string> &_q)
     }
 	else if (_q_0_is("=")) {
         std::string _src, _des;
-        int size = 0;
+        int _des_size = 0;
 
         // 目的地
-		LocVar var = searchLocvar(_q.at(2));
-        if (var.varName.empty()) {
-            var = gloEnv->search(_q.at(2));
+        if (isLocVar(_q.at(2))) {
+            LocVar var = searchLocvar(_q.at(2));
+            if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
+                gas_fstp(var.varName);
+                return;
+            }
+            else {
+                _des_size = var.type.size;
+                _des = loc_var_val(var._off);
+            }
+        }
+        else {
+            Node var = gloEnv->search(_q.at(2));
 
-			if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
-				gas_fstp(var.varName); 
-				return;
-			}
+            if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
+                gas_fstp(var.varName);
+                return;
+            }
 
             if (!var.varName.empty()) {
-                size = var.type.size;
+                _des_size = var.type.size;
                 _des = "_" + var.varName;
             }
             else if (isTempVar(_q.at(2))) {
                 TempVar _tem = searchTempvar(_q.at(2));
-                size = 4;
+                _des_size = 4;
                 _des = "(" + _tem._reg + ")";
             }
-        }
-        else {
-			if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
-				gas_fstp(var.varName);
-				return;
-			}
-            size = var.type.size;
-            _des = loc_var_val(var._off);
         }
 
         // 源 为临时变量
         TempVar _temp = searchTempvar(_q.at(1));
         if (!_temp._name.empty()) {
-            gas_ins(mov2stk(size), reg2stk(_temp._reg, size), _des);
+            gas_ins(mov2stk(_des_size), reg2stk(_temp._reg, _des_size), _des);
         }
 		// 第一个参数为数字
 		else if (isNumber(_q.at(1))) {
-            gas_ins(mov2stk(size), "$" + _q.at(1), _des);
+            gas_ins(mov2stk(_des_size), "$" + _q.at(1), _des);
 		}
         else if (isEnumConst(_q.at(1))) {
-            gas_ins(mov2stk(size), "$" + parser->searchEnum(_q.at(1)), _des);
+            gas_ins(mov2stk(_des_size), "$" + parser->searchEnum(_q.at(1)), _des);
+        }
+        else if (isLocVar(_q.at(1))) {
+            Node _loc = searchLocvar(_q.at(1));
+            std::string _reg = getEmptyReg();
+            gas_ins(movXXl(_loc.type.size, _loc.type.isUnsig), loc_var_val(_loc._off), _reg);
+            gas_ins(mov2stk(_des_size), reg2stk(_reg, _des_size), _des);
+        }
+        else {
+            Node var = gloEnv->search(_q.at(1));
+            std::string _reg = getEmptyReg();
+            gas_ins(movXXl(var.type.size, var.type.isUnsig), "$_" + var.varName, _reg);
+            gas_ins(mov2stk(_des_size), reg2stk(_reg, _des_size), _des);
         }
 	}
 	else if (_q_0_is("if")) {
@@ -303,7 +324,7 @@ void Generate::generate(std::vector<std::string> &_q)
                 getReg("%eax");
 
 				if (_loc.type.type == K_FLOAT || _loc.type.type == K_DOUBLE) {
-					gas_tab(gas_fld(4) + "\t" + std::to_string(_loc._off) + "(%ebp)");
+					gas_tab(gas_fld(_loc.type.size, _loc.type.type) + "\t" + std::to_string(_loc._off) + "(%ebp)");
 					gas_tab("fstpl\t"+ _des);
 					continue;
 				}
@@ -430,6 +451,7 @@ std::string Generate::reg2stk(const std::string &_reg, int size)
     case 2: _r.push_back(_reg.at(2)); _r.push_back(_reg.at(3)); return _r;
     case 4: return _reg;
     }
+    return std::string();               // for warning
 }
 
 std::string Generate::mul(int size, bool isunsig)
@@ -621,13 +643,7 @@ std::string Generate::getTypeString(Type _t)
 int Generate::getFuncLocVarSize(Node &n)
 {
     int _rsize = -1;
-    std::vector<Env *> gloEnv = parser->getGloEnv()->getNext();
-    for (size_t i = 0; i < gloEnv.size(); ++i) {
-        Env * next = gloEnv.at(i);
-        if (n.funcName == next->getName()) {
-            getEnvSize(next, _rsize);
-        }
-    }
+    getEnvSize(locEnv, _rsize);
     return _rsize;
 }
 /**
@@ -683,17 +699,8 @@ void getEnvCallSize(Env * _begin, int *size)
 int Generate::getFuncCallSize(Node &n)
 {
     int _rsize = 0;
-
-    std::vector<Env *> gloEnv = parser->getGloEnv()->getNext();
-    for (size_t i = 0; i < gloEnv.size(); ++i) {
-        Env * next = gloEnv.at(i);
-        // 找到该函数
-        if (n.funcName == next->getName()) {
-            getEnvCallSize(next, &_rsize);
-            return _rsize;
-        }
-    }
-    return 0;
+    getEnvCallSize(locEnv, &_rsize);
+    return _rsize;
 }
 std::vector<std::string> Generate::getQuad()
 {
@@ -758,13 +765,16 @@ std::string Generate::getOutName()
     return _rstr + ".s";
 }
 
-void Generate::setLocEnv(const std::string &envName) {
-    for (size_t i = 0; i < gloEnv->getNext().size(); ++i) {
-        if (gloEnv->getNext().at(i)->getName() == envName) {
-            locEnv = gloEnv->getNext().at(i);
+void Generate::setLocEnv(const std::string &envName) 
+{
+    std::vector<Env*> ptr = locEnv->getNext();
+    for (size_t i = 0; i < ptr.size(); ++i) {
+        if (ptr.at(i)->getName() == envName) {
+            locEnv = ptr.at(i);
             return;
         }
     }
+    error("Not find scope : %s", envName);
     locEnv = nullptr;
 }
 
@@ -790,10 +800,11 @@ TempVar &Generate::searchFloatTempvar(const std::string &name)
 }
 LocVar &Generate::searchLocvar(const std::string &name)
 {
-    LocVar *var = new LocVar();
+    return locEnv->search(name);
+    /*LocVar *var = new LocVar();
     bool isfind = false;
     envUp2DownSearch(locEnv, name, *var, &isfind);
-    return *var;
+    return *var;*/
 }
 
 /**

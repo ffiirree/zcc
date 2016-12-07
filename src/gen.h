@@ -73,66 +73,70 @@ public:
 	std::vector<std::string> getQuad();
 
 private:
-	void genMulOrModAsm(std::vector<std::string> &_q);
-    void genIncDec(const std::string &_obj, const std::string &op);
+    void reg_init();
+    void generate(std::vector<std::string> &_q);
+    std::string getOutName();
 
+    void getEnvSize(Env *_b, int &_size);
+    int getFuncLocVarSize(Node &n);
+    int getFuncCallSize(Node &n);
+    void setLocEnv(const std::string &envName);
+
+
+    // 控制指令
     std::string mov2stk(int size);
     std::string movXXl(int size, bool isz);
     std::string reg2stk(const std::string &_reg, int size);
     std::string mul(int size, bool isunsig);
+    std::string gas_fld(int size, int _t);
+    Type gas_fstp(const std::string &name);
+    std::string getTypeString(Type _t);
 
+    // 产生ASM
     inline void gas(const std::string &_s) { out << _s << std::endl; }
     inline void gas_ins(const std::string &_i, const std::string &_src, const std::string &_des) { out << "\t" + _i + "\t" + _src + ", " + _des << std::endl; }
-    void gas_def_int(const std::string &n, int size, int init, bool is_fir);
-    void gas_custom(Node &n, bool is_fir);
-    void gas_def_flo(const std::string &n, int size, const std::string &init, bool is_fir);
-    void gas_def_arr(Node &n, bool is_fir);
-    void gas_dec(const std::string &n, int size);
-    void gas_jxx(const std::string &op, const std::string &des, Type &_t);
-    Type gas_load(const std::string &_q, const std::string &_reg);
-    int Generate::gas_flo_load(const std::string &fl);
-    std::string Generate::searchFLoat(const std::string &fl);
-    std::string gas_fld(int size);
-    Type gas_fstp(const std::string &name);
 
+    void const_str();
+    void func_decl(Node &n);
+    void gas_dec(const std::string &n, int size);                                    // 全局声明
+    void gas_def_arr(Node &n, bool is_fir);                                          // 数组定义
+    void gas_def_int(const std::string &n, int size, int init, bool is_fir);
+    void gas_def_flo(const std::string &n, int size, const std::string &init, bool is_fir);
+    void gas_custom(Node &n, bool is_fir);
+
+    Type gas_load(const std::string &_q, const std::string &_reg);                   // 加载数据
+    void gas_addr(Node &_var, const std::string &_off, std::string &_des_reg);
+    int Generate::gas_flo_load(const std::string &fl);
+
+    void gas_jxx(const std::string &op, const std::string &des, Type &_t);
+    void unlimited_binary_op(std::vector<std::string> &_q, const std::string &op);
+    void shift_op(std::vector<std::string> &_q, const std::string &op);
+	void genMulOrModAsm(std::vector<std::string> &_q);
+    void genIncDec(const std::string &_obj, const std::string &op);
+
+    void temp_save(const std::string &_n, int type, bool is_unsig = false, const std::string &_reg = "%st");
+    void temp_save(const std::string &_n, Type &_t, const std::string &_reg);
     
     std::string Generate::getEmptyReg();
-	std::string getTypeString(Type _t);
-	// 产生汇编代码
-	void generate(std::vector<std::string> &_q);
-	// 输出文件名称
-	std::string getOutName();
-	// 初始化寄存器
-	void reg_init();
-	// 字符串常量生成汇编代码
-	void const_str();
-	// 生成函数的汇编，函数名需要改
-	void func_decl(Node &n);
-	// 获取该作用域所有局部变量的大小，包括函数调用的size
-	void getEnvSize(Env *_b, int &_size);
-	// 获取函数局部变量的大小，包括size
-	int getFuncLocVarSize(Node &n);
-	// 获取函数调用的大小
-	int getFuncCallSize(Node &n);
-	// 获取局部变量
+    void setReg(const std::string &_reg, const std::string &_var);
+    std::string Generate::getReg(const std::string &_reg);
+    void getReg(std::vector<std::string> &_q);
+    bool isReg(const std::string &_t);
+    void clearRegTemp(const std::string &var);
+
+    std::string Generate::searchFLoat(const std::string &fl);
     LocVar &searchLocvar(const std::string &name);
-    void setLocEnv(const std::string &envName);
     TempVar &searchTempvar(const std::string &name);
 	TempVar &searchFloatTempvar(const std::string &name);
     void envUp2DownSearch(Env * _env, const std::string &name, LocVar &var, bool *isfind);
-	std::string Generate::getReg(const std::string &_reg);
-	void setReg(const std::string &_reg, const std::string &_var);
-	void getReg(std::vector<std::string> &_q);
-
-    void push_back_temp_stk(TempVar & tv, const std::string &reg);
-    void pop_back_temp_stk(const std::string &var);
-
 
     bool isTempVar(const std::string &_t);
 	bool isFloatTemVar(const std::string &_t);
-    bool isReg(const std::string &_t);
     bool isLocVar(const std::string &_l);
     bool isEnumConst(const std::string &_l);
+
+    void push_back_temp_stk(TempVar & tv, const std::string &reg);
+    void pop_back_temp_stk(const std::string &var);
 
 	Parser *parser;
 	Env *gloEnv = nullptr;
@@ -141,7 +145,6 @@ private:
 	std::vector<Reg> universReg;
     std::vector<Reg> float_reg;
 
-	void clearRegTemp(const std::string &var);
 	std::vector<Reg> segReg;
 	File inf;
 	std::ofstream out;
@@ -156,11 +159,6 @@ private:
     std::vector<TempVar> _stk_ret_;
 
 	bool finit = true;                   // FPU是否初始化过
-
-	void temp_save(const std::string &_n, int type, bool is_unsig = false, const std::string &_reg = "%st");
-	void temp_save(const std::string &_n, Type &_t, const std::string &_reg);
-	void unlimited_binary_op(std::vector<std::string> &_q, const std::string &op);
-	void shift_op(std::vector<std::string> &_q, const std::string &op);
 };
 
 #endif // !__ZCC_GEN_H

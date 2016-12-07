@@ -16,9 +16,9 @@ public:
 	Token next();
 	void back();
 	Token peek();
+    Pos getPos() { return tokens.at(index).getPos(); }
 
 	void scan(const std::string &filename);
-
 	inline File getCurrentFile() { return f; }
 
 private:

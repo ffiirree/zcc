@@ -6,8 +6,15 @@
 
 #define _OVERLOAD_
 
-#define __IN_SCOPE__(localEnv, preEnv) do{ Env *old = preEnv; localEnv = new Env(old); old->setNext(localEnv);}while(0)
-#define __OUT_SCOPE__(localEnv, _name) do{localEnv->setName(_name); localEnv = localEnv->pre(); }while(0)
+#define __IN_SCOPE__(localEnv, preEnv, _name) do{ \
+                                                   Env *old = preEnv; \
+                                                   localEnv = new Env(old); \
+                                                   old->setNext(localEnv); \
+                                                   std::string _name_ = _name; \
+                                                   localEnv->setName(_name_); \
+                                                   out << ".inscope\t" << _name_ << std::endl; \
+                                             }while(0)
+#define __OUT_SCOPE__(localEnv) do{ localEnv = localEnv->pre(); out << ".outscope" << std::endl; }while(0)
 
 class Env {
 public:
@@ -251,7 +258,6 @@ private:
 	Node unary_lognot();
 
 	Node wrap(Type &t, Node &node);
-	Node conv(Node &node);
 
 	void ensure_inttype(Node &node);
 
@@ -291,6 +297,10 @@ private:
 #ifdef _OVERLOAD_
 	std::string getOverLoadName(const std::string &name, std::vector<Node> &_p);
 #endif
+
+    bool cheak_is_float(const Node &n);
+    bool cheak_is_int_type(const Node &n);
+    bool cheak_is_custom_type(const Node &n);
 };
 
 /**

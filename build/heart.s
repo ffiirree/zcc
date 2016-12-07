@@ -1,4 +1,4 @@
-	.file	"hello.qd"
+	.file	"heart.qd"
 	.section  .rdata,"dr"
 .LLSTR49:
 	.ascii "\n\0"

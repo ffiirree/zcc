@@ -45,7 +45,7 @@ Node Parser::statement()
  */
 Node Parser::compound_stmt()
 {
-	__IN_SCOPE__(localenv, localenv);
+	__IN_SCOPE__(localenv, localenv, newLabel("Env"));
 
 	std::vector<Node> list;
 
@@ -54,7 +54,7 @@ Node Parser::compound_stmt()
 		decl_or_stmt(list);
 	}
 
-	__OUT_SCOPE__(localenv, newLabel("Env"));
+	__OUT_SCOPE__(localenv);
 	return createCompoundStmtNode(list);
 }
 
@@ -235,7 +235,7 @@ Node Parser::for_stmt()
 	_for._true = newLabel("fort");
 
 	expect('(');
-
+    __IN_SCOPE__(localenv, localenv, newLabel("for"));
 	if (is_type(lex.peek())) {
 		std::vector<Node> list;
 		declaration(list,false);
@@ -277,7 +277,7 @@ Node Parser::for_stmt()
 
 	// Ñ­»·Ìå
 	statement();
-
+    __OUT_SCOPE__(localenv);
 	out << "goto " << _exp3 << std::endl;
 	out << _next << ":" << std::endl;
 

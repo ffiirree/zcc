@@ -11,8 +11,8 @@ int Generate::gas_flo_load(const std::string &name)
     // 如果是常量
     std::string fn = searchFLoat(name);
     if (!fn.empty()) {
-        gas_tab(gas_fld(4) + "\t" + name);
-		return K_DOUBLE;
+        gas_tab(gas_fld(4, K_FLOAT) + "\t" + name);
+		return K_FLOAT;
     }
 
 	if (isNumber(name)) {
@@ -22,22 +22,23 @@ int Generate::gas_flo_load(const std::string &name)
 
     // 寄存器、局部和全局
     Node var = gloEnv->search(name);
-    if (!var.varName.empty()) {
-        gas_tab(gas_fld(var.type.size) + "\t" + "_" + var.varName);
-		return var.type.type;
+    if (isFloatTemVar(name)) {
+        TempVar temp = searchFloatTempvar(name);
+        return temp.type;
     }
-    else if (isFloatTemVar(name)) {
-		TempVar temp = searchFloatTempvar(name);
-		return temp.type;
-    }
-    else if(isLocVar(name)) {
+    else  if (isLocVar(name)) {
         var = searchLocvar(name);
-        gas_tab(gas_fld(var.type.size) + "\t" + loc_var_val(var._off));
+        gas_tab(gas_fld(var.type.size, var.type.type) + "\t" + loc_var_val(var._off));
+        return var.type.type;
+    }
+    else if (!var.varName.empty()) {
+        gas_tab(gas_fld(var.type.size, var.type.type) + "\t" + "_" + var.varName);
 		return var.type.type;
     }
 	else {
 		error("error float number.");
 	}
+    return 0;
 }
 
 Type Generate::gas_fstp(const std::string &name)
@@ -58,26 +59,35 @@ Type Generate::gas_fstp(const std::string &name)
         _des = "_" + var.varName;
     }
 
-    if (_size == 4)
-        _ins = "fstps";
-    else if (_size == 8)
-        _ins = "fstpl";
-    else
-        error("Error float size.");
+    switch (var.type.type)
+    {
+    case K_CHAR:    _ins = "fistps"; break;
+    case K_SHORT:   _ins = "fistps"; break;
+    case K_INT:     _ins = "fistpl"; break;
+    case K_LONG:    _ins = "fistpl"; break;
 
+    case K_FLOAT:   _ins = "fstps"; break;
+    case K_DOUBLE:  _ins = "fstpl"; break;
+
+    default:        error("Error float size."); break;
+    }
     gas_tab(_ins + "\t" + _des);
 
 	return _r;
 }
 
-std::string Generate::gas_fld(int size)
+std::string Generate::gas_fld(int size, int _t)
 {
-    if (size == 4)
-        return "flds";
-    else if (size == 8)
-        return "fldl";
-    else
-        error("Error float size.");
+    switch (_t) {
+    case K_INT:
+    case K_LONG:
+    case K_CHAR:
+    case K_SHORT:   return "fildl"; break;
+    case K_FLOAT:   return "flds"; break;
+    case K_DOUBLE:  return "fldl"; break;
+    default: error("Unspport type.");
+    }
+    return std::string();
 }
 
 std::string Generate::searchFLoat(const std::string &fl)
@@ -367,4 +377,43 @@ void Generate::shift_op(std::vector<std::string> &_q, const std::string &op)
 
 	temp_clear(_q.at(1), _q.at(2));
 	temp_save(_q.at(3), _save, "%edx");
+}
+
+/**
+ * @berif 获取变量的地址，指针+偏移
+ */
+void Generate::gas_addr(Node &_var, const std::string &_off, std::string &_des_reg)
+{
+    int size = _var.type.size;
+    bool is_unsig = _var.type.isUnsig;
+
+    if (isNumber(_off))
+        gas_ins(movXXl(size, is_unsig), std::to_string(_var._off + _var.type.size * atoi(_off.c_str())) + "(%ebp)", "%eax");
+    else if (isEnumConst(_off))
+        gas_ins(movXXl(size, is_unsig), std::to_string(_var._off + _var.type.size * atoi(parser->searchEnum(_off).c_str())) + "(%ebp)", "%eax");
+    else if (isLocVar(_off)) {
+        Node _loc = searchLocvar(_off);
+        getReg("%ecx");
+        gas_ins("leal", std::to_string(_var._off) + "(%ebp)", "%eax");
+        gas_ins("movl", loc_var_val(_loc._off), "%ecx");
+        gas_ins("imull", "$" + std::to_string(_var.type.size), "%ecx");
+        gas_ins("addl", "%ecx", "%eax");
+        gas_ins(movXXl(size, is_unsig), "(%eax)", "%eax");
+    }
+    else if (isTempVar(_off)) {
+        TempVar _loc = searchTempvar(_off);
+        gas_ins("leal", std::to_string(_var._off) + "(%ebp)", "%eax");
+        gas_ins("imull", "$" + std::to_string(_var.type.size), _loc._reg);
+        gas_ins("addl", _loc._reg, "%eax");
+        gas_ins(movXXl(size, is_unsig), "(%eax)", "%eax");
+    }
+    else {
+        Node _glo = gloEnv->search(_off);
+        getReg("%edx");
+        gas_ins("leal", std::to_string(_var._off) + "(%ebp)", "%eax");
+        gas_ins("movl", "_" + _glo.varName, "%edx");
+        gas_ins("imull", "$" + std::to_string(_var.type.size), "%edx");
+        gas_ins("addl", "%edx", "%eax");
+        gas_ins(movXXl(size, is_unsig), "(%eax)", "%eax");
+    }
 }

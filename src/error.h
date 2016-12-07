@@ -3,7 +3,7 @@
 
 #include "zcc.h"
 
-char *print_filename(Token *tok);
+#define _DEBUG_
 
 #define _log_(fmt,...) do{\
 	printf("[%s](%s): #%d \t", __FILE__, __func__, __LINE__);\
@@ -12,7 +12,8 @@ char *print_filename(Token *tok);
 }while (0)
 
 #define warning(fmt,...) do{\
-	printf("Warning. %s: #%d ", __FILE__, __LINE__);\
+    printf("Warning. ");\
+	printf("%s: #%d ", __FILE__, __LINE__);\
 	printf(fmt, __VA_ARGS__);\
 	printf("\n");\
 }while (0)
@@ -24,8 +25,8 @@ char *print_filename(Token *tok);
 }while (0)
 
 #define errorp(pos, fmt,...) do{\
-	printf("%d,%d ", pos.line, pos.cols);\
-	printf("Error. %s: #%d ", __FILE__, __LINE__);\
+    printf("Error.  ");\
+	printf("%d, %d : ", pos.line, pos.cols);\
 	printf(fmt, __VA_ARGS__);\
 	printf("\n");\
 }while (0)
@@ -45,8 +46,8 @@ char *print_filename(Token *tok);
 }while (0)
 
 #define warnp(pos, fmt,...) do{\
+    printf("Warning. ");\
 	printf("%d,%d ", pos.line, pos.cols);\
-	printf("Warning. %s: #%d ", __FILE__, __LINE__);\
 	printf(fmt, __VA_ARGS__);\
 	printf("\n");\
 }while (0)

@@ -14,7 +14,7 @@ std::vector<Node> Parser::trans_unit()
 
 		if (t.getType() == K_EOF) {
 			labels.cheak();
-			_log_("Parser OK.");
+            std::cout << "-----------------------------> Parser OK." << std::endl << std::endl;
 			out.close();
 			return list;
 		}
@@ -39,14 +39,11 @@ void Env::push_back(Node &n) {
 		}
 	}
 
-	if (n.kind == NODE_GLO_VAR) {
-		Node r = search(n.varName);
-		if (r.kind != 0)
-			error("redefined var:%s", n.varName.c_str());
-	}
-
 	nodes.push_back(n);
 }
+/**
+ * @berif 添加标签
+ */
 void Label::push_back(const std::string &_l) {
 
 	// 如果添加过了
@@ -134,13 +131,12 @@ Node Parser::funcDef()
 	int current_class = 0;                                                  // static ...
 	std::string funcName;                                                   // 函数名字
 	std::vector<Node> params;
-
-	__IN_SCOPE__(localenv, globalenv);
+    __IN_SCOPE__(localenv, globalenv, newLabel("fun"));
 
 	Type *retty = new Type(decl_spec_opt(&current_class));                  // 获取函数的返回类型
 	Type functype = declarator(retty, funcName, params, FUNC_BODY);         // 函数定义类型，函数描述
 	if (functype.type == PTR) {
-		error("Ptr not can be function.");
+		errorp(lex.getPos(), "Ptr not can be function.");
 	}
 
 #if defined(_OVERLOAD_)
@@ -153,7 +149,7 @@ Node Parser::funcDef()
 	expect('{');
 	Node r = func_body(functype, funcName, params);                         // 函数体
 
-	__OUT_SCOPE__(localenv, funcName);
+	__OUT_SCOPE__(localenv);
 	out << ".end" << std::endl;
 	return r;
 }
@@ -414,6 +410,9 @@ Node Parser::createGLoVarNode(Type &ty, std::string name)
 	Node r(NODE_GLO_VAR, ty);
 	r.varName = name;
 
+    if(cheak_redefined(globalenv, name))
+        errorp(lex.getPos(), "redefined global variable : %s", name.c_str());
+
 	globalenv->push_back(r);
 
 	return r;
@@ -424,7 +423,7 @@ Node Parser::createLocVarNode(Type &ty, std::string name)
 	r.varName = name;
 
     if (cheak_redefined(localenv, name))
-        error("redefined local variable : %s", name.c_str());
+        errorp(lex.getPos(), "redefined local variable : %s", name.c_str());
 
 	localenv->push_back(r);
 	return r;
@@ -510,7 +509,7 @@ void Parser::skip_parenthesis(int *count)
 		(*count)++;
 
 		if (t.getType() == K_EOF)
-			error("error eof");
+			errorp(lex.getPos(), "error eof");
 
 		if (is_keyword(t, '('))
 			skip_parenthesis(count);
@@ -523,7 +522,7 @@ void Parser::expect(int id)
 {
 	Token t = lex.next();
 	if (t.getId() != id)
-		error("expect '%c', but not is '%c'", id, t.getId());
+		errorp(lex.getPos(), "expect '%c', but not is '%c'", id, t.getId());
 }
 
 bool Parser::is_inttype(Type &ty)
@@ -596,7 +595,7 @@ std::string Parser::num2str(size_t num)
 	for (;num > 0;) {
 		size_t m = num - 10 * (num / 10);
 		num /= 10;
-		_mstr.push_back(m + 48);
+		_mstr.push_back(static_cast<char>(m + 48));
 	}
 	for (int i = _mstr.length() - 1; i >= 0; --i)
 		_rstr.push_back(_mstr.at(i));
@@ -933,7 +932,7 @@ void Parser::createFuncQuad(std::vector<Node> &params)
 		}
 	}
 	if ((fn.kind != NODE_FUNC && fn.kind != NODE_FUNC_DECL) || (fn.params.size() != params.size()))
-		error("func call parms size error.");
+		errorp(lex.getPos(), "func call parms size error.");
 
 _skip_cheak_params_num:
 	for (size_t i = 0; i < fn.params.size(); ++i) {
@@ -1011,10 +1010,10 @@ std::string Parser::getOverLoadName(const std::string &name, std::vector<Node> &
 		case K_DOUBLE: _name_r += "d";break;
 		case K_STRUCT: 
 		case K_TYPEDEF:
-			error("Unspport struct and typedef overload.");
+			errorp(lex.getPos(), "Unspport struct and typedef overload.");
 			break;
 		default:
-			error("Unspport type overload.");
+            errorp(lex.getPos(), "Unspport type overload.");
 			break;
 		}
 	}

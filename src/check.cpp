@@ -5,6 +5,9 @@ bool Parser::ensure_lvalue(const Node &node)
 	return false;
 }
 
+/**
+ * @berif 检查重定义
+ */
 bool Parser::cheak_redefined(Env *_env, const std::string &_name)
 {
     for (size_t i = 0; i < _env->size(); ++i) {
@@ -22,4 +25,46 @@ bool Parser::cheak_redefined(Env *_env, const std::string &_name)
 		}
 	}
     return false;
+}
+
+/**
+ * @berif 检查是否是整数
+ */
+bool Parser::cheak_is_int_type(const Node &n)
+{
+    switch (n.type.type)
+    {
+    case K_CHAR:
+    case K_SHORT:
+    case K_INT:
+    case K_LONG:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/**
+ * 检查是否是浮点数
+ */
+bool Parser::cheak_is_float(const Node &n)
+{
+    if (n.type.type == K_FLOAT || n.type.type == K_DOUBLE)
+        return true;
+    return false;
+}
+
+bool Parser::cheak_is_custom_type(const Node &n)
+{
+    switch (n.type.type)
+    {
+    case K_STRUCT:
+    case K_UNION:
+    case K_ENUM:
+    case K_TYPEDEF:
+        return true;
+
+    default:
+        return false;
+    }
 }
