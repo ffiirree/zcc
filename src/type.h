@@ -165,6 +165,22 @@ public:
     void setFOL() { isfol = true; }
     bool isFOL() { return isfol; }
 
+    HideSet *_hs = nullptr;
+    bool needExpand()
+    {
+        if (!_hs)
+            return true;
+
+        // 是不是只有ID需要展开
+        if (type != ID)
+            return false;
+
+        if (_hs->count(sval))
+            return false;
+        else
+            return true;
+    }
+
 private:
 	void copyUnion(const Token &t);
 
@@ -172,7 +188,7 @@ private:
 	Pos pos;
 	int counter;
 
-    HideSet *_hs = nullptr;
+    
     bool isfol = false;           // first of line
 	union
 	{

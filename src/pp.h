@@ -68,9 +68,9 @@ public:
 
 
     void expand(TokenSquence is, TokenSquence &os);
-    void subst(TokenSquence &is, std::vector<std::string> fp, TokenSquence &ap, HideSet& hs, TokenSquence& os);
+    void subst(TokenSquence &is, std::vector<std::string> fp, TokenSquence &ap, HideSet* hs, TokenSquence& os);
     void glue(TokenSquence &ls, TokenSquence &rs);
-    void hasadd(HideSet &hs, TokenSquence &ts);
+    void hasadd(HideSet *hs, TokenSquence &ts);
     TokenSquence ts(const std::string &_macro_name);
     TokenSquence fp(const std::string &_macro_name);
     TokenSquence select(int i, TokenSquence &ts);
@@ -84,7 +84,16 @@ public:
 
 
     void Include(TokenSquence &is, TokenSquence &os);
-    void PP_define(Lex &is);
+    void _define_(Lex &is);
+    void _if_(Lex &is);
+    void _ifndef_(Lex &is);
+    void _ifdef_(Lex &is);
+    void _undef_(Lex &is);
+    void _elif_(Lex &is);
+    void _else_(Lex &is);
+    void _endif_(Lex &is);
+    void _line_(Lex &is);
+    void _pragma_(Lex &is);
 
 private:
     void init();

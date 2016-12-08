@@ -354,7 +354,7 @@ int Lex::read_universal_char(int len) {
 	return r;
 }
 
-Token Lex::next()
+Token &Lex::next()
 {
 	return tokens.at(index++);
 }

@@ -15,7 +15,7 @@ public:
 
     inline void push_back(const Token &_t) { tokens.push_back(_t); }
     inline void pop_back() { tokens.pop_back(); }
-	Token next();
+	Token &next();
 	void back();
 	Token peek();
     Token peek2();
@@ -29,7 +29,7 @@ public:
 	inline File getCurrentFile() { return f; }
 
     bool empty() { return tokens.empty(); }
-    bool end() { return index == tokens.size(); }
+    bool end() { return index >= tokens.size(); }
     size_t size() { return tokens.size(); }
     Token &at(size_t i) { return tokens.at(i); }
 
@@ -48,7 +48,7 @@ public:
 
     void insert(Lex &l) {
         for (size_t i = l.size(); i > 0; --i) {
-            tokens.insert(tokens.begin() + index + 1, l.at(i - 1));
+            tokens.insert(tokens.begin() + index, l.at(i - 1));
         }
     }
     void setCurrentFile(const File &_f) { f = _f; }
@@ -74,7 +74,7 @@ private:
 	File f;
 	std::vector<std::string> keywords;
 	std::vector<Token> tokens;
-    int index = 0;
+    size_t index = 0;
     Token last;
 };
 

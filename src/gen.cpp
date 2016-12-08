@@ -782,7 +782,7 @@ void Generate::setLocEnv(const std::string &envName)
             return;
         }
     }
-    error("Not find scope : %s", envName);
+    error("Not find scope : %s", envName.c_str());
     locEnv = nullptr;
 }
 
