@@ -10,6 +10,16 @@
 ![效果](https://github.com/ffiirree/zcc/blob/master/simple/dis.png)
 
 ## 二、 支持语法
+### 2.0 预处理器
+```
+        include 
+        define(暂不支持#和##)
+
+        ifndef
+        ifdef
+        endif
+```
+
 ### 2.1 数据类型
         字符串常量、int、short、char、long 、一维数组
         float，double
@@ -26,16 +36,18 @@
         前置& * ~
         .
         []
+```
 
 #### 不支持
+```
         ? :
         前置+ -(常数前置可以)
         !
 ```
-### 2.3 支持函数调用
-### 2.4 支持参数传递，支持函数重载
-        支持可变参数
-        <br>
+### 2.3 支持函数(递归)调用
+
+### 2.4 支持参数传递
+
 ### 2.5 支持函数重载
         支持基本变量作为参数时函数重载
 
@@ -50,5 +62,7 @@
         支持 break
         支持 continue
         支持 default
+        支持 return
+        支持 case
 ```
 
