@@ -962,10 +962,12 @@ std::string Parser::getOverLoadName(const std::string &name, std::vector<Node> &
 {
 	if (name == "main")
 		return name;
-	if (name == "printf")
+	else if (name == "printf")
 		return name;
-	if (name == "puts")
+    else if (name == "puts")
 		return name;
+    else if (name == "putchar")
+        return name;
 
 	std::string _name_r;
 	_name_r += name + "@";

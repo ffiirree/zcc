@@ -10,21 +10,107 @@ _main:
 	.cfi_offset 5, -8
 	movl	%esp, %ebp
 	.cfi_def_cfa_register 5
-	subl	$16, %esp
+	subl	$23, %esp
 	call	___main
-	movl	-8(%ebp), %eax
-	movl	-4(%ebp), %ebx
-	cmpl	%eax, %ebx
-	je	.Lift5
-	jmp	.Liff6
-.Lift5:
-	movl	$0, -4(%ebp)
-.Liff6:
-	movl	$0, %eax
-	leave
-	.cfi_restore 5
-	.cfi_def_cfa 4, 4
-	ret
+	flds	.Lf9
+	fstps	-4(%ebp)
+.Lforb5:
+	flds	.Lf11
+	flds	-4(%ebp)
+	fucompp
+	fnstsw	%ax
+	sahf
+	ja	.Lfort7
+	jmp	.Lforn4
+.Lfe36:
+	flds	-4(%ebp)
+	flds	.Lf12
+	fsubr	%st(1), %st(0)
+	fstps	-4(%ebp)
+	jmp	.Lforb5
+.Lfort7:
+	flds	.Lf21
+	fstps	-8(%ebp)
+.Lforb17:
+	flds	.Lf23
+	flds	-8(%ebp)
+	fucompp
+	fnstsw	%ax
+	sahf
+	jb	.Lfort19
+	jmp	.Lforn16
+.Lfe318:
+	flds	.Lf24
+	flds	-8(%ebp)
+	faddp
+	fstps	-8(%ebp)
+	jmp	.Lforb17
+.Lfort19:
+	flds	-8(%ebp)
+	flds	-8(%ebp)
+	fmulp
+	flds	-4(%ebp)
+	flds	-4(%ebp)
+	fmulp
+	faddp
+	flds	.Lf31
+	fsubr	%st(1), %st(0)
+	fstps	-12(%ebp)
+	finit
+	flds	-12(%ebp)
+	flds	-12(%ebp)
+	fmulp
+	flds	-12(%ebp)
+	fmulp
+	flds	-8(%ebp)
+	flds	-8(%ebp)
+	fmulp
+	flds	-4(%ebp)
+	fmulp
+	flds	-4(%ebp)
+	fmulp
+	flds	-4(%ebp)
+	fmulp
+	fsubr	%st(1), %st(0)
+	flds	.Lf42
+	fxch	%st(1)
+	fucompp
+	fnstsw	%ax
+	sahf
+	jbe	.Lift43
+	jmp	.Liff44
+.Lift43:
+	movb	$42, 0(%esp)
+	call	_putchar
+	jmp	.Lsn34
+.Liff44:
+	movb	$32, 0(%esp)
+	call	_putchar
+.Lsn34:
+	finit
+	jmp	.Lfe318
+.Lforn16:
+	movb	$10, 0(%esp)
+	call	_putchar
+	jmp	.Lfe36
+.Lforn4:
 	.cfi_endproc
-.LFE7:
+.LFE48:
+	.section .rdata,"dr"
+.Lf42:
+	.float 0.0
+.Lf31:
+	.float 1
+.Lf24:
+	.float 0.05
+.Lf23:
+	.float 1.5
+.Lf21:
+	.float -1.5
+.Lf12:
+	.float 0.1
+.Lf11:
+	.float -1.5
+.Lf9:
+	.float 1.5
 	.ident "zcc 0.0.1"

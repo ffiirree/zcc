@@ -1,15 +1,15 @@
-#include<stdio.h>
+#include <stdio.h>
 
-#define Hi "hello"
-#define max(a,b) do{ if(a > b) return a; else return b;} while(0 != 0)
-
-
-int line = __LINE__;
 int main() 
 {
-    int max_a = 8, max_b = 9;
-    char *str = Hi;
-
-    max(max_a, max_b);
-    return 0;
+    for (float y = 1.5; y > -1.5; y -= 0.1) {
+        for (float x = -1.5; x < 1.5; x += 0.05) {
+            float a = x * x + y * y - 1;
+            if(a * a * a - x * x * y * y * y <= 0.0)
+                putchar('*');
+            else 
+                putchar(' ');
+        }
+        putchar('\n');
+    }
 }

@@ -40,9 +40,7 @@ Token Lex::readToken()
         case '\\': return Token(BACKLASH, 0);
         //case ' ': return Token(KEYWORD, static_cast<int>(c));
 		case '\r': break;
-
-		case '#': /*while (c != 0 && c != '\n') c = f.next(); break;*/return Token(KEYWORD, (int)'#');
-
+        case '#': return read_rep('#', DS, '#');
 		case '+': return read_rep2('+', OP_INC, '=', OP_A_ADD, '+');
 		case '*': return read_rep('=', OP_A_MUL, '*');
 		case '%': return read_rep('=', OP_A_MOD, '%');
@@ -58,36 +56,36 @@ Token Lex::readToken()
 		case_0_9: return read_num(c);
 
 		case '/':
-			if (next_is('/')) {
+			if (f.next_is('/')) {
 				while (c != '\n' && c != 0)
 					c = f.next();
 				break;
 			}
-			else if (next_is('*')) {
-				while ((!(c == '*' && next_is('/'))) && c != 0)
+			else if (f.next_is('*')) {
+				while ((!(c == '*' && f.next_is('/'))) && c != 0)
 					c = f.next();
 				break;
 			}
 			return read_rep('=', OP_A_DIV, '/');
 
 		case '-':
-			if (next_is('=')) return Token(KEYWORD, OP_A_SUB);
-			if (next_is('-')) return Token(KEYWORD, OP_DEC);
-			if (next_is('>')) return Token(KEYWORD, OP_ARROW);
+			if (f.next_is('=')) return Token(KEYWORD, OP_A_SUB);
+			if (f.next_is('-')) return Token(KEYWORD, OP_DEC);
+			if (f.next_is('>')) return Token(KEYWORD, OP_ARROW);
 			return Token(KEYWORD, (int)'-');
 
 		case '>':
-			if (next_is('>')) 
+			if (f.next_is('>'))
 				return read_rep('=', OP_A_SAR, OP_SAR);
 			return read_rep('=', OP_GE, '>');
 		case '<':
-			if (next_is('<'))
+			if (f.next_is('<'))
 				return read_rep('=', OP_A_SAL, OP_SAL);
 			return read_rep('=', OP_LE, '<');
 
 		case '.':
-			if (next_is('.'))
-				if (next_is('.'))
+			if (f.next_is('.'))
+				if (f.next_is('.'))
 					return Token(KEYWORD, ELLIPSIS);
 			return Token(KEYWORD, (int)'.');
 
@@ -188,7 +186,7 @@ Token Lex::read_char()
 	if (c != '\'')
 		error("unterminated char");
 
-	return Token(CHAR_, (char)c);
+	return Token(CHAR_, (char)r);
 }
 
 Token Lex::read_id(char fir)
