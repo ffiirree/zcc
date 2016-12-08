@@ -19,9 +19,11 @@ void Lex::scan(const std::string &filename)
     int counter = 0;
 	do {
         last = readToken();
-        last.setPos(f.getPos());
-        last.setCounter(++counter);
-        tokens.push_back(last);
+        if (last.getType() != BACKLASH) {
+            last.setPos(f.getPos());
+            last.setCounter(++counter);
+            tokens.push_back(last);
+        }
 	} while (last.getType() != K_EOF);
 
 	index = 0;
@@ -34,8 +36,8 @@ Token Lex::readToken()
 		c = f.next();
 
 		switch (c) {
-		case '\n': if() return Token(TNEWLINE, 0);
-        case '\\': break;
+        case '\n': if (last.getType() != BACKLASH) return Token(TNEWLINE, 0);
+        case '\\': return Token(BACKLASH, 0);
         //case ' ': return Token(KEYWORD, static_cast<int>(c));
 		case '\r': break;
 
@@ -101,14 +103,14 @@ Token Lex::readToken()
 
 Token Lex::read_rep2(char exp1, int _k1, char exp2, int _k2, int _else)
 {
-	if (next_is(exp1))
+	if (f.next_is(exp1))
 		return Token(KEYWORD, _k1);
-	return Token(KEYWORD, (int)(next_is(exp2) ? _k2 : _else));
+	return Token(KEYWORD, (int)(f.next_is(exp2) ? _k2 : _else));
 }
 
 Token Lex::read_rep(char exp, int _k, int _else)
 {
-	return Token(KEYWORD, (int)(next_is(exp) ? _k : _else));
+	return Token(KEYWORD, (int)(f.next_is(exp) ? _k : _else));
 }
 
 bool Lex::next_is(const char e)

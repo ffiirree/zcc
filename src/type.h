@@ -108,6 +108,7 @@ enum {
 	// Only in CPP
 	MIN_CPP_TOKEN,
 	TNEWLINE,
+    BACKLASH,
 	TSPACE,
 	TMACRO_PARAM,
     DS, // '##'
@@ -161,6 +162,8 @@ public:
 	inline int getCh() const { return ch; }
 
     std::string to_string() const;
+    void setFOL() { isfol = true; }
+    bool isFOL() { return isfol; }
 
 private:
 	void copyUnion(const Token &t);

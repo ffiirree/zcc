@@ -72,3 +72,12 @@ char File::peek()
 	back(c);
 	return c;
 }
+
+bool File::next_is(char ch)
+{
+    char c = next();
+    if (c == ch)
+        return true;
+    back(c);
+    return false;
+}

@@ -1,7 +1,7 @@
 #include<stdio.h>
 
 #define Hi "hello"
-#define max(a,b) do{ if(a > b) return a; else return b;} while(0)
+#define max(a,b) do{ if(a > b) return a; else return b;} while(0 != 0)
 
 
 int line = __LINE__;
