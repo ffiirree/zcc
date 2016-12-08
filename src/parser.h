@@ -99,34 +99,27 @@ public:
 class Parser {
 public:
 	Parser(){}
-	Parser(const std::string &filename) :lex(filename) { 
+	Parser(Lex &l, const std::string &_ofn) :lex(l), _of_name(_ofn + ".q") { 
 		globalenv = new Env(nullptr); 
-		globalenv->setName(filename);
+        globalenv->setName(_of_name);
 		createQuadFile();
 		switch_case_label = newLabel("case");
-	}
-	Parser(Lex &l) :lex(l) { 
-		globalenv = new Env(nullptr); 
-        globalenv->setName(lex.getCurrentFile().getFileName());
-		createQuadFile();
-		switch_case_label = newLabel("case");
+        trans_unit();
 	}
 	Parser(const Parser &p) = delete;
 	Parser operator=(const Parser &p) = delete;
 
 	std::vector<Node> trans_unit();
-	std::string getQuadrupleFileName();
 	Env *getGloEnv() { return globalenv; }
 	Env *getLocEnv() { return localenv; }
 	std::vector<StrCard> getStrTbl() { return const_string; }
 	std::string newLabel(const std::string &_l);
-
+    std::string getQuadrupleFileName() { return _of_name; }
     inline std::vector<std::string> getFloatConst() { return float_const; }
     std::string searchEnum(const std::string &key);
 private:
     bool cheak_redefined(Env *_env, const std::string &_name);
 	Type conv2ptr(Type ty);
-	std::string getQuadrupleFileName(std::string &filename);
 	void createQuadFile();
 	void generateIfGoto();
 	void pushQuadruple(const std::string &name);
@@ -287,6 +280,7 @@ private:
 	std::string switch_case_label;
 	std::string switch_expr;
 
+    std::string _of_name;
 	std::ofstream out;
 	std::vector<std::string> _stk_quad;
 	std::vector<std::string> _stk_incdec;

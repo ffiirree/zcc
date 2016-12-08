@@ -17,6 +17,9 @@ Generate::Generate(Parser *p)
 
     // ¼Ä´æÆ÷³õÊ¼»¯
 	reg_init();
+
+    //
+    run();
 }
 
 /**
@@ -765,13 +768,9 @@ std::vector<std::string> Generate::getQuad()
 
 std::string Generate::getOutName()
 {
-    std::string _rstr;
-    for (size_t i = 0; i < _infilename.length(); ++i) {
-        if (_infilename.at(i) == '.')
-            break;
-        _rstr.push_back(_infilename.at(i));
-    }
-    return _rstr + ".s";
+    _infilename.pop_back();
+    _infilename.push_back('s');
+    return _infilename;
 }
 
 void Generate::setLocEnv(const std::string &envName) 

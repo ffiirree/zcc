@@ -1,6 +1,1 @@
-#ifndef __ZCC_STDIO_H
-#define __ZCC_STDIO_H
-
-int printf(char *_out, ...);
-
-#endif
+int printf(char *_f, int _o);

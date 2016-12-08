@@ -4,8 +4,8 @@
 void Preprocessor::init()
 {
     // 包含默认路径
-    _paths.push_back("D:\\zcc\\include");
-    _paths.push_back("C:\\zcc\\include");
+    _paths.push_back("D:/zcc/include/");
+    _paths.push_back("C:/zcc/include/");
 
     // 包含默认宏定义
     macros.push_back({ "__ZCC__", Token(INTEGER, "1"), M_PRE});
@@ -28,7 +28,7 @@ void Preprocessor::expand(TokenSquence is, TokenSquence &os)
         std::string _name;
         Token tok = is.peek();
 
-        if (tok.getId() == '#') {
+        if (tok.getType() == KEYWORD && tok.getId() == '#') {
             group_part(is, os);
         }
         else if(tok.getType() == ID && ((macro = searchMacro(tok.getSval())))){
@@ -78,42 +78,17 @@ void Preprocessor::expand(TokenSquence is, TokenSquence &os)
             }
         }
         else {
-            os.push_back(is.next());
+            if (isOnlyPP) {
+                os.push_back(tok);
+            }
+            else if (tok.getType() != TNEWLINE) {
+                os.push_back(tok);
+            }  
+            is.next();
         }
     }
 }
 
-TokenSquence Preprocessor::getAP(TokenSquence &is)
-{
-    TokenSquence rts;
-    is.expect('(');
-    while (!is.next_is(')')) {
-        if(!is.next_is(','))
-            rts.push_back(is.next());
-    }
-        
-    return rts;
-}
-
-int Preprocessor::isMacro(const std::string &_n)
-{
-    for (size_t i = 0;i < macros.size(); ++i) {
-        if (_n == macros.at(i)._name) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-
-Macro *Preprocessor::searchMacro(const std::string &_n)
-{
-    for (auto iter = macros.begin(); iter != macros.end(); ++iter) {
-        if (_n == (*iter)._name)
-            return iter._Ptr;
-    }
-    return nullptr;
-}
 
 
 void Preprocessor::group_part(Lex &is, Lex &os)
@@ -130,25 +105,126 @@ void Preprocessor::group_part(Lex &is, Lex &os)
 	}
 		
 	if (t.getType() == ID) {
-		if (t.getSval() == "if")        return;
-		if (t.getSval() == "ifdef")     return;
-		if (t.getSval() == "ifndef")    return;
-		if (t.getSval() == "elif")      return;
-		if (t.getSval() == "else")      return;
-		if (t.getSval() == "endif")     return;
-        //if (t.getSval() == "include"); 之前处理完
-        if (t.getSval() == "define")    PP_define(is); return;
-		if (t.getSval() == "undef")     return;
-		if (t.getSval() == "line")      return;
+        if (t.getSval() == "if") {
+
+        }
+        else if (t.getSval() == "ifdef") {
+
+        }
+        else if (t.getSval() == "ifndef") {
+
+        }
+        else if (t.getSval() == "elif") {
+
+        }
+        else if (t.getSval() == "else") {
+        }
+        else if (t.getSval() == "endif") {
+
+        }
+        else if (t.getSval() == "include") {
+            Include(is, os);
+        }
+        else if (t.getSval() == "define") {
+            PP_define(is);
+        }
+        else if (t.getSval() == "undef") {
+
+        }
+        else if (t.getSval() == "line") {
+
+        }
 	}
 }
+
+/**
+ * @berif
+ * @param is[in]: input squence
+ * @param fp: formal parameters
+ * @param ap: Actual Parameters
+ * @param hs: hide set
+ * @param os: output sqence
+ */ 
+void Preprocessor::subst(TokenSquence &is, std::vector<std::string> fp, TokenSquence &ap, HideSet& hs, TokenSquence& os)
+{
+    int iOfFP = 0;
+    if (is.end()) {
+        hasadd(hs, os);
+        return;
+    }
+    else if (is.test('#') && (iOfFP = isInFP(is.peek2(), fp)) != -1) {
+        return;
+    }
+    else if (is.test(DS) && (iOfFP = isInFP(is.peek2(), fp)) != -1) {
+        return;
+    }
+    else if (is.test(DS)) {
+        return;
+    }
+    else if ((iOfFP = isInFP(is.peek(), fp)) != -1 && is.test2(DS)) {
+        return;
+    }
+    else if ((iOfFP = isInFP(is.peek(), fp)) != -1) {
+        is.next();
+        TokenSquence repAp;
+        expand(select(iOfFP, ap), repAp);
+        os.insertBack(repAp);
+        subst(is, fp, ap, hs, os);
+        return;
+    }
+
+    os.push_back(is.next());
+    subst(is, fp, ap, hs, os);
+}
+
+void Preprocessor::Include(TokenSquence &is, TokenSquence &os)
+{
+    std::string _fn;
+
+    bool isQuot = false;
+    if (is.test('\"'))
+        isQuot = true;
+    else if (is.test('<'))
+        isQuot = false;
+    else
+        error("error for include file.");
+
+    is.next();
+
+    if (!isQuot) {
+        while (!is.test('>')) {
+            _fn += is.next().to_string();
+        }
+        is.expect('>');
+    }
+    else {
+        _fn = is.next().to_string();
+        is.expect('\"');
+    }
+    if (is.next().getType() != TNEWLINE)
+        error("need new_line.");
+
+    // 打开文件并插入
+    for (const std::string path:_paths) {
+        std::string _file = path + _fn;
+        std::ifstream in(_file, std::ios::_Nocreate);
+        if (in.is_open()) {
+            Lex lex(_file);
+            lex.pop_back();        // 删除EOF
+            is.insert(lex);
+            return;
+        }
+    }
+    error("can not open file : %s.", _fn);
+}
+
 
 /**
 | '#' 'define' ID replacement_list new_line
 | '#' 'define' ID lparen [ID_list] ) replacement_list new_line
 //| '#' 'define' ID lparen ... ) replacement_list new_line
 //| '#' 'define' ID lparen ID_list , ... ) replacement_list new_line
- */
+*/
 void Preprocessor::PP_define(Lex &is)
 {
     Macro _macro;
@@ -156,7 +232,7 @@ void Preprocessor::PP_define(Lex &is)
     if (t.getType() == ID) {
         _macro._name = t.getSval();
     }
-    
+
     if (is.next_is('(')) {
         _macro._type = M_FUNCLIKE;
 
@@ -190,7 +266,7 @@ void Preprocessor::PP_define(Lex &is)
     macros.push_back(_macro);
 }
 
-int isInFP(Token &t, std::vector<std::string> fp)
+int Preprocessor::isInFP(Token &t, std::vector<std::string> fp)
 {
     for (size_t i = 0; i < fp.size(); ++i) {
         if (t.getType() == ID && t.getSval() == fp.at(i))
@@ -239,45 +315,35 @@ std::string Preprocessor::stringize(TokenSquence &ts)
 {
     return std::string();
 }
-/**
- * @berif
- * @param is[in]: input squence
- * @param fp: formal parameters
- * @param ap: Actual Parameters
- * @param hs: hide set
- * @param os: output sqence
- */ 
-void Preprocessor::subst(TokenSquence &is, std::vector<std::string> fp, TokenSquence &ap, HideSet& hs, TokenSquence& os)
+
+TokenSquence Preprocessor::getAP(TokenSquence &is)
 {
-    int iOfFP = 0;
-    if (is.end()) {
-        hasadd(hs, os);
-        return;
-    }
-    else if (is.test('#') && (iOfFP = isInFP(is.peek2(), fp)) != -1) {
-        return;
-    }
-    else if (is.test(DS) && (iOfFP = isInFP(is.peek2(), fp)) != -1) {
-        return;
-    }
-    else if (is.test(DS)) {
-        return;
-    }
-    else if ((iOfFP = isInFP(is.peek(), fp)) != -1 && is.test2(DS)) {
-        return;
-    }
-    else if ((iOfFP = isInFP(is.peek(), fp)) != -1) {
-        is.next();
-        TokenSquence repAp;
-        expand(select(iOfFP, ap), repAp);
-        os.insertBack(repAp);
-        subst(is, fp, ap, hs, os);
-        return;
+    TokenSquence rts;
+    is.expect('(');
+    while (!is.next_is(')')) {
+        if (!is.next_is(','))
+            rts.push_back(is.next());
     }
 
-    os.push_back(is.next());
-    subst(is, fp, ap, hs, os);
+    return rts;
+}
+
+int Preprocessor::isMacro(const std::string &_n)
+{
+    for (size_t i = 0;i < macros.size(); ++i) {
+        if (_n == macros.at(i)._name) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 
-
+Macro *Preprocessor::searchMacro(const std::string &_n)
+{
+    for (auto iter = macros.begin(); iter != macros.end(); ++iter) {
+        if (_n == (*iter)._name)
+            return iter._Ptr;
+    }
+    return nullptr;
+}

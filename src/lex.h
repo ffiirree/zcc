@@ -14,6 +14,7 @@ public:
 	inline Lex operator=(const Lex &lex) { f = lex.f; keywords = lex.keywords; tokens = lex.tokens; index = lex.index; return *this; }
 
     inline void push_back(const Token &_t) { tokens.push_back(_t); }
+    inline void pop_back() { tokens.pop_back(); }
 	Token next();
 	void back();
 	Token peek();
@@ -45,6 +46,13 @@ public:
         }
     }
 
+    void insert(Lex &l) {
+        for (size_t i = l.size(); i > 0; --i) {
+            tokens.insert(tokens.begin() + index + 1, l.at(i - 1));
+        }
+    }
+    void setCurrentFile(const File &_f) { f = _f; }
+
 private:
 	Token readToken();
 	Token read_rep(char exp, int _k, int _else);
@@ -67,6 +75,7 @@ private:
 	std::vector<std::string> keywords;
 	std::vector<Token> tokens;
     int index = 0;
+    Token last;
 };
 
 

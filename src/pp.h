@@ -58,7 +58,7 @@ public:
 
 class Preprocessor {
 public:
-    Preprocessor() { init(); }
+    Preprocessor(bool _only) : isOnlyPP(_only) { init(); }
     Preprocessor(const std::string &_fn) { init(); }
     
 	Preprocessor(const Preprocessor &) = delete;
@@ -76,13 +76,14 @@ public:
     TokenSquence select(int i, TokenSquence &ts);
     std::string stringize(TokenSquence &ts);
     TokenSquence getAP(TokenSquence &is);
+    int isInFP(Token &t, std::vector<std::string> fp);
 
     Macro *searchMacro(const std::string &_n);
     int isMacro(const std::string &_n);
 
 
 
-    void Include();
+    void Include(TokenSquence &is, TokenSquence &os);
     void PP_define(Lex &is);
 
 private:
@@ -90,6 +91,7 @@ private:
     //Lex lex;
     std::vector<Macro> macros;
     std::vector<std::string> _paths;
+    bool isOnlyPP = false;
 };
 
 

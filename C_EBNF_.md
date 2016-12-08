@@ -1,3 +1,7 @@
+#############################################################################
+# Copyright (c) 2016 张量奇. Released under the GNU General Public license.
+#############################################################################
+
 # 6.5 Expressions
 ## 6.5.01 Primary expressions // 主表达式
 primary_expr = ID

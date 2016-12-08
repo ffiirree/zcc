@@ -16,14 +16,13 @@ void Lex::scan(const std::string &filename)
 {
 	f.open(filename);
 
-	Token t;
     int counter = 0;
 	do {
-        t = readToken();
-        t.setPos(f.getPos());
-        t.setCounter(++counter);
-        tokens.push_back(t);
-	} while (t.getType() != K_EOF);
+        last = readToken();
+        last.setPos(f.getPos());
+        last.setCounter(++counter);
+        tokens.push_back(last);
+	} while (last.getType() != K_EOF);
 
 	index = 0;
 }
@@ -31,12 +30,13 @@ void Lex::scan(const std::string &filename)
 Token Lex::readToken()
 {
 	char c;
-
 	do {
 		c = f.next();
 
 		switch (c) {
-		case '\n': return Token(TNEWLINE, 0);
+		case '\n': if() return Token(TNEWLINE, 0);
+        case '\\': break;
+        //case ' ': return Token(KEYWORD, static_cast<int>(c));
 		case '\r': break;
 
 		case '#': /*while (c != 0 && c != '\n') c = f.next(); break;*/return Token(KEYWORD, (int)'#');

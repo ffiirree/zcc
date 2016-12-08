@@ -553,26 +553,9 @@ bool Parser::is_arithtype(Type &ty)
 	return is_inttype(ty) || is_floattype(ty);
 }
 
-std::string Parser::getQuadrupleFileName()
-{
-    std::string _rfn = getOnlyFileName(lex.getCurrentFile().getFileName());
-
-	_rfn.push_back('.');
-	_rfn.push_back('q');
-	_rfn.push_back('d');
-	return _rfn;
-}
-
-
-
-std::string Parser::getQuadrupleFileName(std::string &filename)
-{
-	return filename;
-}
-
 void Parser::createQuadFile()
 {
-	out.open(getQuadrupleFileName(), std::ios::out | std::ios::binary);
+	out.open(_of_name, std::ios::out | std::ios::binary);
 	if (!out.is_open())
 		error("Create file filed!");
 }
