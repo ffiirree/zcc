@@ -1,5 +1,7 @@
 int printf(char *s);
 
+int glo_a = 0;
+int glo_b;
 
 int main() 
 {

@@ -6,6 +6,11 @@
 	.ascii " \0"
 .LLSTR45:
 	.ascii "*\0"
+	.globl	_glo_a
+	.data
+_glo_a:
+	.long	0
+	.comm	_glo_b,4
 	.def	__main;	.scl	2;	.type	32;	.endef
 	.text
 	.globl	_main

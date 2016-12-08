@@ -107,6 +107,7 @@ public:
 	}
 	Parser(Lex &l) :lex(l) { 
 		globalenv = new Env(nullptr); 
+        globalenv->setName(lex.getCurrentFile().getFileName());
 		createQuadFile();
 		switch_case_label = newLabel("case");
 	}

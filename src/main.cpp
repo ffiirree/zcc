@@ -1,6 +1,7 @@
 #include <iostream>
 #include "zcc.h"
 #include "error.h"
+#include "PP.H"
 
 
 void Help()
@@ -52,17 +53,27 @@ int main(int argc, char *argv[])
 	// Ö´ÐÐÃüÁî
 	for (size_t i = 1; i < args.size(); ++i)
 	{
-		Parser parser(args.at(i));
+        Lex is(args.at(i));
+        Lex os;
 
-		parser.trans_unit();
+        Preprocessor pp;
+        pp.expand(is, os);
 
-		Generate gen(&parser);
-		gen.run();
+        for (size_t i = 0; i < os.size(); ++i) {
+            std::cout << os.next() << " ";
+        }
+
+		//Parser parser(os);
+
+		//parser.trans_unit();
+
+		//Generate gen(&parser);
+		//gen.run();
 	}
 
-    std::string _fn = getOnlyFileName(args.at(1));
-	std::string runGccSys = "gcc " + _fn + ".s";
-	auto ret = system(runGccSys.c_str());
+ //   std::string _fn = getOnlyFileName(args.at(1));
+	//std::string runGccSys = "gcc " + _fn + ".s";
+	//auto ret = system(runGccSys.c_str());
 
 	return 0;
 }

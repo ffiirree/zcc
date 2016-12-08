@@ -36,10 +36,10 @@ Token Lex::readToken()
 		c = f.next();
 
 		switch (c) {
-		case '\n': //return Token(TNEWLINE, 0);
+		case '\n': return Token(TNEWLINE, 0);
 		case '\r': break;
 
-		case '#': while (c != 0 && c != '\n') c = f.next(); break;//return Token(KEYWORD, (int)'#');
+		case '#': /*while (c != 0 && c != '\n') c = f.next(); break;*/return Token(KEYWORD, (int)'#');
 
 		case '+': return read_rep2('+', OP_INC, '=', OP_A_ADD, '+');
 		case '*': return read_rep('=', OP_A_MUL, '*');
@@ -111,13 +111,41 @@ Token Lex::read_rep(char exp, int _k, int _else)
 	return Token(KEYWORD, (int)(next_is(exp) ? _k : _else));
 }
 
-bool Lex::next_is(char e)
+bool Lex::next_is(const char e)
 {
-	char c = f.next();
-	if (c == e)
-		return true;
-	f.back(c);
+    if (tokens.at(index).getType() == KEYWORD
+        && tokens.at(index).getId() == e) {
+        index++;
+        return true;
+    }
+	
 	return false;
+}
+
+bool Lex::test(int _id)
+{
+    Token tok = peek();
+
+    if (tok.getType() == KEYWORD && tok.getId() == _id)
+        return true;
+    return false;
+}
+
+bool Lex::test2(int _id)
+{
+    Token tok = peek2();
+
+    if (tok.getType() == KEYWORD && tok.getId() == _id)
+        return true;
+    return false;
+}
+
+bool Lex::expect(const char id)
+{
+    if (next_is(id))
+        return true;
+    errorp(tokens.at(index).getPos(), "expect : %c", id);
+    return false;
 }
 
 int Lex::isKeyword(std::string &word)
@@ -344,3 +372,12 @@ Token Lex::peek()
 	return t;
 }
 
+
+Token Lex::peek2()
+{
+    next();
+    Token t = next();
+    back();
+    back();
+    return t;
+}

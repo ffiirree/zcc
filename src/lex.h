@@ -10,17 +10,40 @@ public:
 	Lex(){}
 	Lex(const std::string &filename);
 
-	Lex(const Lex &lex) :f(lex.f), keywords(lex.keywords), tokens(lex.tokens), index(index) {  }
+	Lex(const Lex &lex) :f(lex.f), keywords(lex.keywords), tokens(lex.tokens), index(lex.index) {  }
 	inline Lex operator=(const Lex &lex) { f = lex.f; keywords = lex.keywords; tokens = lex.tokens; index = lex.index; return *this; }
 
-    Token push_back(const Token &_t) { tokens.push_back(_t); }
+    inline void push_back(const Token &_t) { tokens.push_back(_t); }
 	Token next();
 	void back();
 	Token peek();
+    Token peek2();
+    bool test(int _id);
+    bool test2(int _id);
+    bool next_is(const char e);
+    bool expect(const char id);
     Pos getPos() { return tokens.at(index).getPos(); }
 
 	void scan(const std::string &filename);
 	inline File getCurrentFile() { return f; }
+
+    bool empty() { return tokens.empty(); }
+    bool end() { return index == tokens.size(); }
+    size_t size() { return tokens.size(); }
+    Token &at(size_t i) { return tokens.at(i); }
+
+    void insertFront(Lex &l)
+    {
+        for (size_t i = l.size(); i > 0; --i) {
+            tokens.insert(tokens.begin(), l.at(i - 1));
+        }
+    }
+    void insertBack(Lex &l)
+    {
+        for (size_t i = 0; i < l.size(); ++i) {
+            tokens.push_back(l.at(i));
+        }
+    }
 
 private:
 	Token readToken();
@@ -39,7 +62,6 @@ private:
 	bool nextoct();
 
 	int isKeyword(std::string &word);
-	bool next_is(char e);
 
 	File f;
 	std::vector<std::string> keywords;

@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <map>
+#include <set>
 
 #define _CASE_3(x0,x1,x2) case x0: case x1: case x2
 #define _CASE_6(x0,x1,x2,x3,x4,x5) _CASE_3(x0,x1,x2): _CASE_3(x3,x4,x5)
@@ -109,6 +110,7 @@ enum {
 	TNEWLINE,
 	TSPACE,
 	TMACRO_PARAM,
+    DS, // '##'
 
 #define op(ty, _) ty,
 	OP_MAP
@@ -121,6 +123,7 @@ enum {
 
 
 std::string getOnlyFileName(const std::string &_fn);
+using HideSet = std::set<std::string>;
 
 class Pos {
 public:
@@ -141,12 +144,12 @@ class Token {
 public:
 	Token() :type(K_EOF), pos(), counter(0), id(0) {}
 	Token(int _type, int _id) :type(_type), counter(0), id(_id) {  }
-	Token(int ty, std::string &_sval) : type(ty), counter(0), sval(_sval) {  }
+	Token(int ty, const std::string &_sval) : type(ty), counter(0), sval(_sval) {  }
 	Token(int ty, char _c) : type(ty), pos(), counter(0), ch(_c) {  }
 	~Token() { if (type == ID || type == STRING_ || type == INTEGER || type == FLOAT)sval.~basic_string(); }
 
-	Token(const Token &t) :type(t.type), pos(t.pos), counter(t.counter) { copyUnion(t); }
-	Token operator=(const Token &t) { type = t.type;pos = t.pos;counter = t.counter;copyUnion(t);return (*this); }
+    Token(const Token &t) :type(t.type), pos(t.pos), counter(t.counter), _hs(t._hs), isfol(t.isfol)  { copyUnion(t); }
+    Token operator=(const Token &t) { type = t.type; pos = t.pos; counter = t.counter; _hs = t._hs;isfol = t.isfol; copyUnion(t); return (*this); }
 
 	inline int getType() const { return type; }
 	inline Pos getPos() const { return pos; }
@@ -157,6 +160,8 @@ public:
 	inline std::string getSval() const { return sval; }
 	inline int getCh() const { return ch; }
 
+    std::string to_string() const;
+
 private:
 	void copyUnion(const Token &t);
 
@@ -164,6 +169,8 @@ private:
 	Pos pos;
 	int counter;
 
+    HideSet *_hs = nullptr;
+    bool isfol = false;           // first of line
 	union
 	{
 		int id;                  // KEYWORD

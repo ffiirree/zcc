@@ -1,34 +1,35 @@
 #include "type.h"
+#include "ERROR.H"
 
 /**
  * Token
  */
-std::ostream &operator<<(std::ostream & os, const Token & t)
-{
-	os << t.getType() << "\t";
-
-	if (t.getType() == KEYWORD) {
-		switch (t.getId())
-		{
-#define keyword(ty, name, _) case ty: os << name ;break;
-#define op(ty,name) case ty: os << name;break;
-			KEYWORD_MAP
-				OP_MAP
-#undef keyword
-#undef op
-		default: os << (char)t.getId(); break;
-		}
-		os << std::endl;
-	}
-	else if (t.getType() == ID)
-		os << t.getSval().c_str() << std::endl;
-	else if (t.getType() == CHAR_)
-		os << (char)t.getCh() << std::endl;
-	else if (t.getType() == STRING_ || t.getType() == INTEGER || t.getType() == FLOAT)
-		os << t.getSval().c_str() << std::endl;
-
-	return os;
-}
+//std::ostream &operator<<(std::ostream & os, const Token & t)
+//{
+//	os << t.getType() << "\t";
+//
+//	if (t.getType() == KEYWORD) {
+//		switch (t.getId())
+//		{
+//#define keyword(ty, name, _) case ty: os << name ;break;
+//#define op(ty,name) case ty: os << name;break;
+//			KEYWORD_MAP
+//				OP_MAP
+//#undef keyword
+//#undef op
+//		default: os << (char)t.getId(); break;
+//		}
+//		os << std::endl;
+//	}
+//	else if (t.getType() == ID)
+//		os << t.getSval().c_str() << std::endl;
+//	else if (t.getType() == CHAR_)
+//		os << (char)t.getCh() << std::endl;
+//	else if (t.getType() == STRING_ || t.getType() == INTEGER || t.getType() == FLOAT)
+//		os << t.getSval().c_str() << std::endl;
+//
+//	return os;
+//}
 bool operator==(const Token &t1, const Token &t2)
 {
 	return (t1.getType() == t2.getType() && t1.getPos() == t2.getPos() && t1.getCounter() == t2.getCounter() &&
@@ -155,4 +156,44 @@ std::string getOnlyFileName(const std::string &_fn)
         _rfn.push_back(_fn.at(i));
 
     return _rfn;
+}
+
+std::ostream &operator<<(std::ostream & os, const Token & t)
+{
+    os << t.to_string();
+    return os;
+}
+
+std::string Token::to_string() const
+{
+    std::string _r;
+
+    switch (type) {
+    case KEYWORD:
+        switch (id) {
+#define keyword(_t, _n, _)  case _t: _r = _n; break;
+#define op(_t, _n)          case _t: _r = _n; break;
+            KEYWORD_MAP
+                OP_MAP
+#undef keyword
+#undef op
+        default: _r.push_back(static_cast<char>(id)); break;
+        }
+        break;
+
+    case ID:
+    case INTEGER:
+    
+    case FLOAT:  _r = sval; break;
+    case STRING_: _r = "\"" + sval + "\""; break;
+
+
+    case CHAR_:  _r.push_back(static_cast<char>(ch)); break;
+    case K_EOF:  break;
+    case TNEWLINE: _r = "\n"; break;
+    default:
+        errorp(pos, "error token");
+        break;
+    }
+    return _r;
 }
