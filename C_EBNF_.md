@@ -282,7 +282,7 @@ if_group = '#' 'if' const_expr new_line groupopt
          | '#' 'ifdef' ID new_line groupopt
          | '#' 'ifndef' ID new_line groupopt
 
-elif_groups = elif_group | elif_groups elif_group
+elif_groups = elif_group {elif_group} 
 
 elif_group = '#' 'elif' const_expr new_line groupopt
 

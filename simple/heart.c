@@ -1,7 +1,4 @@
-int printf(char *s);
-
-int glo_a = 0;
-int glo_b;
+#include<stdio.h>
 
 int main() 
 {
@@ -9,10 +6,10 @@ int main()
         for (float x = -1.5; x < 1.5; x += 0.05) {
             float a = x * x + y * y - 1;
             if(a * a * a - x * x * y * y * y <= 0.0)
-                printf("*");
+                putchar('*');
             else 
-                printf(" ");
+                putchar(' ');
         }
-        printf("\n");
+        putchar('\n');
     }
 }

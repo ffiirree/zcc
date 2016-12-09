@@ -99,6 +99,9 @@ public:
 class Parser {
 public:
 	Parser(){}
+    // 构造函数，为了预处理器分析表达式的使用
+    Parser(Lex &l) :lex(l) { }
+
 	Parser(Lex &l, const std::string &_ofn) :lex(l), _of_name(_ofn + ".q") { 
 		globalenv = new Env(nullptr); 
         globalenv->setName(_of_name);
@@ -117,6 +120,8 @@ public:
     std::string getQuadrupleFileName() { return _of_name; }
     inline std::vector<std::string> getFloatConst() { return float_const; }
     std::string searchEnum(const std::string &key);
+
+    Node expr();       // 允许预处理器使用
 private:
     bool cheak_redefined(Env *_env, const std::string &_name);
 	Type conv2ptr(Type ty);
@@ -220,7 +225,7 @@ private:
 	Node expr_opt();
 	Node comma_expr();
 	Node assignment_expr();
-	Node conditional_expr();
+    Node conditional_expr();
 	Node logical_or_expr();
 	Node logical_and_expr();
 	Node bit_or_expr();

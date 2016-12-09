@@ -1,11 +1,11 @@
 #ifndef _ZCC_PP_H
 #define _ZCC_PP_H
 
-#include "zcc.h"
 #include <fstream>
 #include <ctime>
+#include "zcc.h"
 
-using TokenSquence = Lex;
+using TokenSequence = Lex;
 
 
 typedef enum {
@@ -51,7 +51,7 @@ public:
     MacroType _type = M_ZERO;
     std::string _name;
     std::vector<std::string> _params;
-    TokenSquence _replist;
+    TokenSequence _replist;
 };
 
 
@@ -67,23 +67,23 @@ public:
     void group_part(Lex &is, Lex &os);
 
 
-    void expand(TokenSquence is, TokenSquence &os);
-    void subst(TokenSquence &is, std::vector<std::string> fp, TokenSquence &ap, HideSet* hs, TokenSquence& os);
-    void glue(TokenSquence &ls, TokenSquence &rs);
-    void hasadd(HideSet *hs, TokenSquence &ts);
-    TokenSquence ts(const std::string &_macro_name);
-    TokenSquence fp(const std::string &_macro_name);
-    TokenSquence select(int i, TokenSquence &ts);
-    std::string stringize(TokenSquence &ts);
-    TokenSquence getAP(TokenSquence &is);
+    void expand(TokenSequence is, TokenSequence &os);
+    void subst(TokenSequence &is, std::vector<std::string> fp, TokenSequence &ap, HideSet* hs, TokenSequence& os);
+    void glue(TokenSequence &ls, TokenSequence &rs);
+    void hasadd(HideSet *hs, TokenSequence &ts);
+    TokenSequence ts(const std::string &_macro_name);
+    TokenSequence fp(const std::string &_macro_name);
+    TokenSequence select(int i, TokenSequence &ts);
+    TokenSequence stringize(TokenSequence &ts);
+    TokenSequence getAP(TokenSequence &is);
     int isInFP(Token &t, std::vector<std::string> fp);
 
     Macro *searchMacro(const std::string &_n);
     int isMacro(const std::string &_n);
+    bool deleteMacro(const std::string &_n);
 
 
-
-    void Include(TokenSquence &is, TokenSquence &os);
+    void Include(TokenSequence &is, TokenSequence &os);
     void _define_(Lex &is);
     void _if_(Lex &is);
     void _ifndef_(Lex &is);
@@ -94,6 +94,8 @@ public:
     void _endif_(Lex &is);
     void _line_(Lex &is);
     void _pragma_(Lex &is);
+    void _elif_group_(Lex &is);
+    void _else_group_(Lex &is);
 
 private:
     void init();

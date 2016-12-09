@@ -19,7 +19,7 @@ void Help()
 		"\n";
 }
 
-void print_pp(TokenSquence &ts)
+void print_pp(TokenSequence &ts)
 {
     for (size_t i = 0; i < ts.size(); ++i) {
         std::cout << ts.next() << " ";
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 	{
         std::string _ofn = getOnlyFileName(fileName.at(i));
         Lex is(fileName.at(i));
-        TokenSquence os;
+        TokenSequence os;
 
         // Ô¤´¦Àí
         Preprocessor pp(isOnlyPP);

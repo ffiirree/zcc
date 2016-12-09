@@ -52,6 +52,7 @@ public:
         }
     }
     void setCurrentFile(const File &_f) { f = _f; }
+    inline size_t restSize() { return tokens.size() - index; }
 
 private:
 	Token readToken();
