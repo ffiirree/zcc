@@ -24,26 +24,21 @@
 ```
 
 ### 2.1 数据类型
-
+```
         string
-        
+
 INTEGER:
-        char
-        short
-        int
-        long 
+        char, short, int, long 
 
 FLOAT:
-        float
-        double
+        float, double
 
+OTHER:
         array
-
         enum
-
         struct
-
         使用typedef定义的struct类型
+```
 ### 2.2 运算
 ```
         +  -  +=  -=  *  *=  /  /=  %  %=
