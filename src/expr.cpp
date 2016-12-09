@@ -37,7 +37,8 @@ Node Parser::assignment_expr()
 	Token t = lex.next();
 	
 	if (is_keyword(t, '?')) {
-		// do..
+        conditional_expr(node);
+        lex.next();
 	}
 
 	int cop = get_compound_assign_op(t); // * + * ..
@@ -46,10 +47,6 @@ Node Parser::assignment_expr()
 	if (is_keyword(t, '=') || cop) {
 		// 右侧值
 		Node value = assignment_expr();
-
-		//if (is_keyword(t, '=') || cop) {
-		//	ensure_lvalue(*node);
-		//}
 		Node _temp;
 		if (cop) {
 			_temp = binop(cop, *node, value);
@@ -69,7 +66,6 @@ Node Parser::assignment_expr()
 				createQuadruple(get_compound_assign_op_signal(t));
 				createQuadruple("=");
 			}
-				
 		}
 		else {
 			_temp = value;
@@ -90,13 +86,53 @@ Node Parser::assignment_expr()
  * conditional_expr = logical_OR_expr
  *                  | logical_OR_expr '?' expression ':' conditional_expr
  */
-Node Parser::conditional_expr()
+Node Parser::conditional_expr(Node *node)
 {
+    BoolLabel _to;
+    std::string snext = newLabel("sn");
+
+    _to._true = newLabel("tot");
+    _to._false = newLabel("tof");
+    boolLabel.back()._true = _to._true;
+    boolLabel.back()._false = _to._false;
+    generateIfGoto();
+    out << _to._true << ":" << std::endl;
+
+    Node *then = new Node(expr());
+    out << "goto\t" << snext << std::endl;
+    out << _to._false << ":" << std::endl;
+
+    expect(':');
+    Node *els = new Node(com_conditional_expr());
+
+    out << snext << ":" << std::endl;
+
+    return createIfStmtNode(node, then, els);
+}
+
+Node Parser::com_conditional_expr()
+{
+    BoolLabel _to;
+    std::string snext = newLabel("sn");
+
 	Node *node = new Node(logical_or_expr());
 	if (next_is('?')) {
+
+        _to._true = newLabel("tot");
+        _to._false = newLabel("tof");
+        boolLabel.back()._true = _to._true;
+        boolLabel.back()._false = _to._false;
+        generateIfGoto();
+        out << _to._true << ":" << std::endl;
+
 		Node *then = new Node(expr());
+        out << "goto\t" << snext << std::endl;
+        out << _to._false << ":" << std::endl;
+
 		expect(':');
-		Node *els = new Node(conditional_expr());
+		Node *els = new Node(com_conditional_expr());
+
+        out << snext << ":" << std::endl;
 
 		return createIfStmtNode(node, then, els);
 	}

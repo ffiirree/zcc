@@ -2,12 +2,11 @@
 
 int main() 
 {
-    int arr[4][5][5] = {11, 22, 33, 44};
-
-    arr[3][4][3] = 45;
-    int b = arr[3][4][3];
-
-    printf("%d\n", b);
-
-    return 0;
+    for (float y = 1.5; y > -1.5; y -= 0.1) {
+        for (float x = -1.5; x < 1.5; x += 0.05) {
+            float a = x * x + y * y - 1;
+            a * a * a - x * x * y * y * y <= 0.0 ? putchar('*') : putchar(' ');
+        }
+        putchar('\n');
+    }
 }

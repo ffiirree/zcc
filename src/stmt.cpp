@@ -322,7 +322,7 @@ Node Parser::return_stmt()
 
 Node Parser::case_stmt()
 {
-	int val = conditional_expr().int_val;
+	int val = com_conditional_expr().int_val;
 	expect(':');
 
 	out << "if " << switch_expr << " != " << val << " goto " << switch_case_label << std::endl;

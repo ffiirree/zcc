@@ -152,7 +152,7 @@ void  Parser::init_list(std::vector<Node> &r, Type &ty, int off, bool designated
 Node Parser::designator_list()
 {
 	if (next_is('[')) {
-		Node r = conditional_expr();
+		Node r = com_conditional_expr();
 		expect(']');
 		return r;
 	}
@@ -265,7 +265,7 @@ void Parser::decl_array(Type *ty)
 
 int Parser::array_int_expr()
 {
-	Node r = conditional_expr();
+	Node r = com_conditional_expr();
 	
 	if (r.kind == NODE_INT || r.kind == NODE_CHAR || r.kind == NODE_INT) {
 		_stk_quad.pop_back();
