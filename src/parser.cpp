@@ -14,7 +14,6 @@ std::vector<Node> Parser::trans_unit()
 
 		if (t.getType() == K_EOF) {
 			labels.cheak();
-            std::cout << "-----------------------------> Parser OK." << std::endl << std::endl;
 			out.close();
 			return list;
 		}
