@@ -13,8 +13,11 @@
 ### 2.0 预处理器
 ```
         include 
-        define(暂不支持#和##)
+        define
+        undef
+        宏展开
 
+部分支持：
         ifndef
         ifdef
         endif
