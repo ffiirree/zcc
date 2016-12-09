@@ -105,8 +105,6 @@ private:
     void gas_custom(Node &n, bool is_fir);
 
     Type gas_load(const std::string &_q, const std::string &_reg);                   // º”‘ÿ ˝æ›
-    void gas_addr(Node &_var, const std::string &_off, std::string &_des_reg);
-    void gas_get_arr_addr(Node &_var, const std::string &_off, std::string &_des_reg);
     int gas_flo_load(const std::string &fl);
     Type getStructFieldType(Node &var, std::string &_off);
 
@@ -130,7 +128,6 @@ private:
     LocVar &searchLocvar(const std::string &name);
     TempVar &searchTempvar(const std::string &name);
 	TempVar &searchFloatTempvar(const std::string &name);
-    void envUp2DownSearch(Env * _env, const std::string &name, LocVar &var, bool *isfind);
 
     bool isTempVar(const std::string &_t);
 	bool isFloatTemVar(const std::string &_t);

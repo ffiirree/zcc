@@ -16,6 +16,9 @@
                                              }while(0)
 #define __OUT_SCOPE__(localEnv) do{ localEnv = localEnv->pre(); out << ".outscope" << std::endl; }while(0)
 
+/**
+ * @berif scope/env
+ */
 class Env {
 public:
 	Env():Env(nullptr) {}
@@ -43,6 +46,9 @@ private:
 	std::vector<Node> nodes;
 };
 
+/**
+ * @berif 标签
+ */
 class Label {
 public:
 	Label() :Label(nullptr) {}
@@ -69,6 +75,9 @@ private:
 	std::vector<bool> enLabels;
 };
 
+/**
+ * @berif bool表达式中使用的标签
+ */
 class BoolLabel{
 public:
 	BoolLabel() :_begin(), _true(), _false(), _next(){}
@@ -198,8 +207,9 @@ private:
 	std::vector<Node> decl_init(Type &ty);
 	void init_list(std::vector<Node> &r, Type &ty, int off, bool designated);
 	Node designator_list();
-
 	void decl_or_stmt(std::vector<Node> &list);
+    Type struct_def();
+    Type enum_def();
 
 	/**
 	 * stmt
@@ -245,8 +255,6 @@ private:
 	Node primary_expr();
 
 	Node var_or_func(Token &t);
-
-
 	Node binop(int op, Node &lhs, Node &rhs);
 
 	Node sizeof_operand();
@@ -258,29 +266,36 @@ private:
 	Node unary_lognot();
 
 	Node wrap(Type &t, Node &node);
+    Type getCustomType(const std::string &_n);
+    
 
-	void ensure_inttype(Node &node);
+#ifdef _OVERLOAD_
+    std::string getOverLoadName(const std::string &name, std::vector<Node> &_p);
+#endif
 
-	// 检查
-	bool ensure_lvalue(const Node &node);
-	Type usual_arith_conv(Type &t, Type &u);
+    // 检查
+    void ensure_inttype(Node &node);
+    bool ensure_lvalue(const Node &node);
+    Type usual_arith_conv(Type &t, Type &u);
+    bool cheak_is_float(const Node &n);
+    bool cheak_is_int_type(const Node &n);
+    bool cheak_is_custom_type(const Node &n);
 
 
 	Lex lex;
-	Env *globalenv = nullptr;              // 全局
-	Env *localenv = nullptr;               // 临时
-	Env *funcCall = nullptr;               // 记录函数调用
-	Label labels;                          // 源程序中的Label
-	std::vector<StrCard> const_string;     // 字符串常量
-    std::vector<std::string> float_const;  // 浮点数常量
-    //std::vector<std::string> enum_const;   // 枚举常量表
+	Env *globalenv = nullptr;                               // 全局
+	Env *localenv = nullptr;                                // 临时
+	Env *funcCall = nullptr;                                // 记录函数调用
+	Label labels;                                           // 源程序中的Label
+	std::vector<StrCard> const_string;                      // 字符串常量
+    std::vector<std::string> float_const;                   // 浮点数常量
     std::map<std::string, std::string> enum_const;
 
 	std::string label_break;
 	std::vector<std::string> _stk_if_goto;
 	std::vector<std::string> _stk_if_goto_op;
 	std::vector<std::string> _stk_if_goto_out;
-	std::vector<std::string> _stk_ctl_bg_l;       // break ..con..
+	std::vector<std::string> _stk_ctl_bg_l;                 // break ..con..
 	std::vector<std::string> _stk_ctl_end_l;
 
 	std::string switch_case_label;
@@ -292,16 +307,6 @@ private:
 	std::vector<std::string> _stk_incdec;
 	std::vector<BoolLabel> boolLabel;
     std::map<std::string, Type> custom_type_tbl;
-    Type getCustomType(const std::string &_n);
-    Type struct_def();
-    Type enum_def();
-#ifdef _OVERLOAD_
-	std::string getOverLoadName(const std::string &name, std::vector<Node> &_p);
-#endif
-
-    bool cheak_is_float(const Node &n);
-    bool cheak_is_int_type(const Node &n);
-    bool cheak_is_custom_type(const Node &n);
 };
 
 /**
