@@ -812,10 +812,10 @@ void Parser::createQuadruple(const std::string &op)
 		_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
 		_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
 	}
-	else if (op == "[]") {
-		_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
-		_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
-	}
+	//else if (op == "[]") {
+	//	_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+	//	_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+	//}
     else if (op == "+f" || op == "-f" || op == "*f" || op == "/f") {
         std::string v1, v2;
 
@@ -843,7 +843,7 @@ void Parser::createQuadruple(const std::string &op)
         // 添加到生成四元式的栈中
         _stk_quad.push_back(tempName);
     }
-    else if (op == ".=") {
+    else if (op == ".=" || op == "[]=") {
         std::string v1, v2;
 
         _out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();

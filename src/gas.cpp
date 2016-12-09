@@ -412,3 +412,47 @@ void Generate::gas_addr(Node &_var, const std::string &_off, std::string &_des_r
         gas_ins(movXXl(size, is_unsig), "(%eax)", "%eax");
     }
 }
+
+void Generate::gas_get_arr_addr(Node &_var, const std::string &_off, std::string &_des_reg)
+{
+    size_t size = _var.type.size;
+    bool is_unsig = _var.type.isUnsig;
+    if (isNumber(_off))
+        gas_ins("leal", std::to_string(_var._off + _var.type.size * atoi(_off.c_str())) + "(%ebp)", "%eax");
+    else if (isEnumConst(_off))
+        gas_ins("leal", std::to_string(_var._off + _var.type.size * atoi(parser->searchEnum(_off).c_str())) + "(%ebp)", "%eax");
+    else if (isLocVar(_off)) {
+        Node _loc = searchLocvar(_off);
+        getReg("%ecx");
+        gas_ins("leal", std::to_string(_var._off) + "(%ebp)", "%eax");
+        gas_ins("movl", loc_var_val(_loc._off), "%ecx");
+        gas_ins("imull", "$" + std::to_string(_var.type.size), "%ecx");
+        gas_ins("addl", "%ecx", "%eax");
+    }
+    else if (isTempVar(_off)) {
+        TempVar _loc = searchTempvar(_off);
+        gas_ins("leal", std::to_string(_var._off) + "(%ebp)", "%eax");
+        gas_ins("imull", "$" + std::to_string(_var.type.size), _loc._reg);
+        gas_ins("addl", _loc._reg, "%eax");
+    }
+    else {
+        Node _glo = gloEnv->search(_off);
+        getReg("%edx");
+        gas_ins("leal", std::to_string(_var._off) + "(%ebp)", "%eax");
+        gas_ins("movl", "_" + _glo.varName, "%edx");
+        gas_ins("imull", "$" + std::to_string(_var.type.size), "%edx");
+        gas_ins("addl", "%edx", "%eax");
+    }
+}
+
+
+Type Generate::getStructFieldType(Node &var, std::string &_off)
+{
+    for (size_t i = 0; i < var.type.fields.size(); ++i) {
+        if (_off == std::to_string(var.type.fields.at(i)._off)) {
+            return *(var.type.fields.at(i)._type);
+        }
+    }
+    error("%s do not have this field.", var.varName);
+    return Type();
+}

@@ -88,7 +88,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
                                 _stk_quad.push_back(arr_init.at(arr_init.size() - i - 1));
                                 _stk_quad.push_back(var.varName);
                                 _stk_quad.push_back(std::to_string(i * var.type.size));
-                                createQuadruple(".=");
+                                createQuadruple("[]=");
                             }
 					}
                     else if (var.type.type == K_STRUCT || var.type.type == K_TYPEDEF) {

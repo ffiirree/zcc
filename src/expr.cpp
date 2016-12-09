@@ -402,12 +402,27 @@ Node Parser::postfix_expr_tail(Node &node)
             createFuncQuad(parms);
         }
         if (next_is('[')) {
-			expr();
-			expect(']');
+            int counter = 0;
+            do {
+                expr();
+                expect(']');
+                counter++;
+                for (size_t i = counter; i < node.type.len.size(); ++i) {
+                    _stk_quad.push_back(std::to_string(node.type.len.at(i)));
+                    createQuadruple("*");
+                }
+                if (counter > 1) {
+                    if (node.type.len.size() > 1)
+                        createQuadruple("+");
+                }
+            } while (next_is('['));
+
+            
+
 			if (lex.peek().getId() == '=')
-				createQuadruple(".&");
+				createQuadruple("[]&");
 			else
-				createQuadruple(".");
+				createQuadruple("[]");
         }
         if (next_is('.')) {
             Token t = lex.next();

@@ -106,7 +106,9 @@ private:
 
     Type gas_load(const std::string &_q, const std::string &_reg);                   // ¼ÓÔØÊı¾İ
     void gas_addr(Node &_var, const std::string &_off, std::string &_des_reg);
-    int Generate::gas_flo_load(const std::string &fl);
+    void gas_get_arr_addr(Node &_var, const std::string &_off, std::string &_des_reg);
+    int gas_flo_load(const std::string &fl);
+    Type getStructFieldType(Node &var, std::string &_off);
 
     void gas_jxx(const std::string &op, const std::string &des, Type &_t);
     void unlimited_binary_op(std::vector<std::string> &_q, const std::string &op);
