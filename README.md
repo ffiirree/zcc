@@ -24,10 +24,26 @@
 ```
 
 ### 2.1 数据类型
-        字符串常量、int、short、char、long 、一维数组
-        float，double
 
-        自定义struct类型，和使用typedef定义的struct类型
+        string
+        
+INTEGER:
+        char
+        short
+        int
+        long 
+
+FLOAT:
+        float
+        double
+
+        array
+
+        enum
+
+        struct
+
+        使用typedef定义的struct类型
 ### 2.2 运算
 ```
         +  -  +=  -=  *  *=  /  /=  %  %=
