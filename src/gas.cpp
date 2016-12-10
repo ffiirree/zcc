@@ -381,3 +381,8 @@ Type Generate::getStructFieldType(Node &var, std::string &_off)
     error("%s do not have this field.", var.varName);
     return Type();
 }
+
+Type Generate::getPtrType(Node &var)
+{
+    return *(var.type.ptr);
+}

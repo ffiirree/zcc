@@ -107,6 +107,7 @@ private:
     Type gas_load(const std::string &_q, const std::string &_reg);                   // МгдиЪ§Он
     int gas_flo_load(const std::string &fl);
     Type getStructFieldType(Node &var, std::string &_off);
+    Type getPtrType(Node &var);
 
     void gas_jxx(const std::string &op, const std::string &des, Type &_t);
     void unlimited_binary_op(std::vector<std::string> &_q, const std::string &op);

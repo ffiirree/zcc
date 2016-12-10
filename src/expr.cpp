@@ -475,8 +475,19 @@ Node Parser::postfix_expr_tail(Node &node)
                 createQuadruple(".");
 		}
 		if (next_is(OP_ARROW)) {
-            createQuadruple("->");
-            errorp(lex.getPos(), "Unspport '->'");
+            Token t = lex.next();
+            int _off = 0;
+            for (size_t i = 0; i < node.type.ptr->fields.size(); ++i) {
+                if (t.getSval() == node.type.ptr->fields.at(i)._name)
+                    _off = node.type.ptr->fields.at(i)._off;
+            }
+            _stk_quad.push_back(std::to_string(_off));
+
+            if (lex.peek().getId() == '=')
+                createQuadruple("->&");
+            else
+                createQuadruple("->");
+            
 		}
 		Token tok = lex.peek();
 		// 后置++/--

@@ -1,4 +1,7 @@
 	.file	"hello.s"
+	.section  .rdata,"dr"
+.LLSTR8:
+	.ascii "%d\n\0"
 	.def	__main;	.scl	2;	.type	32;	.endef
 	.text
 	.globl	_main
@@ -10,107 +13,33 @@ _main:
 	.cfi_offset 5, -8
 	movl	%esp, %ebp
 	.cfi_def_cfa_register 5
-	subl	$23, %esp
+	subl	$64, %esp
 	call	___main
-	flds	.Lf9
-	fstps	-4(%ebp)
-.Lforb5:
-	flds	.Lf11
-	flds	-4(%ebp)
-	fucompp
-	fnstsw	%ax
-	sahf
-	ja	.Lfort7
-	jmp	.Lforn4
-.Lfe36:
-	flds	-4(%ebp)
-	flds	.Lf12
-	fsubr	%st(1), %st(0)
-	fstps	-4(%ebp)
-	jmp	.Lforb5
-.Lfort7:
-	flds	.Lf21
-	fstps	-8(%ebp)
-.Lforb17:
-	flds	.Lf23
-	flds	-8(%ebp)
-	fucompp
-	fnstsw	%ax
-	sahf
-	jb	.Lfort19
-	jmp	.Lforn16
-.Lfe318:
-	flds	.Lf24
-	flds	-8(%ebp)
-	faddp
-	fstps	-8(%ebp)
-	jmp	.Lforb17
-.Lfort19:
-	flds	-8(%ebp)
-	flds	-8(%ebp)
-	fmulp
-	flds	-4(%ebp)
-	flds	-4(%ebp)
-	fmulp
-	faddp
-	flds	.Lf31
-	fsubr	%st(1), %st(0)
-	fstps	-12(%ebp)
-	finit
-	flds	-12(%ebp)
-	flds	-12(%ebp)
-	fmulp
-	flds	-12(%ebp)
-	fmulp
-	flds	-8(%ebp)
-	flds	-8(%ebp)
-	fmulp
-	flds	-4(%ebp)
-	fmulp
-	flds	-4(%ebp)
-	fmulp
-	flds	-4(%ebp)
-	fmulp
-	fsubr	%st(1), %st(0)
-	flds	.Lf41
-	fxch	%st(1)
-	fucompp
-	fnstsw	%ax
-	sahf
-	jbe	.Ltot43
-	jmp	.Ltof44
-.Ltot43:
-	movb	$42, 0(%esp)
-	call	_putchar
-	jmp	.Lsn42
-.Ltof44:
-	movb	$32, 0(%esp)
-	call	_putchar
-.Lsn42:
-	finit
-	jmp	.Lfe318
-.Lforn16:
-	movb	$10, 0(%esp)
-	call	_putchar
-	jmp	.Lfe36
-.Lforn4:
+	movl	$6, -40(%ebp)
+	movl	$5, -36(%ebp)
+	movl	$4, -32(%ebp)
+	movl	$2, -28(%ebp)
+	leal	-40(%ebp), %eax
+	movl	%eax, -44(%ebp)
+	movl	-44(%ebp), %eax
+	addl	$4, %eax
+	movl	%eax, -44(%ebp)
+	movl	-44(%ebp), %eax
+	addl	$8, %eax
+	movl	$89, (%eax)
+	movl	-44(%ebp), %eax
+	addl	$8, %eax
+	movl	(%eax), %eax
+	movl	%eax, -48(%ebp)
+	movl	$.LLSTR8, 0(%esp)
+	movl	-48(%ebp), %eax
+	movl	%eax, 4(%esp)
+	call	_printf
+	movl	$0, %eax
+	leave
+	.cfi_restore 5
+	.cfi_def_cfa 4, 4
+	ret
 	.cfi_endproc
-.LFE49:
-	.section .rdata,"dr"
-.Lf41:
-	.float 0.0
-.Lf31:
-	.float 1
-.Lf24:
-	.float 0.05
-.Lf23:
-	.float 1.5
-.Lf21:
-	.float -1.5
-.Lf12:
-	.float 0.1
-.Lf11:
-	.float -1.5
-.Lf9:
-	.float 1.5
+.LFE10:
 	.ident "zcc 0.0.1"
