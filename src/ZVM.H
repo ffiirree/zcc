@@ -45,6 +45,8 @@ public:
     void run();
 
     void push_back(const AsmIns &ai) { text_.push_back(ai); }
+    void *getRegByName(const std::string &name);
+    Instruction getInsByOp(const std::string &name);
 
     static int eax;
     static int ebx;
@@ -53,55 +55,6 @@ public:
 
     static int esp;
     static int ebp;
-
-    void *getRegByName(const std::string &name)
-    {
-        std::string _off;
-        if (name == "%eax")
-            return &eax;
-        else if (name == "%ebx")
-            return &ebx;
-        else if (name == "%ecx")
-            return &ecx;
-        else if (name == "%edx")
-            return &edx;
-        else if (name == "%ebp")
-            return &ebp;
-        else if (name == "%esp")
-            return &esp;
-        else {
-            size_t i = 0;
-            for (; i < name.size(); ++i) {
-                if (name.at(i) != '(')
-                    _off.push_back(name.at(i));
-                else
-                    break;
-            }
-            switch (name.at(i + 3))
-            {
-            case 'a': return &eax + atoi(_off.c_str());
-            case 'b': 
-                if(name.at(i + 4) == 'x')
-                    return (void *)(ebx + atoi(_off.c_str()));
-                else 
-                    return (void *)(ebp + atoi(_off.c_str()));
-            case 'c': return (void *)(ecx + atoi(_off.c_str()));
-            case 'd': return (void *)(edx + atoi(_off.c_str()));
-            case 's': return (void *)(esp + atoi(_off.c_str()));
-            default:
-                break;
-            }
-        }
-    }
-
-    Instruction getInsByOp(const std::string &name)
-    {
-        if (name == "subl") return subl;
-        else if (name == "addl") return addl;
-        else if (name == "andl") return andl;
-        else if (name == "xorl") return xorl;
-        else if (name == "orl") return orl;
-    }
 
 private:
     Parser *parser_;
