@@ -2,6 +2,7 @@
 #include "zcc.h"
 #include "error.h"
 #include "PP.H"
+#include "ZVM.H"
 
 
 void Help()
@@ -16,6 +17,8 @@ void Help()
 		"  -c                Do not run linker (default)\n"
 		"  -o filename       Output to the specified file\n"
 		"  -h                help\n"
+        "  -V                use virtual machine to run the program.\n"
+        "  -D                Debug(virtual machine mode)\n"
 		"\n";
 }
 
@@ -30,7 +33,8 @@ int main(int argc, char *argv[])
 {
 	std::vector<std::string> args;
 	std::vector<std::string> fileName;
-    bool isOnlyPP = false, to_print = false, stopAsm = false;
+    bool isOnlyPP = false, to_print = false, stopAsm = false, useVM = false, debug = false;
+    std::string _ofn;
 
 	// 读取所有命令参数
 	for (int i = 0; i < argc; ++i) {
@@ -44,10 +48,12 @@ int main(int argc, char *argv[])
             case 'E': to_print = true;  break;
             case 'S': stopAsm = true;   break;
             case 'P': isOnlyPP = true;  break;
-			case 'c': 
-			case 'o': 
-			case 'h': Help();return 0;
-			case 'I':
+			case 'c': break;
+			case 'o': _ofn = getOnlyFileName(args.at(++i));break;
+			case 'h': Help(); return 0;
+			case 'I': break;
+            case 'V': useVM = true; break;
+            case 'D': debug = true; break;
 			default:
 				error("Undefined args.");
 				break;
@@ -61,7 +67,9 @@ int main(int argc, char *argv[])
 	// 执行命令
 	for (size_t i = 1; i < fileName.size(); ++i)
 	{
-        std::string _ofn = getOnlyFileName(fileName.at(i));
+        if(_ofn.empty())
+            _ofn = getOnlyFileName(fileName.at(i));
+
         Lex is(fileName.at(i));
         TokenSequence os;
 
@@ -75,11 +83,17 @@ int main(int argc, char *argv[])
         // 
         if (!isOnlyPP) {
             Parser parser(os, _ofn);
-            Generate gen(&parser);
+            VirtualMachine vm(debug);
+            Generate gen(&parser, &vm);
 
-            if (!stopAsm) {
-                std::string runGccSys = "gcc " + _ofn +".s";
-                auto ret = system(runGccSys.c_str());
+            if (useVM) {
+                vm.run();
+            }
+            else {
+                if (!stopAsm) {
+                    std::string runGccSys = "gcc " + _ofn + ".s";
+                    auto ret = system(runGccSys.c_str());
+                }
             }
         }
 	}

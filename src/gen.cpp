@@ -4,7 +4,7 @@
 #include "error.h"
 
 
-Generate::Generate(Parser *p)
+Generate::Generate(Parser *p, VirtualMachine *vm):vm_(vm)
 {
 	parser = p;
 	_infilename = p->getQuadrupleFileName();
@@ -157,13 +157,19 @@ void Generate::func_decl(Node &n)
 
     gas_tab(".cfi_startproc");
     gas_tab("pushl  %ebp");
+    vm_->push_back({ pushl, &VirtualMachine::ebp });
     gas_tab(".cfi_def_cfa_offset 8");
     gas_tab(".cfi_offset 5, -8");
     gas_tab("movl	%esp, %ebp");
+    vm_->push_back({ movl, &VirtualMachine::esp, &VirtualMachine::ebp });
     gas_tab(".cfi_def_cfa_register 5");
 
-	if (size > 0)
-		out << "\tsubl\t$" << ((size + 8 > 16) ? size + 8 : 16) << ", %esp" << std::endl;
+    if (size > 0) {
+        int stk_size = ((size + 8 > 16) ? size + 8 : 16);
+        out << "\tsubl\t$" << stk_size << ", %esp" << std::endl;
+        vm_->push_back({ subl, new int(stk_size), &VirtualMachine::esp });
+    }
+		
 	if (is_main) {
         gas_call("__main");
 	}
@@ -247,13 +253,16 @@ void Generate::generate(std::vector<std::string> &_q)
         TempVar _temp = searchTempvar(_q.at(1));
         if (!_temp._name.empty()) {
             gas_ins(mov2stk(_des_size), reg2stk(_temp._reg, _des_size), _des);
+            vm_->push_back({ movl, vm_->getRegByName(_temp._reg), vm_->getRegByName(_des) });
         }
 		// 第一个参数为数字
 		else if (isNumber(_q.at(1))) {
             gas_ins(mov2stk(_des_size), "$" + _q.at(1), _des);
+            vm_->push_back({ movl, new int(atoi(_q.at(1).c_str())), vm_->getRegByName(_des) });
 		}
         else if (isEnumConst(_q.at(1))) {
             gas_ins(mov2stk(_des_size), "$" + parser->searchEnum(_q.at(1)), _des);
+            vm_->push_back({ movl, new int(atoi(parser->searchEnum(_q.at(1)).c_str())), vm_->getRegByName(_des) });
         }
         else if (isLocVar(_q.at(1))) {
             Node var = searchLocvar(_q.at(1));
@@ -266,7 +275,9 @@ void Generate::generate(std::vector<std::string> &_q)
             else if (var.kind == NODE_LOC_VAR) {
                 std::string _reg = getEmptyReg();
                 gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), _reg);
+                vm_->push_back({ movl, vm_->getRegByName(loc_var_val(var._off)), vm_->getRegByName(_reg) });
                 gas_ins(mov2stk(_des_size), reg2stk(_reg, _des_size), _des);
+                vm_->push_back({ movl, vm_->getRegByName(_reg), vm_->getRegByName(_des) });
             }
         }
 	}
@@ -548,6 +559,7 @@ std::string Generate::getReg(const std::string &_reg)
 			_stk_temp_var.push_back(_pus);
 
             gas_ins("movl", _reg, _tem._reg);
+            vm_->push_back({ movl, vm_->getRegByName(_reg),vm_->getRegByName(_tem._reg) });
 
 			return _reg;
 		}

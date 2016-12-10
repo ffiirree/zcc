@@ -5,6 +5,7 @@
 #include <iostream>
 #include "file.h"
 #include "parser.h"
+#include "ZVM.H"
 
 #define st(x) do{x} while(0)
 
@@ -64,7 +65,7 @@ public:
 using LocVar = Node;
 class Generate{
 public:
-	Generate(Parser *parser);
+	Generate(Parser *parser, VirtualMachine *vm);
 	Generate(const Generate &) = delete;
 	Generate operator= (const Generate &) = delete;
 	~Generate() { out.close(); }
@@ -159,6 +160,9 @@ private:
     std::vector<TempVar> _stk_ret_;
 
 	bool finit = true;                   // FPU是否初始化过
+
+
+    VirtualMachine *vm_;
 };
 
 #endif // !__ZCC_GEN_H

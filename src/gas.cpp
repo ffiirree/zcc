@@ -197,12 +197,14 @@ Type Generate::gas_load(const std::string &_q, const std::string &_reg)
     // ¼ÓÔØÁ¢¼´Êý
     if (isNumber(_q)) {
         gas_ins("movl", "$" + _q, _reg);
+        vm_->push_back({ movl, new int(atoi(_q.c_str())), vm_->getRegByName(_reg) });
         setReg(_reg, _q);
         return Type(K_INT, 4, false);
     }
 
     if (isEnumConst(_q)) {
         gas_ins("movl", "$" + parser->searchEnum(_q), _reg);
+        vm_->push_back({ movl, new int(atoi(parser->searchEnum(_q).c_str())), vm_->getRegByName(_reg) });
         setReg(_reg, parser->searchEnum(_q));
         return Type(K_INT, 4, false);
     }
@@ -225,6 +227,7 @@ Type Generate::gas_load(const std::string &_q, const std::string &_reg)
         }
         else if (var.kind == NODE_LOC_VAR) {
             gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), _reg);
+            vm_->push_back({ movl, vm_->getRegByName(loc_var_val(var._off)), vm_->getRegByName(_reg) });
             setReg(_reg, _q);
             return Type(var.type.type, var.type.size, var.type.isUnsig);
         }
@@ -241,6 +244,7 @@ Type Generate::gas_load(const std::string &_q, const std::string &_reg)
     if (isTempVar(_q)) {
         TempVar var = searchTempvar(_q);
         gas_ins("movl", var._reg, _reg);
+        vm_->push_back({ movl, vm_->getRegByName(var._reg), vm_->getRegByName(_reg) });
         clearRegTemp(_q);
         setReg(_reg, _q);
 		return Type(var.type, var._size, var._isUnsig);
@@ -305,6 +309,7 @@ void Generate::temp_save(const std::string &_n, int type, bool is_unsig, const s
 	default:		_t_save._size = 0; break;
 	}
 	_t_save._reg = _reg;
+    setReg(_reg, _n);
 
 	if (type == K_FLOAT || type == K_DOUBLE)
 		_stk_float_temp_var.push_back(_t_save);
@@ -327,6 +332,7 @@ void Generate::temp_save(const std::string &_n, Type &_t, const std::string &_re
 	default:		_t_save._size = 0; break;
 	}
 	_t_save._reg = _reg;
+    setReg(_reg, _n);
 	if (_t_save.type == K_FLOAT || _t_save.type == K_DOUBLE)
 		_stk_float_temp_var.push_back(_t_save);
 	else
@@ -348,6 +354,8 @@ void Generate::unlimited_binary_op(std::vector<std::string> &_q, const std::stri
 
 	gas_ins(op, _q1_reg, _q2_reg);
 
+    vm_->push_back({ vm_->getInsByOp(op), vm_->getRegByName(_q1_reg), vm_->getRegByName(_q2_reg) });
+
 	temp_clear(_q.at(1), _q.at(2));
 	temp_save(_q.at(3), _save, _q2_reg);
 }
@@ -365,6 +373,8 @@ void Generate::shift_op(std::vector<std::string> &_q, const std::string &op)
 	_t = gas_load(_q.at(1), "%ecx"); _save.type < _t.type ? _save = _t : true;
 	_t = gas_load(_q.at(2), "%edx"); _save.type < _t.type ? _save = _t : true;
 	gas_ins(op, "%cl", "%edx");
+
+    vm_->push_back({ vm_->getInsByOp(op), vm_->getRegByName("%cl"), vm_->getRegByName("%edx") });
 
 	temp_clear(_q.at(1), _q.at(2));
 	temp_save(_q.at(3), _save, "%edx");
