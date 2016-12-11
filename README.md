@@ -16,10 +16,11 @@
         define
         undef
         宏展开
-
-部分支持：
+        if
         ifndef
         ifdef
+        elif
+        else
         endif
 ```
 
