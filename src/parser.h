@@ -16,6 +16,9 @@
                                              }while(0)
 #define __OUT_SCOPE__(localEnv) do{ localEnv = localEnv->pre(); out << ".outscope" << std::endl; }while(0)
 
+#define _EN_CONDITION_()                isCondition = true
+#define _DIS_CONDITION_()               isCondition = false
+
 /**
  * @berif scope/env
  */
@@ -129,7 +132,7 @@ public:
     std::string getQuadrupleFileName() { return _of_name; }
     inline std::vector<std::string> getFloatConst() { return float_const; }
     std::string searchEnum(const std::string &key);
-
+    bool compute_bool_expr();
     Node expr();       // 允许预处理器使用
 private:
     bool cheak_redefined(Env *_env, const std::string &_name);
@@ -140,7 +143,6 @@ private:
 	void pushIncDec(const std::string &name);
 	void createQuadruple(const std::string &op);
 	void createUnaryQuadruple(const std::string &op);
-	void createBoolQuadruple(const std::string &op);
 	void createBoolGenQuadruple(const std::string &op);
 	void gotoLabel(const std::string &op);
 	void createFuncQuad(std::vector<Node> &params);
@@ -232,6 +234,7 @@ private:
 	 * expr
 	 */
 	//Node expr();
+    Node bool_expr();
 	Node expr_opt();
 	Node comma_expr();
 	Node assignment_expr();
@@ -307,6 +310,10 @@ private:
 	std::vector<std::string> _stk_incdec;
 	std::vector<BoolLabel> boolLabel;
     std::map<std::string, Type> custom_type_tbl;
+
+    bool isCondition = false;
+    bool isComputeBool = false;
+    bool boolExprRes = false;
 };
 
 /**

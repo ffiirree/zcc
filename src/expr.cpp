@@ -10,7 +10,39 @@ Node Parser::expr_opt()
 {
 	return comma_expr();
 }
+Node Parser::bool_expr()
+{
+    Node r = comma_expr();
+    if (isCondition && _stk_if_goto_out.empty()) {
+        _stk_quad.push_back("0");
+        createBoolGenQuadruple("!=");
 
+        BoolLabel b_;
+        b_._leaf = true;
+        boolLabel.push_back(b_);
+    }
+    return r;
+}
+
+bool Parser::compute_bool_expr()
+{
+    bool r = false;
+
+    isComputeBool = true;
+    bool_expr();
+
+    if (_stk_quad.size() > 1)
+        error("bool_expr not res.");
+    if (_stk_quad.size() == 1) {
+        if (atoi(_stk_quad.back().c_str()) != 0)
+            r = true;
+    }
+
+
+    isComputeBool = false;
+
+    return r;
+}
 /**
  * expression = assignment_expr {',' assignment_expr}
  */
@@ -148,7 +180,21 @@ Node Parser::logical_or_expr()
 	while (next_is(OP_LOGOR)) {
 		node = new Node(createBinOpNode(Type(K_INT, 4, false), OP_LOGOR, node, new Node(logical_and_expr())));
 		boolLabel.push_back(BoolLabel());
-		_stk_if_goto_op.push_back("||");
+        if (isComputeBool) {
+            if (_stk_quad.size() < 2)
+                error("|| operand < 2.");
+
+            std::string v1 = _stk_quad.back(); _stk_quad.pop_back();
+            std::string v2 = _stk_quad.back(); _stk_quad.pop_back();
+            int op1 = atoi(v1.c_str());
+            int op2 = atoi(v2.c_str());
+            if (op1 || op2)
+                _stk_quad.push_back("1");
+            else
+                _stk_quad.push_back("0");
+        }
+        else 
+		    _stk_if_goto_op.push_back("||");
 	}
 	return *node;
 }
@@ -159,7 +205,21 @@ Node Parser::logical_and_expr()
 	while (next_is(OP_LOGAND)) {
 		node = new Node(createBinOpNode(Type(K_INT, 4, false), OP_LOGAND, node, new Node(bit_or_expr())));
 		boolLabel.push_back(BoolLabel());
-		_stk_if_goto_op.push_back("&&");
+        if (isComputeBool) {
+            if (_stk_quad.size() < 2)
+                error("|| operand < 2.");
+
+            std::string v1 = _stk_quad.back(); _stk_quad.pop_back();
+            std::string v2 = _stk_quad.back(); _stk_quad.pop_back();
+            int op1 = atoi(v1.c_str());
+            int op2 = atoi(v2.c_str());
+            if (op1 && op2)
+                _stk_quad.push_back("1");
+            else
+                _stk_quad.push_back("0");
+        }
+        else
+		    _stk_if_goto_op.push_back("&&");
 	}
 	return *node;
 }
@@ -338,10 +398,12 @@ Node Parser::multi_expr()
  */
 Node Parser::cast_expr()
 {
-    if (next_is('(')) {
-        if (!is_type(lex.peek())) errorp(lex.getPos(), "cast expression need a type.");
-        lex.next();
-        expect(')');
+    if (lex.test('(')) {
+        if (is_type(lex.peek2())) {
+            lex.next();
+            lex.next();
+            expect(')');
+        }
     }
     return unary_expr();
 }

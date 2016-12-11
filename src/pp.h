@@ -97,13 +97,27 @@ public:
     void _elif_group_(Lex &is);
     void _else_group_(Lex &is);
 
+    bool invalid() { return invalid_; }
+
 private:
     void init();
     //Lex lex;
     std::vector<Macro> macros;
     std::vector<std::string> _paths;
     bool isOnlyPP = false;
+
+    std::vector<std::pair<std::string, bool>> stk_if_else;
+
+    bool invalid_ = false;
+    bool preInvalid_ = false;
+    std::vector<bool> stK_invalid;
+
+    bool isExpandExpr = false;
+
+    bool cheak_else();
 };
 
+#define _BEGIN_IF_()   do{stK_invalid.push_back(preInvalid_); preInvalid_ = invalid_; invalid_ = false; }while(0)
+#define _END_IF_()     do{preInvalid_ = stK_invalid.back(); stK_invalid.pop_back(); invalid_ = preInvalid_; }while(0)
 
 #endif

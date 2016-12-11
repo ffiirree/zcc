@@ -681,44 +681,49 @@ _gen_end:
 
 void Parser::createBoolGenQuadruple(const std::string &op)
 {
+    std::string str;
+    std::string var1 = _stk_quad.back(); _stk_quad.pop_back();
+    std::string var2 = _stk_quad.back(); _stk_quad.pop_back();
+
+    if (isComputeBool) {
+        bool res = false;
+        int op1 = atoi(var2.c_str());
+        int op2 = atoi(var1.c_str());
+
+        if (op == ">") {
+            res = op1 > op2;
+        }
+        else if (op == "<") {
+            res = op1 < op2;
+        }
+        else if (op == ">=") {
+            res = op1 >= op2;
+        }
+        else if (op == "<=") {
+            res = op1 <= op2;
+        }
+        else if (op == "==") {
+            res = op1 == op2;
+        }
+        else if (op == "!=") {
+            res = op1 != op2;
+        }
+
+        if (res)
+            _stk_quad.push_back("1");
+        else
+            _stk_quad.push_back("0");
+
+        return;
+    }
+
+
 	BoolLabel _b;
 	_b._leaf = true;
-	//_b._true = newLabel("true");
-	//_b._false = newLabel("false");
 	boolLabel.push_back(_b);
-
-	std::string str;
-	std::string var1 = _stk_quad.back(); _stk_quad.pop_back();
-	std::string var2 = _stk_quad.back(); _stk_quad.pop_back();
 
 	str = "if\t" + var2 + " " + op + " " + var1 + "\tgoto ";
 	_stk_if_goto.push_back(str);
-}
-
-void Parser::createBoolQuadruple(const std::string &op)
-{
-	BoolLabel b1, b2;
-	if (boolLabel.empty())
-		return;
-
-	if (op == "||") {
-		b1._true = boolLabel.back()._true;
-		b1._false = newLabel("orf");
-		b2._true = boolLabel.back()._true;
-		b2._false = boolLabel.back()._false;
-
-		boolLabel.push_back(b2);
-		boolLabel.push_back(b1);
-	}
-	else if (op == "&&") {
-		b1._true = newLabel("andt");
-		b1._false = boolLabel.back()._false;
-		b2._true = boolLabel.back()._true;
-		b2._false = boolLabel.back()._false;
-
-		boolLabel.push_back(b2);
-		boolLabel.push_back(b1);
-	}
 }
 
 std::string getReulst(std::string &v1, std::string &v2, const std::string &op)

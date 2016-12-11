@@ -1,10 +1,17 @@
-#include<stdio.h>
+
+
+#if 9 > 80
+    #if 8 > 7
+        #define Hi "HELLO"
+    #endif
+#elif 4 < 5
+    #if __LINE__
+    #define Hi "Hii"
+    #endif
+#endif
 
 int main() 
 {
-    int a = 8, b = 9;
-    
-    int c = a *b + a / 2;
-
+    char *s  = Hi;
     return 0;
 }

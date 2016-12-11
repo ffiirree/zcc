@@ -32,7 +32,12 @@ void Preprocessor::expand(TokenSequence is, TokenSequence &os)
         Token tok = is.peek();
 
         if (tok.getType() == KEYWORD && tok.getId() == '#') {
+            if (isExpandExpr)
+                return;
             group_part(is, os);
+        }
+        else if (invalid_) {
+            is.next();
         }
         else if (!tok.needExpand()) {
             if (isOnlyPP) {
@@ -119,9 +124,6 @@ void Preprocessor::group_part(Lex &is, Lex &os)
 	if (t.getType() == ID) {
         if (t.getSval() == "if") {
             _if_(is);
-            _elif_group_(is);
-            _else_group_(is);
-            _endif_(is);
         }
         else if (t.getSval() == "ifdef") {
             _ifdef_(is);
@@ -504,7 +506,8 @@ void Preprocessor::_define_(Lex &is)
             } while (t.getType() != TNEWLINE);
         }
     }
-    macros.push_back(_macro);
+    if(!invalid_)
+        macros.push_back(_macro);
 }
 
 /**
@@ -530,39 +533,40 @@ void Preprocessor::_undef_(Lex &is)
  */
 void Preprocessor::_if_(Lex &is)
 {
+    _BEGIN_IF_();
+
     is.expect('#');
     if (is.next().to_string() != "if")
         error("not if macro.");
 
-    TokenSequence ts;
-    expand(is, ts);
+    TokenSequence is_ = is, ts;
+    isExpandExpr = true;
+    expand(is_, ts);
+    ts.push_back(Token(KEYWORD, ';'));
+    isExpandExpr = false;
 
     Parser parser(ts);
-    auto expr = parser.expr();
-    // 计算expr的真值
+    invalid_ = (!parser.compute_bool_expr()) || preInvalid_;
 
+    while (is.next().getType() != TNEWLINE);
+
+    stk_if_else.push_back({ "if", invalid_ });
 }
 void Preprocessor::_ifndef_(Lex &is)
 {
+    _BEGIN_IF_();
+
     is.next();
     is.next();
     Token tok = is.next();
     if (tok.getType() != ID)
         errorp(tok.getPos(), "ifdef need a iden....");
 
-    if (searchMacro(tok.getSval())) {
-        if (is.next().getType() == TNEWLINE)
-            return;
-        else
-            errorp(tok.getPos(), "should new line.");
-    }
-
-    while (!(is.test('#') && is.peek2().to_string() == "endif"))
-        is.next();
-    is.next();
-    tok = is.next();
     if (is.next().getType() != TNEWLINE)
-        errorp(tok.getPos(), "should end with new line");
+        errorp(tok.getPos(), "should new line.");
+
+    invalid_ = searchMacro(tok.getSval()) || preInvalid_;
+    stk_if_else.push_back({ "if", invalid_ });
 }
 
 /**
@@ -570,47 +574,44 @@ void Preprocessor::_ifndef_(Lex &is)
  */
 void Preprocessor::_ifdef_(Lex &is)
 {
+    _BEGIN_IF_();
+
     is.next(); // #
     is.next(); // ifdef
     Token tok = is.next();
     if (tok.getType() != ID)
         errorp(tok.getPos(), "ifdef need a iden....");
 
-    if (!searchMacro(tok.getSval())) {
-        if (is.next().getType() == TNEWLINE)
-            return;
-        else
-            errorp(tok.getPos(), "should new line.");
-    }
-
-    while (!(is.test('#') && is.peek2().to_string() == "endif"))
-        is.next();
-    is.next();
-    tok = is.next();
     if (is.next().getType() != TNEWLINE)
-        errorp(tok.getPos(), "should end with new line");
+        errorp(tok.getPos(), "should new line.");
+
+    invalid_ = !searchMacro(tok.getSval()) || preInvalid_;
+    stk_if_else.push_back({ "if", invalid_ });
 }
 
-/**
- * @berif #elif_groups
- */
-void Preprocessor::_elif_group_(Lex &is)
-{
-
-}
-/**
- * @berif #else
- */
-void Preprocessor::_else_group_(Lex &is)
-{
-
-}
 /**
  * @berif #elif
  */
 void Preprocessor::_elif_(Lex &is)
 {
+    invalid_ = false;
 
+    is.expect('#');
+    if (is.next().to_string() != "elif")
+        error("not if macro.");
+
+    TokenSequence is_ = is, ts;
+    isExpandExpr = true;
+    expand(is_, ts);
+    ts.push_back(Token(KEYWORD, ';'));
+    isExpandExpr = false;
+
+    Parser parser(ts);
+    invalid_ = !parser.compute_bool_expr() || preInvalid_ || cheak_else();
+
+    while (is.next().getType() != TNEWLINE);
+
+    stk_if_else.push_back({ "elif", invalid_ });
 }
 /**
  * @berif #elif_groups
@@ -623,15 +624,27 @@ void Preprocessor::_else_(Lex &is)
 
     if (is.next().getType() != TNEWLINE)
         error("else need a new line.");
+
+    invalid_ = cheak_else() || preInvalid_;
+
+    stk_if_else.push_back({ "else", invalid_ });
 }
 
 
 void Preprocessor::_endif_(Lex &is)
 {
-    is.next();
-    is.next();
+    is.expect('#');
+    if (is.next().to_string() != "endif")
+        error("not if macro.");
     if (is.next().getType() != TNEWLINE)
         error("endif should be end with new_line.");
+
+
+    while (!stk_if_else.empty() && stk_if_else.back().first != "if")
+        stk_if_else.pop_back();
+    stk_if_else.pop_back();
+
+    _END_IF_();
 }
 
 
@@ -642,4 +655,18 @@ void Preprocessor::_line_(Lex &is)
 void Preprocessor::_pragma_(Lex &is)
 {
 
+}
+bool Preprocessor::cheak_else() {
+    for (size_t i = stk_if_else.size(); i > 0; --i) {
+        if (stk_if_else.at(i - 1).first == "if") {
+            return !stk_if_else.at(i - 1).second;
+        }
+        else {
+            if (stk_if_else.at(i - 1).second == true)
+                return false;
+        }
+    }
+
+    error("no if for else.");
+    return false;
 }

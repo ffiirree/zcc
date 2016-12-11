@@ -88,7 +88,9 @@ Node Parser::if_stmt()
 	std::string snext = newLabel("sn");
 
 	expect('(');
-	Node *cond = new Node(expr());          // B.code
+    _EN_CONDITION_();
+	Node *cond = new Node(bool_expr());          // B.code
+    _DIS_CONDITION_();
 	expect(')');
 
 	_if._true = newLabel("ift");
@@ -135,7 +137,9 @@ Node Parser::while_stmt()
 	out << _begin << ":" << std::endl;     // Label(begin)
 
 	expect('(');
-	Node node = expr();                    
+    _EN_CONDITION_();
+	Node node = bool_expr();
+    _DIS_CONDITION_();
 	expect(')');
 
 	boolLabel.back()._true = _while._true;
@@ -172,7 +176,9 @@ Node Parser::do_stmt()
 	Node *r = new Node(statement());
 	expect(K_WHILE);
 	expect('(');
-	Node *_b = new Node(expr());
+    _EN_CONDITION_();
+	Node *_b = new Node(bool_expr());
+    _DIS_CONDITION_();
 	expect(')');
 	expect(';');
 
@@ -244,7 +250,9 @@ Node Parser::for_stmt()
 		expect(';');
 	}
 	else {
-		expr();
+        _EN_CONDITION_();
+        bool_expr();
+        _DIS_CONDITION_();
 		expect(';');
 	}
 

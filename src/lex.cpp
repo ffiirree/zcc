@@ -201,6 +201,7 @@ Token Lex::read_id(char fir)
 	} while (isalnum(c) || c == '_');
 	f.back(c);
 
+    if(last.to_string() != "#")
 	if ((i = isKeyword(str)) != ID) {
 		return Token(KEYWORD, i);
 	}
