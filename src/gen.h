@@ -16,8 +16,8 @@
 #define gas_label(label)      gas(label+":")
 #define gas_func_def(fn)      gas("\t.def\t_" + std::string(fn) + ";\t.scl\t2;\t.type\t32;\t.endef")
 
-#define gas_jmp(des)          gas("\tjmp\t" + des);
-#define gas_call(des)         gas("\tcall\t_" + std::string(des));
+#define gas_jmp(des)          gas_tab("jmp\t" + des);
+#define gas_call(des)         gas_tab("call\t_" + std::string(des));
 
 #define temp_clear(_q1_, _q2_)  do {\
 										pop_back_temp_stk(_q1_);\
@@ -95,7 +95,8 @@ private:
 
     // ²úÉúASM
     inline void gas(const std::string &_s) { out << _s << std::endl; }
-    inline void gas_ins(const std::string &_i, const std::string &_src, const std::string &_des) { out << "\t" + _i + "\t" + _src + ", " + _des << std::endl; }
+    void gas_ins(const std::string &_i, const std::string &_src, const std::string &_des);
+    void gas_ins(const std::string &_i, const std::string &_des);
 
     void const_str();
     void func_decl(Node &n);

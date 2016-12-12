@@ -10,8 +10,8 @@ public:
 	Lex(){}
 	Lex(const std::string &filename);
 
-	Lex(const Lex &lex) :f(lex.f), keywords(lex.keywords), tokens(lex.tokens), index(lex.index) {  }
-	inline Lex operator=(const Lex &lex) { f = lex.f; keywords = lex.keywords; tokens = lex.tokens; index = lex.index; return *this; }
+	Lex(const Lex &lex) :f(lex.f), keywords(lex.keywords), tokens(lex.tokens), index(lex.index), last(lex.last) {  }
+    inline Lex operator=(const Lex &lex) { f = lex.f; keywords = lex.keywords; tokens = lex.tokens; index = lex.index; last = lex.last; return *this; }
 
     inline void push_back(const Token &_t) { tokens.push_back(_t); }
     inline void pop_back() { tokens.pop_back(); }
@@ -33,32 +33,17 @@ public:
     size_t size() { return tokens.size(); }
     Token &at(size_t i) { return tokens.at(i); }
 
-    void insertFront(Lex &l)
-    {
-        for (size_t i = l.size(); i > 0; --i) {
-            tokens.insert(tokens.begin(), l.at(i - 1));
-        }
-    }
-    void insertBack(Lex &l)
-    {
-        for (size_t i = 0; i < l.size(); ++i) {
-            tokens.push_back(l.at(i));
-        }
-    }
+    void insertFront(Lex &l);
+    void insertBack(Lex &l);
+    void insert(Lex &l);
 
-    void insert(Lex &l) {
-        for (size_t i = l.size(); i > 0; --i) {
-            tokens.insert(tokens.begin() + index, l.at(i - 1));
-        }
-    }
-    void setCurrentFile(const File &_f) { f = _f; }
     inline size_t restSize() { return tokens.size() - index; }
 
 private:
 	Token readToken();
-	Token read_rep(char exp, int _k, int _else);
-	Token read_rep2(char exp1, int _k1, char exp2, int _k2, int _else);
-	Token read_string(char c);
+	Token read_op(char exp, int _k, int _else);
+	Token read_op2(char exp1, int _k1, char exp2, int _k2, int _else);
+	Token read_string();
 	Token read_char();
 	Token read_id(char c);
 	Token read_num(char c);
@@ -67,8 +52,6 @@ private:
 	int read_escaped_char();
 	int read_octal_char(int c);
 	int read_hex_char();
-	int read_universal_char(int len);
-	bool nextoct();
 
 	int isKeyword(std::string &word);
 

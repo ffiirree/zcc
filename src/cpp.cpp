@@ -296,7 +296,7 @@ void Preprocessor::hasadd(HideSet *hs, TokenSequence &ts)
 
     // Èç¹û
     Token &tok = ts.next();
-    tok._hs ? !nullptr : tok._hs = new HideSet();
+    tok._hs ? !nullptr : (tok._hs = new HideSet());
     tok._hs->insert(hs->begin(), hs->end());
 
     hasadd(hs, ts);

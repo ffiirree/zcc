@@ -65,7 +65,6 @@ void Generate::getReg(std::vector<std::string> &_q)
 		_t = gas_load(_q1, "%edx"); _save.type < _t.type ? _save = _t : true;
 
 		gas_ins(mul(4, _t.isUnsig), "%edx", "%eax");
-        vm_->push_back({ imull, &VirtualMachine::edx, &VirtualMachine::eax });
 
 		temp_clear(_q1, _q2);
 		temp_save(_q3, _save, "%eax");
@@ -611,11 +610,8 @@ void Generate::genIncDec(const std::string &_obj, const std::string &op)
             }
             else if (var.kind == NODE_LOC_VAR) {
                 gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), _des);
-                vm_->push_back({ movl, vm_->getRegByName(loc_var_val(var._off)), vm_->getRegByName(_des) });
                 gas_ins("addl", "$" + std::to_string(var.type.ptr->size), _des);
-                vm_->push_back({ addl, new int(var.type.ptr->size), vm_->getRegByName(_des) });
                 gas_ins(mov2stk(var.type.size), reg2stk(_des, var.type.size), loc_var_val(var._off));
-                vm_->push_back({ movl, vm_->getRegByName(_des), vm_->getRegByName(loc_var_val(var._off)) });
             }
         }
         else {
@@ -660,9 +656,7 @@ void Generate::genMulOrModAsm(std::vector<std::string> &_q)
 		_t.create(K_INT, 4, false);
 
         gas_ins("movl", "$" + _q.at(1), "%ecx");
-        vm_->push_back({ movl, new int(atoi(_q.at(1).c_str())) , &VirtualMachine::ecx });
-        gas_tab("idivl   %ecx");
-        vm_->push_back({ idivl, &VirtualMachine::ecx });
+        gas_ins("idivl", "%ecx");
 	}
     else if(isEnumConst(_q.at(1))) {
         getReg("%ecx");
@@ -670,9 +664,7 @@ void Generate::genMulOrModAsm(std::vector<std::string> &_q)
 		_t.create(K_INT, 4, false);
 
         gas_ins("movl", "$" + parser->searchEnum(_q.at(1)), "%ecx");
-        vm_->push_back({ movl, new int(atoi(parser->searchEnum(_q.at(1)).c_str())) , &VirtualMachine::ecx });
-        gas_tab("idivl   %ecx");
-        vm_->push_back({ idivl, &VirtualMachine::ecx });
+        gas_ins("idivl", "%ecx");
     }
 	else if (isLocVar(_q.at(1))) {
 		LocVar _l = searchLocvar(_q.at(1));
@@ -680,12 +672,10 @@ void Generate::genMulOrModAsm(std::vector<std::string> &_q)
         if (_l.kind == NODE_GLO_VAR) {
             getReg("%ecx");
             gas_ins(movXXl(_l.type.size, _l.type.isUnsig), "_" + _l.varName, "%ecx");
-            gas_tab("idivl  %ecx");
-            vm_->push_back({ idivl, &VirtualMachine::ecx });
+            gas_ins("idivl", "%ecx");
         }
         else if (_l.kind == NODE_LOC_VAR) {
-            gas_tab("idivl\t" + loc_var_val(_l._off));
-            vm_->push_back({ idivl, vm_->getRegByName(loc_var_val(_l._off)) });
+            gas_ins("idivl", loc_var_val(_l._off));
         }
         _t = _l.type;
 	}
@@ -694,8 +684,7 @@ void Generate::genMulOrModAsm(std::vector<std::string> &_q)
 		
 		_t.create(_temp.type, _temp._size, _temp._isUnsig);
 
-        gas_tab("idivl\t" + _temp._reg);
-        vm_->push_back({ idivl, vm_->getRegByName(_temp._reg) });
+        gas_ins("idivl", _temp._reg);
 	}
 
 	_save.type < _t.type ? _save = _t : true;

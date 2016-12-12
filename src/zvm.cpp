@@ -3,6 +3,7 @@
 #include<iomanip>
 #include "zvm.h"
 #include "FILE.H"
+#include "ERROR.H"
 
 int VirtualMachine::eax = 0;
 int VirtualMachine::ebx = 0;
@@ -48,6 +49,16 @@ void VirtualMachine::run()
     {
         AsmIns asmIns = text_.at(pc++);
 
+        if (debug_) {
+            std::cout << asmIns.ins_ << std::endl;
+            std::cout << "eax=" << std::left << std::setw(10) << eax
+                << " ebx=" << std::left << std::setw(10) << ebx
+                << " ecx=" << std::left << std::setw(10) << ecx
+                << " edx=" << std::left << std::setw(10) << edx << std::endl;
+            std::cout << "ebp=" << std::left << std::setw(10) << ebp << " esp="
+                << std::left << std::setw(10) << esp << std::endl << std::endl;
+        }
+
         switch (asmIns.operator_)
         {
         case movl:  _32sR = _32sL; break;
@@ -74,64 +85,130 @@ void VirtualMachine::run()
             break;
         }
 
-        if (debug_) {
-            std::cout << "eax=" << std::left << std::setw(10) << eax
-                << " ebx=" << std::left << std::setw(10) << ebx
-                << " ecx=" << std::left << std::setw(10) << ecx
-                << " edx=" << std::left << std::setw(10) << edx << std::endl;
-            std::cout << "ebp=" << std::left << std::setw(10) << ebp << " esp="
-                << std::left << std::setw(10) << esp << std::endl << std::endl;
-        }
+        
     }
 }
 
 
-
-void *VirtualMachine::getRegByName(const std::string &name)
-{
-    std::string _off;
-    if (name == "%eax")
-        return &eax;
-    else if (name == "%ebx")
-        return &ebx;
-    else if (name == "%ecx")
-        return &ecx;
-    else if (name == "%edx")
-        return &edx;
-    else if (name == "%ebp")
-        return &ebp;
-    else if (name == "%esp")
-        return &esp;
-    else {
-        size_t i = 0;
-        for (; i < name.size(); ++i) {
-            if (name.at(i) != '(')
-                _off.push_back(name.at(i));
-            else
-                break;
-        }
-        switch (name.at(i + 3))
-        {
-        case 'a': return &eax + atoi(_off.c_str());
-        case 'b':
-            if (name.at(i + 4) == 'x')
-                return (void *)(ebx + atoi(_off.c_str()));
-            else
-                return (void *)(ebp + atoi(_off.c_str()));
-        case 'c': return (void *)(ecx + atoi(_off.c_str()));
-        case 'd': return (void *)(edx + atoi(_off.c_str()));
-        case 's': return (void *)(esp + atoi(_off.c_str()));
-        default:
-            break;
-        }
-    }
-}
 
 Instruction VirtualMachine::getInsByOp(const std::string &name)
 {
-    if (name == "subl") return subl;
+    if (name == "movl") return movl;
+    else if (name == "movb") return movb;
+    else if (name == "movw") return movw;
+    else if (name == "imull") return imull;
+    else if (name == "idivl") return idivl;
+    else if (name == "subl") return subl;
     else if (name == "addl") return addl;
     else if (name == "andl") return andl;
     else if (name == "xorl") return xorl;
     else if (name == "orl") return orl;
+    else if (name == "call") return call;
+    else if (name == "ret") return ret;
+    else if (name == "leave") return leave;
+    else if (name == "popl") return popl;
+    else if (name == "pushl") return pushl;
+    else if (name == "sarl") return sarl;
+    else if (name == "sall") return sall;
+    else if (name == "notl") return notl;
+    else if (name == "leal") return leal;
+    else
+        error("unknown operator:%s.", name.c_str());
 }
+
+int VirtualMachine::getRegValByName(const std::string &name)
+{
+    if (name == "%eax")
+        return eax;
+    else if (name == "%ebx")
+        return ebx;
+    else if (name == "%ecx")
+        return ecx;
+    else if (name == "%edx")
+        return edx;
+    else if (name == "%ebp")
+        return ebp;
+    else if (name == "%esp")
+        return esp;
+    else
+        error("unknown register.");
+}
+/**
+ * @attention 浮点数不会出现在指令里面
+ */
+bool VirtualMachine::isImmediate(const std::string &name)
+{
+    for (size_t i = 0; i < name.size(); ++i) {
+        if (name.at(i) != '$' && (name.at(i) > '9' || name.at(i) < '0'))
+            return false;
+    }
+    return true;
+}
+
+int VirtualMachine::getImmediate(const std::string &name)
+{
+    std::string _imm;
+    for (int i = 1; i < name.size(); ++i) {
+        _imm.push_back(name.at(i));
+    }
+
+    return atoi(_imm.c_str());
+}
+
+void *VirtualMachine::getOperandAddr(const std::string &name)
+{
+    std::string _off, _reg;
+    int i = 0;
+
+    switch (name.at(0))
+    {
+    case '$':
+        if (isImmediate(name))
+            return new int(getImmediate(name));
+            
+
+    case '%':
+        if (name == "%eax")
+            return &eax;
+        else if (name == "%ebx")
+            return &ebx;
+        else if (name == "%ecx")
+            return &ecx;
+        else if (name == "%edx")
+            return &edx;
+        else if (name == "%ebp")
+            return &ebp;
+        else if (name == "%esp")
+            return &esp;
+        else
+            error("unknown register.");
+        break;
+
+    case '-':
+    case '+':
+    case '(':
+    case_0_9:
+        for (i = 0; name.at(i) != '('; ++i) {
+            _off.push_back(name.at(i));
+        }
+        if (_off.empty())
+            _off.push_back('0');
+
+        for (; name.at(i) != ')'; ++i) {
+            switch (name.at(i))
+            {
+            case_a_z:
+            case '%':
+                _reg.push_back(name.at(i));
+            }
+        }
+
+        return (void *)(getRegValByName(_reg) + atoi(_off.c_str()));
+
+    case '_':
+
+    default:
+        break;
+    }
+}
+

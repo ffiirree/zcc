@@ -381,8 +381,8 @@ Node Parser::multi_expr()
 		else if (next_is('%')) {
             Node *right = new Node(cast_expr());
 
-            if (cheak_is_int_type(*node)) errorp(lex.getPos(), "'%'need a interger object.");
-            if (cheak_is_int_type(*right)) errorp(lex.getPos(), "'%' need a interger object.");
+            if (cheak_is_int_type(*node)) errorp(lex.getPos(), "mod op need a interger object.");
+            if (cheak_is_int_type(*right)) errorp(lex.getPos(), "mod op need a interger object.");
 
 			node = new Node(binop('%', *node, *right));
 			createQuadruple("%");
