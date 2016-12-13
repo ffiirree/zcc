@@ -4,7 +4,7 @@
 
 void main(int argc, char *argv[])
 {
-    int i, j, k, n = 18, a[N][N];                  /*定义二维数组a[14][14]*/
+    int i, j, k, n = 18, a[N][N];
     for (i = 1;i <= n;i++) {
         a[i][i] = 1;
         int t1 = a[i][i];
@@ -14,7 +14,7 @@ void main(int argc, char *argv[])
         for (j = 2;j <= i - 1;j++) {
             int t1 = a[i - 1][j];
             int t2 = a[i - 1][j - 1];
-            a[i][j] = a[i - 1][j] + t2;                     /*除两边的数外都等于上两顶数之和*/
+            a[i][j] = t1 + t2;
         }
     }
 
