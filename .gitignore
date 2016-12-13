@@ -1,2 +1,14 @@
-build/
+build/.vs/
+build/CMakeFiles/
+build/Debug/
+build/Win32/
+build/zcc.dir/
+build/CMakeCache.txt
+*.vcxproj
+*.filters
+*.cmake
+*.db
+*.opendb
+*.user
+*.sln
 bin/
