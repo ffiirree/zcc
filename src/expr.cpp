@@ -13,7 +13,7 @@ Node Parser::expr_opt()
 Node Parser::bool_expr()
 {
     Node r = comma_expr();
-    if (isCondition && _stk_if_goto_out.empty()) {
+    if (isCondition && _stk_if_goto.empty()) {
         _stk_quad.push_back("0");
         createBoolGenQuadruple("!=");
 
@@ -381,8 +381,8 @@ Node Parser::multi_expr()
 		else if (next_is('%')) {
             Node *right = new Node(cast_expr());
 
-            if (cheak_is_int_type(*node)) errorp(lex.getPos(), "mod op need a interger object.");
-            if (cheak_is_int_type(*right)) errorp(lex.getPos(), "mod op need a interger object.");
+            if (!cheak_is_int_type(*node)) errorp(lex.getPos(), "mod op need a interger object.");
+            if (!cheak_is_int_type(*right)) errorp(lex.getPos(), "mod op need a interger object.");
 
 			node = new Node(binop('%', *node, *right));
 			createQuadruple("%");
@@ -433,7 +433,10 @@ Node Parser::unary_expr()
 
         case '*':
             r = unary_deref(tok);
-            createUnaryQuadruple("*U");
+            if(lex.peek().to_string() == "=")
+                createUnaryQuadruple("*=");
+            else 
+                createUnaryQuadruple("*U");
             return r;
 
             // 不完全
@@ -623,16 +626,21 @@ Node Parser::primary_expr()
 Node Parser::var_or_func(Token &t)
 {
 	Node r = localenv->search(t.getSval());
+    // 如果是重载函数做参数，无法根据函数名获取到参数中调用的函数
 
 	if (r.kind == NODE_GLO_VAR || r.kind == NODE_LOC_VAR)
 		pushQuadruple(r.varName);
 #ifdef _OVERLOAD_
 	else 
 		pushQuadruple(t.getSval());
-#elif
+#else
 	else if (r.kind == NODE_FUNC || r.kind == NODE_FUNC_DECL)
 		pushQuadruple(t.getSval());
-	if (r.kind == NODE_NULL)
+
+    std::map<std::string, std::string> ::iterator iter = enum_const.find(t.getSval());
+    if (iter != enum_const.end())
+        pushQuadruple(t.getSval());
+    else if (r.kind == NODE_NULL)
         errorp(lex.getPos(), "undefined var : %s！", t.getSval().c_str());
 #endif // _OVERLOAD_
 

@@ -4,7 +4,7 @@
 /**
  * @加载浮点数到内存中
  */
-int Generate::gas_flo_load(const std::string &name)
+int Generate::gas_flo_load(const std::string &name, bool isChange)
 {
     std::string _src;
 
@@ -23,6 +23,8 @@ int Generate::gas_flo_load(const std::string &name)
     // 寄存器、局部和全局
     if (isFloatTemVar(name)) {
         TempVar temp = searchFloatTempvar(name);
+        if (isChange)
+            gas_tab("fxch");
         return temp.type;
     }
     else  if (isLocVar(name)) {
@@ -109,7 +111,6 @@ void Generate::gas_def_int(const std::string &n, int size, int init, bool is_fir
 {
     gas_tab(".globl\t_" + n);
     if (is_fir) gas_tab(".data");
-    //if (size > 1) gas_tab(".align\t" + std::to_string(size));
     gas("_" + n + ":");
     switch (size)
     {
@@ -120,6 +121,7 @@ void Generate::gas_def_int(const std::string &n, int size, int init, bool is_fir
         error("Error data size.");
         break;
     }
+    vm_->use_ ? vm_->push_data("_" + n, init, size) : false;
 }
 
 /**
@@ -213,7 +215,7 @@ Type Generate::gas_load(const std::string &_q, const std::string &_reg)
         var = searchLocvar(_q);
 		// 加载浮点数
 		if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
-			gas_flo_load(_q);
+			gas_flo_load(_q, false);
 			// 没有使用通用，释放掉
 			clearRegTemp(_q);
 			return Type(var.type.type, var.type.size, var.type.isUnsig);
@@ -232,7 +234,7 @@ Type Generate::gas_load(const std::string &_q, const std::string &_reg)
 
 	std::string _f = searchFLoat(_q);
 	if (!_f.empty()) {
-		gas_flo_load(_q);
+		gas_flo_load(_q, false);
 		clearRegTemp(_q);
 		return Type(K_FLOAT, 4, false);
 	}
@@ -258,33 +260,33 @@ Type Generate::gas_load(const std::string &_q, const std::string &_reg)
 void Generate::gas_jxx(const std::string &op, const std::string &des, Type &_t)
 {
 	if (op == ">") {
-		if(_t.isUnsig || _t.type == K_FLOAT || _t.type == K_DOUBLE)
-			gas_tab(("ja\t" + des));
+        if (_t.isUnsig || _t.type == K_FLOAT || _t.type == K_DOUBLE)
+            gas_ins("ja", des);
 		else 
-			gas_tab(("jg\t" + des));
+            gas_ins("jg", des);
 	}
 	else if (op == "<") {
 		if (_t.isUnsig || _t.type == K_FLOAT || _t.type == K_DOUBLE)
-			gas_tab(("jb\t" + des));
+            gas_ins("jb", des);
 		else
-			gas_tab(("jl\t" + des));
+            gas_ins("jl", des);
 	}
 	else if (op == ">=") {
 		if (_t.isUnsig || _t.type == K_FLOAT || _t.type == K_DOUBLE)
-			gas_tab(("jae\t" + des));
+            gas_ins("jae", des);
 		else
-			gas_tab(("jge\t" + des));
+            gas_ins("jge", des);
 	}
 	else if (op == "<=") {
 		if (_t.isUnsig || _t.type == K_FLOAT || _t.type == K_DOUBLE)
-			gas_tab(("jbe\t" + des));
+            gas_ins("jbe", des);
 		else
-			gas_tab(("jle\t" + des));
+			gas_ins("jle", des);
 	}
     else if (op == "==")
-        gas_tab(("je\t" + des));
+        gas_ins("je", des);
     else if (op == "!=")
-        gas_tab(("jne\t" + des));
+        gas_ins("jne", des);
 }
 
 /**
@@ -354,6 +356,30 @@ void Generate::unlimited_binary_op(std::vector<std::string> &_q, const std::stri
 	temp_save(_q.at(3), _save, _q2_reg);
 }
 
+void Generate::add_sub_with_ptr(std::vector<std::string> &_q, const std::string &op)
+{
+    Type _save, _t1, _t2;
+    std::string _q1_reg, _q2_reg;
+
+    _q1_reg = getEmptyReg();
+    _t1 = gas_load(_q.at(1), _q1_reg);
+    _q2_reg = getEmptyReg();
+    _t2 = gas_load(_q.at(2), _q2_reg);
+
+    //if (_t1.getType() == PTR &&_t2.getType() != PTR) {
+    //    if (_q1_reg != "%eax") {
+    //        
+    //        gas_ins("movl", _q1_reg, "%eax");
+    //    }
+    //    gas_ins("imull", )
+    //}
+
+    gas_ins(op, _q1_reg, _q2_reg);
+
+    temp_clear(_q.at(1), _q.at(2));
+    temp_save(_q.at(3), _save, _q2_reg);
+}
+
 /**
  * @berif 移位操作符
  */
@@ -394,7 +420,7 @@ void Generate::gas_ins(const std::string &_i, const std::string &_src, const std
 {
     std::string ins = _i + "\t" + _src + ", " + _des;
     gas_tab(ins);
-    vm_->push_back({ vm_->getInsByOp(_i), vm_->getOperandAddr(_src), vm_->getOperandAddr(_des) , ins });
+    vm_->use_ ? vm_->push_back({ vm_->getInsByOp(_i), _src, _des , ins }) : false;
 
 }
 
@@ -403,5 +429,18 @@ void Generate::gas_ins(const std::string &_i, const std::string &_des)
 {
     std::string ins = _i + "\t" + _des;
     gas_tab(ins);
-    vm_->push_back({ vm_->getInsByOp(_i), vm_->getOperandAddr(_des), ins});
+    vm_->use_ ? vm_->push_back({ vm_->getInsByOp(_i), _des, ins }) : false;
+}
+
+void Generate::gas_call(const std::string &_des)
+{
+    std::string ins = "call\t_" + _des;
+    gas_tab(ins);
+    vm_->use_ ? vm_->push_back({ vm_->getInsByOp("call"), "_" + _des , ins }) : false;
+}
+
+void Generate::gas_jxx_label(const std::string &_l)
+{
+    gas(_l + ":");
+    vm_->use_ ? vm_->setFuncAddr(_l) : false;
 }

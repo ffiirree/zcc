@@ -14,7 +14,7 @@ void main(int argc, char *argv[])
         for (j = 2;j <= i - 1;j++) {
             int t1 = a[i - 1][j];
             int t2 = a[i - 1][j - 1];
-            a[i][j] = t1 + t2;                     /*除两边的数外都等于上两顶数之和*/
+            a[i][j] = a[i - 1][j] + t2;                     /*除两边的数外都等于上两顶数之和*/
         }
     }
 

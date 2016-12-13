@@ -4,7 +4,7 @@
 #include <map>
 #include "lex.h"
 
-#define _OVERLOAD_
+//#define _OVERLOAD_
 
 #define __IN_SCOPE__(localEnv, preEnv, _name) do{ \
                                                    Env *old = preEnv; \

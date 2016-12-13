@@ -109,6 +109,26 @@ void Generate::getReg(std::vector<std::string> &_q)
 
 		temp_save(_q2, var.type, "%eax");
 	}
+    else if (_q_0_is("*=")) {
+        // 取其他类型的值还有问题，没有通过指针看出原始类型，需要修改
+        getReg("%eax");
+
+        Node var;
+        if (isLocVar(_q1)) {
+            var = searchLocvar(_q1);
+            if (var.kind == NODE_GLO_VAR) {
+                gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, "%eax");
+            }
+            else if (var.kind == NODE_LOC_VAR) {
+                gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), "%eax");
+            }
+        }
+        else {
+            error("pre * var error");
+        }
+
+        temp_save(_q2, var.type, "%eax");
+    }
     // 取结构体中的值
     // int a = str.b;
     // .  _off  str  .Lvar3
@@ -533,15 +553,15 @@ void Generate::getReg(std::vector<std::string> &_q)
     }
     // 浮点运算
     else if (_q_0_is("=f") || _q_0_is("=d")) {
-		gas_flo_load(_q1);
+		gas_flo_load(_q1, false);
         gas_fstp(_q2);
 		finit = false;
     }
     else if (_q_0_is("+f")) {
 		int _save = 0, _t;
 
-		_t = gas_flo_load(_q1); _t > _save ? _save = _t : true;
-		_t = gas_flo_load(_q2); _t > _save ? _save = _t : true;
+		_t = gas_flo_load(_q1, false); _t > _save ? _save = _t : true;
+		_t = gas_flo_load(_q2, false); _t > _save ? _save = _t : true;
 		gas_tab("faddp");
 
 		finit = false;
@@ -550,9 +570,10 @@ void Generate::getReg(std::vector<std::string> &_q)
     else if (_q_0_is("-f")) {
 		int _save = 0, _t;
 
-		_t = gas_flo_load(_q2); _t > _save ? _save = _t : true;
-		_t = gas_flo_load(_q1); _t > _save ? _save = _t : true;
-		gas_ins("fsubr", "%st(1)", "%st(0)");
+		_t = gas_flo_load(_q1, false); _t > _save ? _save = _t : true;
+        _t = gas_flo_load(_q2, true); _t > _save ? _save = _t : true;
+
+		gas_tab("fsubp");
 
 		finit = false;
 		temp_save(_q3, _save);
@@ -560,8 +581,8 @@ void Generate::getReg(std::vector<std::string> &_q)
     else if (_q_0_is("*f")) {
 		int _save = 0, _t;
 
-		_t = gas_flo_load(_q1); _t > _save ? _save = _t : true;
-		_t = gas_flo_load(_q2); _t > _save ? _save = _t : true;
+		_t = gas_flo_load(_q1, false); _t > _save ? _save = _t : true;
+		_t = gas_flo_load(_q2, false); _t > _save ? _save = _t : true;
 		gas_tab("fmulp");
 
 		finit = false;
@@ -570,8 +591,8 @@ void Generate::getReg(std::vector<std::string> &_q)
     else if (_q_0_is("/f")) {
 		int _save = 0, _t;
 
-		_t = gas_flo_load(_q1); _t > _save ? _save = _t : true;
-		_t = gas_flo_load(_q2); _t > _save ? _save = _t : true;
+		_t = gas_flo_load(_q1, false); _t > _save ? _save = _t : true;
+		_t = gas_flo_load(_q2, true); _t > _save ? _save = _t : true;
 		gas_tab("fdivp");
 
 		finit = false;
@@ -605,12 +626,18 @@ void Generate::genIncDec(const std::string &_obj, const std::string &op)
         if (var.type.getType() == PTR) {
             if (var.kind == NODE_GLO_VAR) {
                 gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, _des);
-                gas_ins("addl", "$" + std::to_string(var.type.ptr->size), _des);
+                if(op.at(0) == 'a')
+                    gas_ins("addl", "$" + std::to_string(var.type.ptr->size), _des);
+                else 
+                    gas_ins("subl", "$" + std::to_string(var.type.ptr->size), _des);
                 gas_ins(mov2stk(var.type.size), reg2stk(_des, var.type.size), "_" + var.varName);
             }
             else if (var.kind == NODE_LOC_VAR) {
                 gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), _des);
-                gas_ins("addl", "$" + std::to_string(var.type.ptr->size), _des);
+                if (op.at(0) == 'a')
+                    gas_ins("addl", "$" + std::to_string(var.type.ptr->size), _des);
+                else
+                    gas_ins("subl", "$" + std::to_string(var.type.ptr->size), _des);
                 gas_ins(mov2stk(var.type.size), reg2stk(_des, var.type.size), loc_var_val(var._off));
             }
         }
@@ -690,5 +717,5 @@ void Generate::genMulOrModAsm(std::vector<std::string> &_q)
 	_save.type < _t.type ? _save = _t : true;
 
 	temp_clear(_q.at(1), _q.at(2));
-	temp_save(_q.at(3), _save, "%eax");
+	temp_save(_q.at(3), _save, _save_reg);
 }

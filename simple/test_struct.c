@@ -1,4 +1,4 @@
-int printf(char *_s, int a);
+#include <stdio.h>
 
 typedef struct Test{
     int cols;

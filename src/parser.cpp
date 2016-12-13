@@ -614,24 +614,27 @@ void Parser::gotoLabel(const std::string &op)
 void Parser::generateIfGoto()
 {
 	BoolLabel b, b1, b2;
-	std::vector<std::string>  _temp;
-
+    
 	if (_stk_if_goto.size() == 1 && _stk_if_goto_op.size() == 0) {
 		b = boolLabel.back();boolLabel.pop_back();
 
-		_stk_if_goto_out.push_back(_stk_if_goto.back() + b._true);
-		_stk_if_goto_out.push_back("goto " + b._false);
-		_stk_if_goto.pop_back();
-		goto _gen_end;
+        out << _stk_if_goto.back() + b._true << std::endl;
+        out << "goto " + b._false << std::endl;
+        _stk_if_goto.clear();
+        return;
 	}
 
+    ///////////////////////////////////////////////////////////////////////
+    std::vector<std::string>  op_;
+    std::vector<std::string>  temp_;
+    std::vector<BoolLabel>  bl;
 	for (int i = _stk_if_goto.size(); i > 0; --i) {
-		_temp.push_back(_stk_if_goto.back());_stk_if_goto.pop_back();
+        temp_.push_back(_stk_if_goto.back());_stk_if_goto.pop_back();
 	}
 
 	for (int i = _stk_if_goto_op.size(); i > 0; --i) {
 		std::string op = _stk_if_goto_op.back(); _stk_if_goto_op.pop_back();
-	
+        op_.push_back(op);
 		b = boolLabel.back();boolLabel.pop_back();
 		b2 = boolLabel.back();boolLabel.pop_back();
 		b1 = boolLabel.back();boolLabel.pop_back();
@@ -648,21 +651,13 @@ void Parser::generateIfGoto()
 			b2._false = b._false;
 		}
 
+        bl.push_back(b);
+        if (b2._leaf) {
+            bl.push_back(b2);
+        }
+
 		if (b1._leaf) {
-			_stk_if_goto_out.push_back(_temp.back() + b1._true);
-			_stk_if_goto_out.push_back("goto " + b1._false);
-			_temp.pop_back();
-
-			if (op == "||")
-				_stk_if_goto_out.push_back(b1._false + ":");
-			else if (op == "&&")
-				_stk_if_goto_out.push_back(b1._true + ":");
-		}
-
-		if (b2._leaf) {
-			_stk_if_goto_out.push_back(_temp.back() + b2._true);
-			_stk_if_goto_out.push_back("goto " + b2._false);
-			_temp.pop_back();
+            bl.push_back(b1);
 		}
 
 		if(!b2._leaf)
@@ -672,11 +667,38 @@ void Parser::generateIfGoto()
 			boolLabel.push_back(b1);
 	}
 
-_gen_end:
-	for (size_t i = 0; i < _stk_if_goto_out.size(); ++i) {
-		out << _stk_if_goto_out.at(i) << std::endl; 
-	}
-	_stk_if_goto_out.clear();
+    for (size_t i = op_.size(); i > 0; --i) {
+        b1 = bl.back(); bl.pop_back();
+        b2 = bl.back(); bl.pop_back();
+
+        if (op_.at(i-1) == "||") {
+            if (b1._leaf == true) {
+                out << temp_.back() + b1._true << std::endl;
+                out << "goto\t" + b1._false << std::endl;
+            }
+
+            out << b1._false << ":" << std::endl;
+
+            if (b2._leaf == true) {
+                out << temp_.back() + b2._true << std::endl;
+                out << "goto\t" + b2._false << std::endl;
+            }
+            
+        }
+        else if (op_.at(i-1) == "&&") {
+            if (b1._leaf == true) {
+                out << temp_.back() + b1._true << std::endl;
+                out << "goto\t" + b1._false << std::endl;
+            }
+
+            out << b1._true << ":" << std::endl;
+
+            if (b2._leaf == true) {
+                out << temp_.back() + b2._true << std::endl;
+                out << "goto\t" + b2._false << std::endl;
+            }
+        }
+    }
 }
 
 void Parser::createBoolGenQuadruple(const std::string &op)
@@ -914,7 +936,7 @@ _skip_cheak_params_num:
 		localenv->_call_size += fn.params.at(i).type.size;
 	}
 
-    out << std::left << std::setw(15) << "call" << std::left << std::setw(15) << fn.funcName << fn.params.size();
+    out << "call" << "\t" << fn.funcName << "\t" << fn.params.size();
 
     std::string ret_;
     if (fn.type.type != K_VOID || fn.type.retType != nullptr) {
@@ -943,8 +965,8 @@ void Parser::createIncDec()
 			out << std::left << std::setw(15) << "-";
 		}
 
+        out << std::left << std::setw(15) << "1";
 		out << std::left << std::setw(15) << var;
-		out << std::left << std::setw(15) << "1";
 		out << std::left << std::setw(15) << label << std::endl;
 		out << std::left << std::setw(15) << "=";
 		out << std::left << std::setw(15) << label;

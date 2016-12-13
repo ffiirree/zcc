@@ -147,13 +147,14 @@ void Generate::func_decl(Node &n)
 	size += getFuncCallSize(n);
 
 	if (n.funcName == "main") {
-        gas_func_def("_main");
+        gas_func_def("__main");
 		is_main = true;
 	}
     gas_tab(".text");
     gas_glo(n.funcName);
     gas_func_def(n.funcName);
     gas_label("_" + n.funcName);
+    vm_->use_ ? vm_->setFuncAddr("_" + n.funcName) : false;
 
     gas_tab(".cfi_startproc");
     gas_ins("pushl", "%ebp");
@@ -168,7 +169,7 @@ void Generate::func_decl(Node &n)
     }
 		
 	if (is_main) {
-        gas_call("__main");
+        gas_tab("call\t___main");
 	}
 }
 
@@ -186,7 +187,7 @@ void Generate::generate(std::vector<std::string> &_q)
 			return;
 		}
 
-        gas_label(_q.at(0));                          // 如果是其他标签，输出
+        gas_jxx_label(_q.at(0));                          // 如果是其他标签，输出
 	}
     else if (_q_0_is(".inscope")) {
         setLocEnv(_q.at(1));
@@ -303,7 +304,7 @@ void Generate::generate(std::vector<std::string> &_q)
 		temp_clear(_q1, _q2);
 	}
 	else if (_q_0_is("goto")) {
-        gas_jmp(_q.at(1));
+        gas_ins("jmp", _q.at(1));
 	}
 	else if (_q_0_is("param")) {
 		params.push_back(_q.at(1));
@@ -363,11 +364,21 @@ void Generate::generate(std::vector<std::string> &_q)
             gas_ins(mov2stk(param_size), _src, _des);
 			params.pop_back();
 		}
-        gas_ins("call", _q.at(1));
+        gas_call(_q.at(1));
 
         if (_q.size() == 4) {
             setReg("%eax", _q.at(3));
             TempVar var(_q.at(3), "%eax");
+            if (func.getKind() == NODE_FUNC) {
+                var.type = func.type.retType->type;
+                var._isUnsig = func.type.retType->isUnsig;
+                var._size = func.type.retType->size;
+            }
+            else if (func.getKind() == NODE_FUNC_DECL) {
+                var.type = func.type.type;
+                var._isUnsig = func.type.isUnsig;
+                var._size = func.type.size;
+            }
             _stk_temp_var.push_back(var);
         }
 	}
@@ -410,9 +421,11 @@ void Generate::generate(std::vector<std::string> &_q)
         }
 
         gas_tab("leave");
+        vm_->use_ ? vm_->push_back({ vm_->getInsByOp("leave"), "leave" }) : false;
         gas_tab(".cfi_restore 5");
         gas_tab(".cfi_def_cfa 4, 4");
         gas_tab("ret");
+        vm_->use_ ? vm_->push_back({ vm_->getInsByOp("ret"), "ret" }) : false;
 	}
 	else if (_q_0_is(".end")) {
         gas_tab(".cfi_endproc");
@@ -540,15 +553,15 @@ std::string Generate::getReg(const std::string &_reg)
 	}
 
 	// 如果指定寄存器不为空, 调整寄存器
-	TempVar _tem = searchTempvar(_var);
+	TempVar &_tem = searchTempvar(_var);
 	for (size_t i = 0; i < universReg.size(); ++i) {
 		if (_reg != universReg.at(i)._reg && universReg.at(i)._var.empty()) {
 			universReg.at(i)._var = _var;
 			_tem._reg = universReg.at(i)._reg;
 
-			TempVar _pus = _tem;
-			_stk_temp_var.pop_back();
-			_stk_temp_var.push_back(_pus);
+			//TempVar _pus = _tem;
+			//_stk_temp_var.pop_back();
+			//_stk_temp_var.push_back(_pus);
 
             gas_ins("movl", _reg, _tem._reg);
 
@@ -815,5 +828,7 @@ LocVar &Generate::searchLocvar(const std::string &name)
 {
     return locEnv->search(name);
 }
+
+
 
 

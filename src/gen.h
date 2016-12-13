@@ -16,8 +16,7 @@
 #define gas_label(label)      gas(label+":")
 #define gas_func_def(fn)      gas("\t.def\t_" + std::string(fn) + ";\t.scl\t2;\t.type\t32;\t.endef")
 
-#define gas_jmp(des)          gas_tab("jmp\t" + des);
-#define gas_call(des)         gas_tab("call\t_" + std::string(des));
+#define gas_jmp(des)          gas_tab("jmp\t" + des)
 
 #define temp_clear(_q1_, _q2_)  do {\
 										pop_back_temp_stk(_q1_);\
@@ -97,6 +96,8 @@ private:
     inline void gas(const std::string &_s) { out << _s << std::endl; }
     void gas_ins(const std::string &_i, const std::string &_src, const std::string &_des);
     void gas_ins(const std::string &_i, const std::string &_des);
+    void gas_call(const std::string &_des);
+    void gas_jxx_label(const std::string &_des);
 
     void const_str();
     void func_decl(Node &n);
@@ -107,12 +108,13 @@ private:
     void gas_custom(Node &n, bool is_fir);
 
     Type gas_load(const std::string &_q, const std::string &_reg);                   // ¼ÓÔØÊý¾Ý
-    int gas_flo_load(const std::string &fl);
+    int gas_flo_load(const std::string &fl, bool isChange);
     Type getStructFieldType(Node &var, std::string &_off);
     Type getPtrType(Node &var);
 
     void gas_jxx(const std::string &op, const std::string &des, Type &_t);
     void unlimited_binary_op(std::vector<std::string> &_q, const std::string &op);
+    void Generate::add_sub_with_ptr(std::vector<std::string> &_q, const std::string &op);
     void shift_op(std::vector<std::string> &_q, const std::string &op);
 	void genMulOrModAsm(std::vector<std::string> &_q);
     void genIncDec(const std::string &_obj, const std::string &op);

@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
         // 
         if (!isOnlyPP) {
             Parser parser(os, _ofn);
-            VirtualMachine vm(debug);
+            VirtualMachine vm(useVM, debug);
             Generate gen(&parser, &vm);
 
             if (useVM) {
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
             }
             else {
                 if (!stopAsm) {
-                    std::string runGccSys = "gcc " + _ofn + ".s";
+                    std::string runGccSys = "gcc " + _ofn + ".s -o" + _ofn + ".exe";
                     auto ret = system(runGccSys.c_str());
                 }
             }

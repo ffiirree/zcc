@@ -1,4 +1,4 @@
-int printf(char *s, int a);
+#include <stdio.h>
 
 enum en{
     ONE = 9,

@@ -100,6 +100,7 @@ Node Parser::if_stmt()
 	generateIfGoto();
 	out << _if._true << ":" << std::endl;   
 
+    out << "clr" << std::endl;
 	Node *then = new Node(statement());     // S1.code
 
 	if (next_is(K_ELSE)) {
@@ -146,6 +147,8 @@ Node Parser::while_stmt()
 	boolLabel.back()._false = _while._false;           
 	generateIfGoto();                      // B.code
 	out << _while._true << ":" << std::endl;           // Label(B.true)
+
+    out << "clr" << std::endl;
 
 	Node body = statement();               // S1.code
 	out << "goto " << _begin << std::endl; // gen(goto begin)
@@ -250,9 +253,7 @@ Node Parser::for_stmt()
 		expect(';');
 	}
 	else {
-        _EN_CONDITION_();
-        bool_expr();
-        _DIS_CONDITION_();
+        expr();
 		expect(';');
 	}
 
@@ -262,13 +263,16 @@ Node Parser::for_stmt()
 		expect(';');
 	}
 	else {
-		expr();
+        _EN_CONDITION_();
+        bool_expr();
+        _DIS_CONDITION_();
 		expect(';');
 	}
 
 	// bool判断部分
 	boolLabel.push_back(_for);
 	generateIfGoto();
+    out << "clr" << std::endl;
 
 	// 后循环部分
 	out << _exp3 << ":" << std::endl;
@@ -279,6 +283,7 @@ Node Parser::for_stmt()
 		expr();
 		expect(')');
 	}
+    out << "clr" << std::endl;
 
 	out << "goto " << _begin << std::endl;
 	out << _for._true << ":" << std::endl;
