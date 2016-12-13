@@ -2,14 +2,28 @@
 > **zcc**是一个用C++写的C99的编译器.
 <br><br>
 
-## 一 、当前效果
-        C语言例子：`simple/hello.c`
-        中间代码输出:`build/hello.qd`
-        AT&T汇编输出:`build/hello.s`
+## 一、 使用
+```
+命令:
+        -P                only preprocessed
+        -E                print preprocessed source code
+        -o filename       Output to the specified file
+        -h                help
+        -V                use virtual machine to run the program.
+        -D                Debug(virtual machine mode)
+Debug:
+        n                 next, print next assembly instruction and register data.
+        x <addr>          print the data of the address.
+        q                 exit
+Output:
+        .q                四元式文件
+        .s                AT&T汇编
+```
 
+## 二 、当前效果
 ![效果](https://github.com/ffiirree/zcc/blob/master/simple/dis.gif)
 
-## 二、 支持语法
+## 三、 支持语法
 ### 2.0 预处理器
 ```
         include 
@@ -45,14 +59,8 @@ OTHER:
         +  -  *  /  %
         +=  -=   *=   /=   %=
         <  >  >=  <=  ==  !=
-        ||  &&
-        >>  << 
-        ~  ^  |  & 
-        ++  --
-        .
-        []
-        ? :
-        ->
+        ||  &&  >>  <<  ~  ^  |  & 
+        ++  -- . []  ? :  ->
 ```
 
 #### 不支持
@@ -84,7 +92,7 @@ OTHER:
         支持 case
 ```
 
-## 三、执行
+## 四、执行
 ### 3.1  default mode
 ```
         默认模式下，会自动生成AT&T汇编代码，并调用gcc编译得到可执行文件
@@ -95,13 +103,13 @@ OTHER:
 ```
         virtual machine mode 下，暂时也会产生汇编代码，不过不会调用gcc，而是在虚拟机中运行
 ```
-## Attention
+## 五、Attention
 ```
         1. 函数必须return。
         2. 碍于寄存器分配不完善，多使用中间变量，防止寄存器溢出。
 ```
 
-## BUG
+## 六、BUG
 ```
         1. 打开函数重载后，无法使用函数调用做函数的参数，暂时无法获取作为参数的函数的信息;
         2. d=max(sum(a,b), max(c,b));这样的也不行，执行顺序为sum -> max ->max，最后调用max的时候，寄存器的值已经被
