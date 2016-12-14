@@ -3,7 +3,7 @@
 
 #include <map>
 #include <vector>
-#include "PARSER.H"
+#include "parser.h"
 
 enum Instruction {
     movl, movb, movw,

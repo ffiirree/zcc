@@ -1,35 +1,9 @@
 #include "type.h"
-#include "ERROR.H"
+#include "error.h"
 
 /**
  * Token
  */
-//std::ostream &operator<<(std::ostream & os, const Token & t)
-//{
-//	os << t.getType() << "\t";
-//
-//	if (t.getType() == KEYWORD) {
-//		switch (t.getId())
-//		{
-//#define keyword(ty, name, _) case ty: os << name ;break;
-//#define op(ty,name) case ty: os << name;break;
-//			KEYWORD_MAP
-//				OP_MAP
-//#undef keyword
-//#undef op
-//		default: os << (char)t.getId(); break;
-//		}
-//		os << std::endl;
-//	}
-//	else if (t.getType() == ID)
-//		os << t.getSval().c_str() << std::endl;
-//	else if (t.getType() == CHAR_)
-//		os << (char)t.getCh() << std::endl;
-//	else if (t.getType() == STRING_ || t.getType() == INTEGER || t.getType() == FLOAT)
-//		os << t.getSval().c_str() << std::endl;
-//
-//	return os;
-//}
 bool operator==(const Token &t1, const Token &t2)
 {
 	return (t1.getType() == t2.getType() && t1.getPos() == t2.getPos() && t1.getCounter() == t2.getCounter() &&

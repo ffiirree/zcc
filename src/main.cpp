@@ -1,8 +1,8 @@
 #include <iostream>
 #include "zcc.h"
 #include "error.h"
-#include "PP.H"
-#include "ZVM.H"
+#include "cpp.h"
+#include "zvm.h"
 
 
 void Help()

@@ -1,5 +1,4 @@
 ﻿#include "parser.h"
-#include <cassert>
 #include "error.h"
 
 Node Parser::expr()

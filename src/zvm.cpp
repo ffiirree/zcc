@@ -2,8 +2,8 @@
 #include <malloc.h>
 #include<iomanip>
 #include "zvm.h"
-#include "FILE.H"
-#include "ERROR.H"
+#include "file.h"
+#include "error.h"
 
 int VirtualMachine::eax = 0;
 int VirtualMachine::ebx = 0;

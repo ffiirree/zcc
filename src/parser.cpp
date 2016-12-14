@@ -1,7 +1,8 @@
+#include<iomanip>
 #include "parser.h"
 #include "error.h"
 
-#include<iomanip>
+
 /**
  * @berif 一个翻译单元，一个文件
  * 
