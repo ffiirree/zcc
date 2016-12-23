@@ -1,17 +1,8 @@
 #ifndef _ZCC_PP_H
 #define _ZCC_PP_H
 
-#include <fstream>
 #include <ctime>
 #include "zcc.h"
-
-typedef enum {
-    M_ZERO,
-    M_FUNCLIKE,
-    M_OBJLIKE,
-    M_PRE,
-}MacroType;
-
 
 class Date {
 #define __s(x) std::to_string(x)
@@ -36,34 +27,46 @@ private:
     inline void reset() { tt = time(NULL);t = localtime(&tt); }
 };
 
+/**
+ * @class Macro
+ */
 class Macro {
 public:
-    Macro() :_name(), _params(), _replist() { }
-    Macro(const std::string &_n, MacroType _ty) :_name(_n), _type(_ty), _params(), _replist() {}
-    Macro(const std::string &_n, Token & _v, MacroType _ty) :_name(_n), _type(_ty), _params() { _replist.push_back(_v); }
+    enum MacroType {
+        M_ZERO,
+        M_FUNCLIKE,
+        M_OBJLIKE,
+        M_PRE,
+    };
 
-    Macro(const Macro&_m) :_type(_m._type), _name(_m._name), _params(_m._params), _replist(_m._replist) {  }
-    Macro operator=(const Macro &_m) { _type = _m._type; _name = _m._name; _params = _m._params; _replist = _m._replist; return *this; }
+public:
+    Macro() :name_(), params_(), replist_() { }
+    Macro(const std::string &n, MacroType ty) :name_(n), type_(ty), params_(), replist_() {}
+    Macro(const std::string &n, Token & v, MacroType ty) :name_(n), type_(ty), params_() { replist_.push_back(v); }
 
-    MacroType _type = M_ZERO;
-    std::string _name;
-    std::vector<std::string> _params;
-    TokenSequence _replist;
+    Macro(const Macro&m) :type_(m.type_), name_(m.name_), params_(m.params_), replist_(m.replist_) {  }
+    Macro operator=(const Macro &m) { type_ = m.type_; name_ = m.name_; params_ = m.params_; replist_ = m.replist_; return *this; }
+    ~Macro() = default;
+
+    MacroType type_ = M_ZERO;
+    std::string name_;
+    std::vector<std::string> params_;
+    TokenSequence replist_;
 };
 
-
-
+/**
+ * @class Preprocessor
+ */
 class Preprocessor {
 public:
     Preprocessor(bool _only) : isOnlyPP(_only) { init(); }
-    Preprocessor(const std::string &_fn) { init(); }
-    
 	Preprocessor(const Preprocessor &) = delete;
 	Preprocessor operator= (const Preprocessor &) = delete;
+    ~Preprocessor() = default;
 
-    void group_part(TokenSequence &is, TokenSequence &os);
-
-
+    /**
+     * @berif macro expansion
+     */
     void expand(TokenSequence is, TokenSequence &os);
     void subst(TokenSequence &is, std::vector<std::string> fp, TokenSequence &ap, HideSet* hs, TokenSequence& os);
     void glue(TokenSequence &ls, TokenSequence &rs);
@@ -79,26 +82,39 @@ public:
     int isMacro(const std::string &_n);
     bool deleteMacro(const std::string &_n);
 
-
+    /**
+     * @berif group part
+     * \ #include
+     * \ #define
+     * \ #if
+     * \ #ifndef
+     * \ #ifdef
+     * \ #undef
+     * \ #elif
+     * \ #else
+     * \ #endif
+     */
+    void group_part(TokenSequence &is, TokenSequence &os);
     void Include(TokenSequence &is, TokenSequence &os);
-    void _define_(TokenSequence &is);
-    void _if_(TokenSequence &is);
-    void _ifndef_(TokenSequence &is);
-    void _ifdef_(TokenSequence &is);
-    void _undef_(TokenSequence &is);
-    void _elif_(TokenSequence &is);
-    void _else_(TokenSequence &is);
-    void _endif_(TokenSequence &is);
-    void _line_(TokenSequence &is);
-    void _pragma_(TokenSequence &is);
+    void Define(TokenSequence &is);
+    void If(TokenSequence &is);
+    void Ifndef(TokenSequence &is);
+    void Ifdef(TokenSequence &is);
+    void Undef(TokenSequence &is);
+    void Elif(TokenSequence &is);
+    void Else(TokenSequence &is);
+    void Endif(TokenSequence &is);
+    void Line(TokenSequence &is);
+    void Pragma(TokenSequence &is);
 
     bool invalid() { return invalid_; }
 
 private:
     void init();
-    //Lex lex;
-    std::vector<Macro> macros;
-    std::vector<std::string> _paths;
+    bool cheak_else();
+
+    std::vector<Macro> macros_;
+    std::vector<std::string> paths_;
     bool isOnlyPP = false;
 
     std::vector<std::pair<std::string, bool>> stk_if_else;
@@ -107,9 +123,7 @@ private:
     bool preInvalid_ = false;
     std::vector<bool> stK_invalid;
 
-    bool isExpandExpr = false;
-
-    bool cheak_else();
+    bool isExpandExpr = false; 
 };
 
 #define _BEGIN_IF_()   do{stK_invalid.push_back(preInvalid_); preInvalid_ = invalid_; invalid_ = false; }while(0)

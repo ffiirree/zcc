@@ -13,6 +13,12 @@ int VirtualMachine::edx = 0;
 int VirtualMachine::esp = 0;
 int VirtualMachine::ebp = 0;
 
+std::vector<std::pair<std::string, Instruction>> VirtualMachine::instructions_ = {
+#define vminsmap(_n_, _i_) {_n_, _i_}, 
+    VM_INS
+#undef vminsmap
+};
+
 void AsmIns::copying(const AsmIns&ai)
 {
     operator_ = ai.operator_;
@@ -176,43 +182,11 @@ _begin_debug_:
 
 Instruction VirtualMachine::getInsByOp(const std::string &name)
 {
-    if (name == "movl") return movl;
-    else if (name == "movb") return movb;
-    else if (name == "movw") return movw;
-    else if (name == "imull") return imull;
-    else if (name == "idivl") return idivl;
-    else if (name == "subl") return subl;
-    else if (name == "addl") return addl;
-    else if (name == "andl") return andl;
-    else if (name == "xorl") return xorl;
-    else if (name == "orl") return orl;
-    else if (name == "call") return call;
-    else if (name == "ret") return ret;
-    else if (name == "leave") return leave;
-    else if (name == "popl") return popl;
-    else if (name == "pushl") return pushl;
-    else if (name == "sarl") return sarl;
-    else if (name == "sall") return sall;
-    else if (name == "notl") return notl;
-    else if (name == "leal") return leal;
-    else if (name == "exit") return exitvm;
-    else if (name == "cmpl") return cmpl;
-    else if (name == "jg") return jg;
-    else if (name == "jl") return jl;
-    else if (name == "jge") return jge;
-    else if (name == "jle") return jle;
-    else if (name == "je") return je;
-    else if (name == "jne") return jne;
-    else if (name == "jmp") return jmp;
-
-    // not support
-    else if (name == "ja") return ja;
-    else if (name == "jae") return jae;
-    else if (name == "jb") return jb;
-    else if (name == "jbe") return jbe;
-    else
-        error("unknown operator:%s.", name.c_str());
-
+    for (const auto &ins : instructions_) {
+        if (name == ins.first)
+            return ins.second;
+    }
+    error("unknown operator:%s.", name.c_str());
     return INS_NULL;
 }
 

@@ -4,40 +4,18 @@
 #include <map>
 #include <vector>
 #include "parser.h"
+#include "type.h"
 
 enum Instruction {
     INS_NULL,
-    movl, movb, movw,
-    subl, addl,
-    imull, idivl, call,
-    leave, ret, pushl,
-    popl,
-
-    andl,
-    xorl,
-    orl,
-    sarl,
-    sall,
-    shrl,
-    notl,
-    leal,
-    exitvm,
-    cmpl,
-    jg,
-    jl,
-    jge,
-    jle,
-    jmp,
-    je,
-    jne,
-
-    // 
-    ja,
-    jb,
-    jae,
-    jbe
+#define vminsmap(_, ins) ins,
+    VM_INS
+#undef vminsmap
 };
 
+/**
+ * @berif AsmIns
+ */
 class AsmIns {
 public:
     AsmIns(Instruction optor, const std::string &ins) : operator_(optor), lstr_(), rstr_(), ins_(ins) {}
@@ -47,8 +25,6 @@ public:
     AsmIns(const AsmIns &ai) { copying(ai); }
     AsmIns operator=(const AsmIns &ai) { copying(ai); return *this; }
     ~AsmIns() = default;
-
-    
 
 public:
     Instruction operator_;           // ²Ù×÷·û
@@ -61,15 +37,12 @@ public:
     std::string rstr_;               // ÓÒ²Ù×÷Êý
 private:
     void copying(const AsmIns&ai);
-
-    
 };
 
-struct Data {
-    std::string name_;
-    int addr = 0;
-};
 
+/**
+ * @berif VirtualMachine
+ */
 class VirtualMachine {
 public:
     VirtualMachine(bool use = false, bool debug = false);
@@ -91,6 +64,9 @@ public:
     void *getOperandAddr(const std::string &name);
     int getRegValByName(const std::string &name);
 
+    /**
+     * @berif Virtual register
+     */
     static int eax;
     static int ebx;
     static int ecx;
@@ -104,18 +80,27 @@ public:
 private:
     Parser *parser_;
 
+    /**
+     * \ Whether the vm is running in the debug model.
+     */
+    bool debug_ = false;
+
+    static std::vector<std::pair<std::string, Instruction>> instructions_;
+
+    /**
+     * @berif code segment
+     */
     std::vector<AsmIns> text_;
+    std::map<std::string, int> data_;
     size_t pc = 0;
 
-    bool debug_ = false;
-    
-
-    std::map<std::string, int> data_;
     int heap_ptr_ = 0;
-
     char heap_[64];
     int stk_[24];
 
+    /**
+     * \ flags
+     */
     bool zf = false;
     bool sf = false;
 };

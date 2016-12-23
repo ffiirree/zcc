@@ -101,7 +101,6 @@ inline void Node::copying(const Node &n)
 	varName = n.varName;
 	_off = n._off;
 	lvarinit = n.lvarinit;
-	glabel = n.glabel;
 
 
 	left = n.left;
@@ -117,7 +116,6 @@ inline void Node::copying(const Node &n)
 
 	init_val = n.init_val;
 	init_off = n.init_off;
-	to_type = n.to_type;
 	cond = n.cond;
 	then = n.then;
 	els = n.els;

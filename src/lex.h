@@ -11,38 +11,56 @@
 class TokenSequence {
 public:
     TokenSequence() = default;
-    TokenSequence(const TokenSequence &ts) : tokens(ts.tokens), index(ts.index), filename_(ts.filename_) { }
-    TokenSequence operator=(const TokenSequence &ts) { tokens = ts.tokens; index = ts.index; filename_ = ts.filename_; return *this; }
+    TokenSequence(const TokenSequence &ts) : tokens_(ts.tokens_), index_(ts.index_), filename_(ts.filename_) { }
+    TokenSequence operator=(const TokenSequence &ts) { tokens_ = ts.tokens_; index_ = ts.index_; filename_ = ts.filename_; return *this; }
+    ~TokenSequence() = default;
 
-    void push_back(const Token &t) { tokens.push_back(t); }
-    inline size_t size() { return tokens.size(); }
-    inline void pop_back() { tokens.pop_back(); }
-
-    inline Token next() { if (index >= tokens.size()) return{ T_EOF, 0 }; return tokens.at(index++); }
+    /**
+     * @berif Get, peek or test a token.
+     */
+    inline Token next() { if (index_ >= tokens_.size()) return{}; return tokens_.at(index_++); }
+    inline Token &at(size_t i) { return tokens_.at(i); }
     void back();
-    inline Token peek() { if (index >= tokens.size()) return{ T_EOF, 0 }; return tokens.at(index); }
-    inline Token peek2() { if (index + 1 >= tokens.size()) return{ T_EOF, 0 }; return tokens.at(index + 1); }
-    inline bool test(int _id) { return (peek().getType() == T_KEYWORD && peek().getId() == _id);  }
-    inline bool test2(int _id) { return (peek2().getType() == T_KEYWORD && peek2().getId() == _id); }
+    inline Token peek() const { if (index_ >= tokens_.size()) return{}; return tokens_.at(index_); }
+    inline Token peek2() const { if (index_ + 1 >= tokens_.size()) return{}; return tokens_.at(index_ + 1); }
+    inline bool test(int id) const { return (peek().getType() == T_KEYWORD && peek().getId() == id);  }
+    inline bool test2(int id) const { return (peek2().getType() == T_KEYWORD && peek2().getId() == id); }
+
+    /**
+     * @berif Cheak whether the next is character 'e'.
+     */
     bool next_is(const char e);
     bool expect(const char id);
-    Pos getPos() { return tokens.at(index).getPos(); }
 
-    bool empty() { return tokens.empty(); }
-    bool end() { return index >= tokens.size(); }
-    Token &at(size_t i) { return tokens.at(i); }
-    inline size_t restSize() { return tokens.size() - index; }
+    /**
+     * @berif pos of current token;
+     */
+    inline Pos getPos() const { return tokens_.at(index_).getPos(); }
 
+    inline void push_back(const Token &t) { tokens_.push_back(t); }
+    inline void pop_back() { tokens_.pop_back(); }
+
+    inline size_t size() const { return tokens_.size(); }
+    inline bool empty() const { return tokens_.empty(); }
+    inline bool end() const { return index_ >= tokens_.size(); }
+    inline size_t restSize() const { return tokens_.size() - index_; }
+
+    /**
+     * @berif Insert a TokenSequence to this.
+     * \ the firs postion
+     * \ the last postion
+     * \ current postion
+     */
     void insertFront(TokenSequence &l);
     void insertBack(TokenSequence &l);
     void insert(TokenSequence &l);
 
-    void setFileName(const std::string &fn) { filename_ = fn; }
-    std::string getFileName() { return filename_; }
+    inline void setFileName(const std::string &fn) { filename_ = fn; }
+    inline std::string getFileName() const { return filename_; }
 
 private:
-    std::vector<Token> tokens;
-    size_t index = 0;
+    std::vector<Token> tokens_;
+    size_t index_ = 0;
     std::string filename_;
 };
 
@@ -51,16 +69,19 @@ private:
  */
 class Lex {
 public:
-    Lex();
-    Lex(const std::string &filename, TokenSequence &ts) : Lex() { scan(filename, ts); }
+    Lex() = default;
+    Lex(const std::string &filename, TokenSequence &ts) { scan(filename, ts); }
+    Lex(const Lex &) = delete;
+    Lex operator=(const Lex &) = delete;
+    ~Lex() = default;
 
-    Lex(const Lex &lex) = delete;
-    inline Lex operator=(const Lex &lex) = delete;
-
+    /**
+     * @berif Scan a file and return the TokenSequence.
+     */
     void scan(const std::string &filename, TokenSequence &ts);
 
 private:
-	Token readToken();
+	Token next();
     void skipComments();
 	Token read_string();
 	Token read_char();
@@ -71,11 +92,15 @@ private:
 	int read_octal_char(int c);
 	int read_hex_char();
 
-	int isKeyword(std::string &word);
+    /**
+     * @berif Cheak whether the string is a keyword.
+     */
+	int isKeyword(const std::string &str);
 
-	File f;
-	std::vector<std::string> keywords;
-    Token last;
+	File f_;
+    Token last_;
+
+    static std::vector<std::string> keywords_;
 };
 
 

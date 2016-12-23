@@ -7,19 +7,19 @@
 void Preprocessor::init()
 {
     // 包含默认路径
-    _paths.push_back("D:/zcc/include/");
-    _paths.push_back("C:/zcc/include/");
+    paths_.push_back("D:/zcc/include/");
+    paths_.push_back("C:/zcc/include/");
 
     // 包含默认宏定义
-    macros.push_back({ "__ZCC__", Token(T_INTEGER, "1"), M_PRE});
-    macros.push_back({ "__ZCC_VERSION__", Token(T_STRING, "Version 0.02"), M_PRE });
-    macros.push_back({ "__FILE__", M_PRE });
-    macros.push_back({ "__LINE__", M_PRE });
-    macros.push_back({ "__FUNC__", M_PRE });
-    macros.push_back({ "__DATE__", M_PRE });
-    macros.push_back({ "__STDC__", Token(T_INTEGER, "0"), M_PRE });
-    macros.push_back({ "__TIME__" , M_PRE });
-    macros.push_back({ "__cplusplus", Token(T_INTEGER, "0"), M_PRE });
+    macros_.push_back({ "__ZCC__", Token(T_INTEGER, "1"), Macro::M_PRE});
+    macros_.push_back({ "__ZCC_VERSION__", Token(T_STRING, "Version 0.02"), Macro::M_PRE });
+    macros_.push_back({ "__FILE__", Macro::M_PRE });
+    macros_.push_back({ "__LINE__", Macro::M_PRE });
+    macros_.push_back({ "__FUNC__", Macro::M_PRE });
+    macros_.push_back({ "__DATE__", Macro::M_PRE });
+    macros_.push_back({ "__STDC__", Token(T_INTEGER, "0"), Macro::M_PRE });
+    macros_.push_back({ "__TIME__" , Macro::M_PRE });
+    macros_.push_back({ "__cplusplus", Token(T_INTEGER, "0"), Macro::M_PRE });
 }
 
 void Preprocessor::expand(TokenSequence is, TokenSequence &os)
@@ -50,49 +50,49 @@ void Preprocessor::expand(TokenSequence is, TokenSequence &os)
         }
         else if(tok.getType() == T_IDENTIFIER && ((macro = searchMacro(tok.getSval())))){
 
-            if (macro->_name == "__LINE__") {
+            if (macro->name_ == "__LINE__") {
                 Token r(T_INTEGER, std::to_string(tok.getPos().line));
-                macro->_replist.push_back(r);
+                macro->replist_.push_back(r);
                 os.push_back(r);
                 is.next();
             }
-            else if (macro->_name == "__FILE__") {
+            else if (macro->name_ == "__FILE__") {
                 Token r(T_STRING, is.getFileName());
-                macro->_replist.push_back(r);
+                macro->replist_.push_back(r);
                 os.push_back(r);
                 is.next();
             }
-            else if (macro->_name == "__FUNC__") {
+            else if (macro->name_ == "__FUNC__") {
                 is.next();
             }
-            else if (macro->_name == "__DATE__") {
+            else if (macro->name_ == "__DATE__") {
                 Token r(T_STRING, Date::getDate());
-                macro->_replist.push_back(r);
+                macro->replist_.push_back(r);
                 os.push_back(r);
                 is.next();
             }
-            else if (macro->_name == "__TIME__") {
+            else if (macro->name_ == "__TIME__") {
                 is.next();
             }
-            else if(macro->_type == M_OBJLIKE){
+            else if(macro->type_ == Macro::M_OBJLIKE){
                 tok = is.next();
-                TokenSequence repTs = ts(macro->_name);
+                TokenSequence repTs = ts(macro->name_);
                 HideSet *hs = tok.hs_ ? tok.hs_ : new HideSet();
-                hs->insert(macro->_name);
+                hs->insert(macro->name_);
                 TokenSequence substOs;
 
                 subst(repTs, std::vector<std::string>(), TokenSequence(), hs, substOs);
                 is.insert(substOs);
             }
-            else if (macro->_type == M_FUNCLIKE) {
+            else if (macro->type_ == Macro::M_FUNCLIKE) {
                 tok = is.next();
 
-                TokenSequence repTs = ts(macro->_name);
+                TokenSequence repTs = ts(macro->name_);
                 HideSet *hs = tok.hs_ ? tok.hs_ : new HideSet();
-                hs->insert(macro->_name);
+                hs->insert(macro->name_);
                 TokenSequence ap = getAP(is);
                 TokenSequence substOs;
-                subst(repTs, macro->_params, ap, hs, substOs);
+                subst(repTs, macro->params_, ap, hs, substOs);
                 is.insert(substOs);
             }
         }
@@ -117,44 +117,21 @@ void Preprocessor::group_part(TokenSequence &is, TokenSequence &os)
 	if (t.getType() == T_NEWLINE)
 		return;
 
-	if (t.getType() == T_INTEGER || t.getType() == T_FLOAT) {
+	if (t.getType() == T_INTEGER || t.getType() == T_FLOAT)
 		return;
-	}
 		
 	if (t.getType() == T_IDENTIFIER) {
-        if (t.getSval() == "if") {
-            _if_(is);
-        }
-        else if (t.getSval() == "ifdef") {
-            _ifdef_(is);
-        }
-        else if (t.getSval() == "ifndef") {
-            _ifndef_(is);
-        }
-        else if (t.getSval() == "elif") {
-            _elif_(is);
-        }
-        else if (t.getSval() == "else") {
-            _else_(is);
-        }
-        else if (t.getSval() == "endif") {
-            _endif_(is);
-        }
-        else if (t.getSval() == "include") {
-            Include(is, os);
-        }
-        else if (t.getSval() == "define") {
-            _define_(is);
-        }
-        else if (t.getSval() == "undef") {
-            _undef_(is);
-        }
-        else if (t.getSval() == "line") {
-            _line_(is);
-        }
-        else if (t.getSval() == "pragma") {
-            _pragma_(is);
-        }
+        if (t.getSval() == "if")           If(is);
+        else if (t.getSval() == "ifdef")   Ifdef(is);
+        else if (t.getSval() == "ifndef")  Ifndef(is);
+        else if (t.getSval() == "elif")    Elif(is);
+        else if (t.getSval() == "else")    Else(is);
+        else if (t.getSval() == "endif")   Endif(is);
+        else if (t.getSval() == "include") Include(is, os);
+        else if (t.getSval() == "define")  Define(is);
+        else if (t.getSval() == "undef")   Undef(is);
+        else if (t.getSval() == "line")    Line(is);
+        else if (t.getSval() == "pragma")  Pragma(is);
 	}
 }
 
@@ -311,9 +288,9 @@ TokenSequence Preprocessor::ts(const std::string &_macro_name)
 {
     TokenSequence rts;
 
-    for (const auto &_m : macros) {
-        if (_m._name == _macro_name)
-            return _m._replist;
+    for (const auto &m : macros_) {
+        if (m.name_ == _macro_name)
+            return m.replist_;
     }
 
     error("Do not have this macros :%s.", _macro_name.c_str());
@@ -384,8 +361,8 @@ TokenSequence Preprocessor::getAP(TokenSequence &is)
  */
 int Preprocessor::isMacro(const std::string &_n)
 {
-    for (size_t i = 0;i < macros.size(); ++i) {
-        if (_n == macros.at(i)._name) {
+    for (size_t i = 0;i < macros_.size(); ++i) {
+        if (_n == macros_.at(i).name_) {
             return i;
         }
     }
@@ -400,8 +377,8 @@ int Preprocessor::isMacro(const std::string &_n)
  */
 Macro *Preprocessor::searchMacro(const std::string &_n)
 {
-    for (auto iter = macros.begin(); iter != macros.end(); ++iter) {
-        if (_n == (*iter)._name)
+    for (auto iter = macros_.begin(); iter != macros_.end(); ++iter) {
+        if (_n == (*iter).name_)
             return iter._Ptr;
     }
     return nullptr;
@@ -409,9 +386,9 @@ Macro *Preprocessor::searchMacro(const std::string &_n)
 
 bool Preprocessor::deleteMacro(const std::string &_n)
 {
-    for (auto iter = macros.begin(); iter != macros.end(); ++iter) {
-        if (_n == (*iter)._name)
-            macros.erase(iter);
+    for (auto iter = macros_.begin(); iter != macros_.end(); ++iter) {
+        if (_n == (*iter).name_)
+            macros_.erase(iter);
         return true;
     }
     return false;
@@ -449,7 +426,7 @@ void Preprocessor::Include(TokenSequence &is, TokenSequence &os)
         error("need new_line.");
 
     // 打开文件并插入
-    for (const std::string path:_paths) {
+    for (const std::string path: paths_) {
         std::string _file = path + _fn;
         std::ifstream in(_file, std::ios::_Nocreate);
         if (in.is_open()) {
@@ -466,23 +443,23 @@ void Preprocessor::Include(TokenSequence &is, TokenSequence &os)
 /**
  * @berif #define 
  */
-void Preprocessor::_define_(TokenSequence &is)
+void Preprocessor::Define(TokenSequence &is)
 {
     is.next();
     is.next();
     Macro _macro;
     Token t = is.next();
     if (t.getType() == T_IDENTIFIER) {
-        _macro._name = t.getSval();
+        _macro.name_ = t.getSval();
     }
 
     if (is.next_is('(')) {
-        _macro._type = M_FUNCLIKE;
+        _macro.type_ = Macro::M_FUNCLIKE;
 
         if (!is.next_is(')')) {
             do {
                 t = is.next();
-                _macro._params.push_back(t.getSval());
+                _macro.params_.push_back(t.getSval());
             } while (is.next_is(','));
 
             is.expect(')');
@@ -491,29 +468,29 @@ void Preprocessor::_define_(TokenSequence &is)
         t = is.next();
         if (t.getType() != T_NEWLINE) {
             do {
-                _macro._replist.push_back(t);
+                _macro.replist_.push_back(t);
                 t = is.next();
             } while (t.getType() != T_NEWLINE);
         }
     }
     else {
-        _macro._type = M_OBJLIKE;
+        _macro.type_ = Macro::M_OBJLIKE;
         t = is.next();
         if (t.getType() != T_NEWLINE) {
             do {
-                _macro._replist.push_back(t);
+                _macro.replist_.push_back(t);
                 t = is.next();
             } while (t.getType() != T_NEWLINE);
         }
     }
     if(!invalid_)
-        macros.push_back(_macro);
+        macros_.push_back(_macro);
 }
 
 /**
  * @berif #undef
  */
-void Preprocessor::_undef_(TokenSequence &is)
+void Preprocessor::Undef(TokenSequence &is)
 {
     is.expect('#');
     if (is.next().toString() != "undef")
@@ -531,7 +508,7 @@ void Preprocessor::_undef_(TokenSequence &is)
 /**
  * @berif #if
  */
-void Preprocessor::_if_(TokenSequence &is)
+void Preprocessor::If(TokenSequence &is)
 {
     _BEGIN_IF_();
 
@@ -552,7 +529,7 @@ void Preprocessor::_if_(TokenSequence &is)
 
     stk_if_else.push_back({ "if", invalid_ });
 }
-void Preprocessor::_ifndef_(TokenSequence &is)
+void Preprocessor::Ifndef(TokenSequence &is)
 {
     _BEGIN_IF_();
 
@@ -572,7 +549,7 @@ void Preprocessor::_ifndef_(TokenSequence &is)
 /**
  * @berif #ifdef
  */
-void Preprocessor::_ifdef_(TokenSequence &is)
+void Preprocessor::Ifdef(TokenSequence &is)
 {
     _BEGIN_IF_();
 
@@ -592,7 +569,7 @@ void Preprocessor::_ifdef_(TokenSequence &is)
 /**
  * @berif #elif
  */
-void Preprocessor::_elif_(TokenSequence &is)
+void Preprocessor::Elif(TokenSequence &is)
 {
     invalid_ = false;
 
@@ -616,7 +593,7 @@ void Preprocessor::_elif_(TokenSequence &is)
 /**
  * @berif #elif_groups
  */
-void Preprocessor::_else_(TokenSequence &is)
+void Preprocessor::Else(TokenSequence &is)
 {
     is.expect('#');
     if (is.next().toString() != "else")
@@ -631,7 +608,7 @@ void Preprocessor::_else_(TokenSequence &is)
 }
 
 
-void Preprocessor::_endif_(TokenSequence &is)
+void Preprocessor::Endif(TokenSequence &is)
 {
     is.expect('#');
     if (is.next().toString() != "endif")
@@ -648,11 +625,11 @@ void Preprocessor::_endif_(TokenSequence &is)
 }
 
 
-void Preprocessor::_line_(TokenSequence &is)
+void Preprocessor::Line(TokenSequence &is)
 {
 
 }
-void Preprocessor::_pragma_(TokenSequence &is)
+void Preprocessor::Pragma(TokenSequence &is)
 {
 
 }

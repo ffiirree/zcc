@@ -81,6 +81,42 @@
 					keyword(K_VOLATILE, "volatile", true)\
 					keyword(K_WHILE, "while", false)
 
+#define VM_INS vminsmap("mov",    mov)\
+                vminsmap("movl",  movl)\
+                vminsmap("movb",  movb)\
+                vminsmap("movw",  movw)\
+                vminsmap("subl",  subl)\
+                vminsmap("addl",  addl)\
+                vminsmap("imull", imull)\
+                vminsmap("idivl", idivl)\
+                vminsmap("call",  call)\
+                vminsmap("leave", leave)\
+                vminsmap("ret",   ret)\
+                vminsmap("pushl", pushl)\
+                vminsmap("popl",  popl)\
+                vminsmap("andl",  andl)\
+                vminsmap("xorl",  xorl)\
+                vminsmap("orl",   orl)\
+                vminsmap("sarl",  sarl)\
+                vminsmap("sall",  sall)\
+                vminsmap("shrl",  shrl)\
+                vminsmap("notl",  notl)\
+                vminsmap("leal",  leal)\
+                vminsmap("exit",  exitvm)\
+                vminsmap("cmpl",  cmpl)\
+                vminsmap("jg",    jg)\
+                vminsmap("jl",    jl)\
+                vminsmap("jge",   jge)\
+                vminsmap("jle",   jle)\
+                vminsmap("jmp",   jmp)\
+                vminsmap("je",    je)\
+                vminsmap("jne",   jne)\
+                vminsmap("ja",    ja)\
+                vminsmap("jb",    jb)\
+                vminsmap("jae",   jae)\
+                vminsmap("jbe",   jbe)
+
+
 enum TokenKind {
     T_KEYWORD = 180, T_IDENTIFIER, T_CHAR, T_STRING, T_FLOAT, T_INTEGER,
     T_NEWLINE, T_SPACE, T_OP, T_EOF,
@@ -134,7 +170,6 @@ public:
 	int line;
 	int cols;
 };
-inline bool operator==(const Pos &p1, const Pos &p2) { return p1.line == p2.line && p1.cols == p2.cols; }
 
 /**
  * 词法单元
@@ -143,7 +178,6 @@ class Token {
 public:
 	Token() :kind_(T_EOF), pos_(),  id_(0) { }
     Token(int id) :kind_(T_KEYWORD), id_(id) { }
-	Token(int kind, int id) :kind_(kind),  id_(id) { }
 	Token(int kind, const std::string &sval) : kind_(kind), sval_(sval) { }
 	Token(int kind, char ch) : kind_(kind), pos_(), ch_(ch) { }
 	~Token() { if (kind_ == T_IDENTIFIER || kind_ == T_STRING || kind_ == T_INTEGER || kind_ == T_FLOAT)sval_.~basic_string(); }
@@ -307,74 +341,69 @@ public:
 	int kind = NODE_NULL;
 	Type type;
 
-	// Char, int, or long
+	/**
+     * \ Char short int long
+     */
 	long int_val = 0;
 
-	// Float or double
+	/**
+     * \ float or double
+     */
 	double float_val = 0.0;
 
-	// String
+	/**
+     * \ string
+     */
 	std::string sval;
 
-	// Local/global variable
-	struct {
-		std::string varName;
+	/**
+     * \ Local/global variable
+     */
+    std::string varName;
+    int _off = 0;
+    std::vector<Node> lvarinit;
 
-		// local
-		int _off = 0;                 // 局部变量在栈中的偏移
-		std::vector<Node> lvarinit;
+	/**
+     * \ 
+     */
+	Node *left = nullptr;
+    Node *right = nullptr;
 
-		// global
-		std::string glabel;
-	};
-
-	// 二元运算符
-	Node *left = nullptr;             // 左节点
-	Node *right = nullptr;            // 右节点
-
-	// 一元运算符
+	/**
+     * \ unary op
+     */
 	Node *operand = nullptr;
 
-	// 函数定义和声明
-	std::string funcName;           // 函数名
-	std::vector<Node> params;       // 函数参数
-	Node *body = nullptr;           // 函数体
+	/**
+     * \function define and function declartion
+     */
+	std::string funcName;
+	std::vector<Node> params;
+	Node *body = nullptr;
 
 
-	// 声明
-	struct {
-		Node *decl_var = nullptr;
-		std::vector<Node> decl_init;
-	};
+	// declartion
+    Node *decl_var = nullptr;
+    std::vector<Node> decl_init;
 
 	// Initializer
-	struct {
-		Node *init_val = nullptr;
-		int init_off = 0;
-		Type to_type;
-	};
+    Node *init_val = nullptr;
+    int init_off = 0;
 
 	// If statement or ternary operator
-	struct {
-		Node *cond = nullptr;
-		Node *then = nullptr;
-		Node *els = nullptr;
-	};
+    Node *cond = nullptr;
+    Node *then = nullptr;
+    Node *els = nullptr;
 
 	// Goto and label
-	struct {
-		std::string label;
-		std::string newLabel;
-	};
+    std::string label;
+    std::string newLabel;
 
 	// return stmt
 	Node *retval = nullptr;
 
 	// Compound statement
 	std::vector<Node> stmts;
-
-    // struct
-
 private:
 	inline void copying(const Node &n);
 };
