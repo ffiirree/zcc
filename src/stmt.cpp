@@ -165,17 +165,17 @@ Node Parser::while_stmt()
 
 Node Parser::do_stmt()
 {
-	BoolLabel _do;
-	std::string _begin = newLabel("db");   // begin = newLabel
-	std::string _snext = newLabel("sn");
+	BoolLabel doLabel;
+	std::string begin = newLabel("db");   // begin = newLabel
+	std::string snext = newLabel("sn");
 
-	_stk_ctl_bg_l.push_back(_begin);
-	_stk_ctl_end_l.push_back(_snext);
+	_stk_ctl_bg_l.push_back(begin);
+	_stk_ctl_end_l.push_back(snext);
 
-	_do._true = _begin;
-	_do._false = _snext;
+    doLabel._true = begin;
+    doLabel._false = snext;
 
-	out << _begin << ":" << std::endl;
+	out << begin << ":" << std::endl;
 	Node *r = new Node(statement());
 	expect(K_WHILE);
 	expect('(');
@@ -185,11 +185,11 @@ Node Parser::do_stmt()
 	expect(')');
 	expect(';');
 
-	boolLabel.back()._true = _do._true;
-	boolLabel.back()._false = _do._false;
+	boolLabel.back()._true = doLabel._true;
+	boolLabel.back()._false = doLabel._false;
 	generateIfGoto();                      // B.code
 
-	out << _snext << ":" << std::endl;
+	out << snext << ":" << std::endl;
 
 	_stk_ctl_bg_l.pop_back();
 	_stk_ctl_end_l.pop_back();

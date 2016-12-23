@@ -18,12 +18,12 @@ public:
     inline size_t size() { return tokens.size(); }
     inline void pop_back() { tokens.pop_back(); }
 
-    Token next();
+    inline Token next() { if (index >= tokens.size()) return{ T_EOF, 0 }; return tokens.at(index++); }
     void back();
-    Token peek();
-    Token peek2();
-    bool test(int _id);
-    bool test2(int _id);
+    inline Token peek() { if (index >= tokens.size()) return{ T_EOF, 0 }; return tokens.at(index); }
+    inline Token peek2() { if (index + 1 >= tokens.size()) return{ T_EOF, 0 }; return tokens.at(index + 1); }
+    inline bool test(int _id) { return (peek().getType() == T_KEYWORD && peek().getId() == _id);  }
+    inline bool test2(int _id) { return (peek2().getType() == T_KEYWORD && peek2().getId() == _id); }
     bool next_is(const char e);
     bool expect(const char id);
     Pos getPos() { return tokens.at(index).getPos(); }

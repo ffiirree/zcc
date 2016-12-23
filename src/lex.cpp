@@ -286,39 +286,12 @@ int Lex::read_hex_char() {
 	}
 }
 
-Token TokenSequence::next()
-{
-    if (index == tokens.size())
-        return{ T_EOF, 0 };
-
-	return tokens.at(index++);
-}
-
 void TokenSequence::back()
 {
     if (index == 0)
         error("begin of token sequence.");
 	index--;
 }
-
-
-Token TokenSequence::peek()
-{
-	Token t = next();
-	back();
-	return t;
-}
-
-
-Token TokenSequence::peek2()
-{
-    next();
-    Token t = next();
-    back();
-    back();
-    return t;
-}
-
 
 bool TokenSequence::next_is(const char e)
 {
@@ -328,24 +301,6 @@ bool TokenSequence::next_is(const char e)
         return true;
     }
 
-    return false;
-}
-
-bool TokenSequence::test(int _id)
-{
-    Token tok = peek();
-
-    if (tok.getType() == T_KEYWORD && tok.getId() == _id)
-        return true;
-    return false;
-}
-
-bool TokenSequence::test2(int _id)
-{
-    Token tok = peek2();
-
-    if (tok.getType() == T_KEYWORD && tok.getId() == _id)
-        return true;
     return false;
 }
 
