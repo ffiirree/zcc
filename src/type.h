@@ -81,45 +81,43 @@
 					keyword(K_VOLATILE, "volatile", true)\
 					keyword(K_WHILE, "while", false)
 
+enum TokenKind {
+    T_KEYWORD = 180, T_IDENTIFIER, T_CHAR, T_STRING, T_FLOAT, T_INTEGER,
+    T_NEWLINE, T_SPACE, T_OP, T_EOF,
 
-
-enum {
-	KEYWORD = 128, K_EOF,
+    //keyword
 #define keyword(key, name, _) key,
-	KEYWORD_MAP
+    KEYWORD_MAP
 #undef keyword
+
+    // operator
+#define op(ty, _) ty,
+    OP_MAP
+#undef op
+    OP_SHR,                // 逻辑右移
+    OP_SHL,                // 逻辑左移，同算术左移
+    OP_A_SHR,
+    OP_A_SHL,
+    OP_PRE_INC,
+    OP_PRE_DEC,
+    OP_POST_INC,
+    OP_POST_DEC,
+    CONV,                 // 类型转换
+    CAST,
+
+    // preprocessor,
+    OP_BACKLASH,          // 反斜杠
+    OP_DS,                // '##'
 };
 
 
-enum {
-	ID = 180, CHAR_, STRING_, INTEGER, FLOAT, FUNC_BODY, COMPARISON, SECTION, UNIT_ROOT,
-	VAR, DECL, INIT, BIN_OP, UNARY_OP, STMT, TERN_OP, LABEL, COM_STMT, STRUCT_REF,
-	ARRAY,
-	PTR,
-	COMPOUND_STMT, 
-	DECL_BODY,
-	FUNC_DECL,
-	CONV, // 类型转换
-	OP_PRE_INC,
-	OP_PRE_DEC,
-	OP_POST_INC,
-	OP_POST_DEC,
-	CAST,
-	// Only in CPP
-	MIN_CPP_TOKEN,
-	TNEWLINE,
-    BACKLASH,
-	TSPACE,
-	TMACRO_PARAM,
-    DS, // '##'
 
-#define op(ty, _) ty,
-	OP_MAP
-#undef op
-	OP_SHR, // 逻辑右移
-	OP_SHL, // 逻辑左移，同算术左移
-	OP_A_SHR,
-	OP_A_SHL,
+enum {
+    FUNC_BODY = 265, BIN_OP, UNARY_OP, COM_STMT,
+    ARRAY,
+    PTR,
+    DECL_BODY,
+    FUNC_DECL,
 };
 
 
@@ -143,64 +141,47 @@ inline bool operator==(const Pos &p1, const Pos &p2) { return p1.line == p2.line
  */
 class Token {
 public:
-	Token() :type(K_EOF), pos(), counter(0), id(0) {}
-	Token(int _type, int _id) :type(_type), counter(0), id(_id) {  }
-	Token(int ty, const std::string &_sval) : type(ty), counter(0), sval(_sval) {  }
-	Token(int ty, char _c) : type(ty), pos(), counter(0), ch(_c) {  }
-	~Token() { if (type == ID || type == STRING_ || type == INTEGER || type == FLOAT)sval.~basic_string(); }
+	Token() :kind_(T_EOF), pos_(),  id_(0) { }
+    Token(int id) :kind_(T_KEYWORD), id_(id) { }
+	Token(int kind, int id) :kind_(kind),  id_(id) { }
+	Token(int kind, const std::string &sval) : kind_(kind), sval_(sval) { }
+	Token(int kind, char ch) : kind_(kind), pos_(), ch_(ch) { }
+	~Token() { if (kind_ == T_IDENTIFIER || kind_ == T_STRING || kind_ == T_INTEGER || kind_ == T_FLOAT)sval_.~basic_string(); }
 
-    Token(const Token &t) :type(t.type), pos(t.pos), counter(t.counter), _hs(t._hs), isfol(t.isfol)  { copyUnion(t); }
-    Token operator=(const Token &t) { type = t.type; pos = t.pos; counter = t.counter; _hs = t._hs;isfol = t.isfol; copyUnion(t); return (*this); }
+    Token(const Token &t) { copying(t); }
+    Token operator=(const Token &t) { copying(t); return (*this); }
 
-	inline int getType() const { return type; }
-	inline Pos getPos() const { return pos; }
-	inline void setPos(const Pos &_p) { pos = _p; }
-	inline int getCounter() const { return counter; }
-	inline void setCounter(int _c) { counter = _c; }
-	inline int getId() const { return id; }
-	inline std::string getSval() const { return sval; }
-	inline int getCh() const { return ch; }
+	inline int getType() const { return kind_; }
+	inline Pos getPos() const { return pos_; }
+	inline void setPos(const Pos &_p) { pos_ = _p; }
+	inline int getId() const { return id_; }
+	inline std::string getSval() const { return sval_; }
+	inline int getCh() const { return ch_; }
 
-    std::string to_string() const;
-    void setFOL() { isfol = true; }
-    bool isFOL() { return isfol; }
+    std::string toString() const;
+    void setBOL() { isbol_ = true; }
+    bool isBOL() { return isbol_; }
 
-    HideSet *_hs = nullptr;
-    bool needExpand()
+    bool needExpand();
+    
+    int kind_ = 0;
+    Pos pos_;
+    bool isbol_ = false;
+    HideSet *hs_ = nullptr;
+
+    union
     {
-        if (!_hs)
-            return true;
+        int id_;                  // which keyword or operator
+        std::string sval_;        // STRING value
+        int ch_;                  // CHAR_ value
+    };
 
-        // 是不是只有ID需要展开
-        if (type != ID)
-            return false;
-
-        if (_hs->count(sval))
-            return false;
-        else
-            return true;
-    }
 
 private:
 	void copyUnion(const Token &t);
-
-	int type;
-	Pos pos;
-	int counter;
-
-    
-    bool isfol = false;           // first of line
-	union
-	{
-		int id;                  // KEYWORD
-		std::string sval;        // STRING 
-		int ch;                  // CHAR_
-	};
-
+    void copying(const Token &t);
 };
 std::ostream &operator<<(std::ostream & os, const Token & t);
-bool operator==(const Token &t1, const Token &t2);
-bool operator!=(const Token &t1, const Token &t2);
 
 class Node;
 class Type;
@@ -227,23 +208,23 @@ public:
 	Type() {}
     Type(int ty) :type(ty) {}
 	Type(int ty, int _s, std::vector<int> _l) :type(ty), _all_len(_s), len(_l) {}
-	Type(int ty, int s, bool isunsig) :type(ty), size(s), isUnsig(isunsig), len(0), fields(), params(){ }
+	Type(int ty, int s, bool isunsig) :type(ty), size_(s), isUnsig(isunsig), len(0), fields(), params(){ }
 	Type(int ty, Type *ret, std::vector<Node> _params) : type(ty), retType(ret), params(_params) { }
 
     Type(const Type &t) { coping(t); }
     inline Type operator=(const Type &t) { coping(t); return *this; }
 
-	inline Type create(int ty, int s, bool isuns) { type = ty, size = s, isUnsig = isuns; return *this; }
+	inline Type create(int ty, int s, bool isuns) { type = ty, size_ = s, isUnsig = isuns; return *this; }
 
 	inline int getType() const { return type; }
 	inline bool isUnsigned() { return isUnsig; }
 	inline bool isStatic() { return isSta; }
 	inline void setStatic(bool is) { isSta = is; }
-	inline int getSize() const { return size; }
+	inline int getSize() const { return size_; }
 	inline void setUnsig(bool isunsig) { isUnsig = isunsig; }
 
 	int type = 0;
-	int size = 0;
+	int size_ = 0;
 
 	bool isUnsig = false;
 	bool isSta = false;

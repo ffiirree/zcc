@@ -11,9 +11,9 @@ std::vector<Node> Parser::trans_unit()
 {
 	std::vector<Node> list;
 	for (;;) {
-		Token t = lex.peek();
+		Token t = ts_.peek();
 
-		if (t.getType() == K_EOF) {
+		if (t.getType() == T_EOF) {
 			labels.cheak();
 			out.close();
 			return list;
@@ -85,13 +85,13 @@ bool Parser::isFuncDef()
 
 	// 返回类型
 	do {
-		t = lex.next();
+		t = ts_.next();
 		count++;
 	} while (is_type(t) || t.getId() == '*');
-	lex.back(); count--;
+    ts_.back(); count--;
 
 	for (;;) {
-		t = lex.next();
+		t = ts_.next();
 		count++;
 		if (is_keyword(t, '(')) {
 			skip_parenthesis(&count);
@@ -100,7 +100,7 @@ bool Parser::isFuncDef()
 				goto _end;
 			}
 		}
-		else if (t.getType() == ID) {
+		else if (t.getType() == T_IDENTIFIER) {
 			if (next_is('(')) {
 				count++;
 				skip_parenthesis(&count);
@@ -112,14 +112,14 @@ bool Parser::isFuncDef()
 		}
 		else {
 			for (int i = 0; i < count; ++i)
-				lex.back();
+                ts_.back();
 			return false;
 		}
 	}
 
 _end:
 	for (int i = 0; i < count; ++i)
-		lex.back();
+        ts_.back();
 	return true;
 }
 
@@ -136,7 +136,7 @@ Node Parser::funcDef()
 	Type *retty = new Type(decl_spec_opt(&current_class));                  // 获取函数的返回类型
 	Type functype = declarator(retty, funcName, params, FUNC_BODY);         // 函数定义类型，函数描述
 	if (functype.type == PTR) {
-		errorp(lex.getPos(), "Ptr not can be function.");
+		errorp(ts_.getPos(), "Ptr not can be function.");
 	}
 
 #if defined(_OVERLOAD_)
@@ -163,8 +163,8 @@ Type Parser::func_param_list(Type *retty, std::vector<Node> &params, int deal_ty
 		return Type(NODE_FUNC, retty, params);
 	}
 	// foo(void)
-	else if (is_keyword(lex.peek(), K_VOID)) {
-		lex.next();
+	else if (is_keyword(ts_.peek(), K_VOID)) {
+        ts_.next();
 		expect(')');
 		return Type(NODE_FUNC, retty, params);
 	} 
@@ -254,7 +254,7 @@ Type Parser::get_type(std::string key)
 }
 int Parser::get_compound_assign_op(Token &t)
 {
-	if (t.getType() != KEYWORD)
+	if (t.getType() != T_KEYWORD)
 		return 0;
 	switch (t.getId()) {
 	case OP_A_ADD: return '+';
@@ -273,7 +273,7 @@ int Parser::get_compound_assign_op(Token &t)
 
 std::string Parser::get_compound_assign_op_signal(Token &t)
 {
-	if (t.getType() != KEYWORD)
+	if (t.getType() != T_KEYWORD)
 		return 0;
 	switch (t.getId()) {
 	case OP_A_ADD: return "+";
@@ -292,9 +292,9 @@ std::string Parser::get_compound_assign_op_signal(Token &t)
 
 bool Parser::next_is(int id)
 {
-	if (lex.next().getId() == id) 
+	if (ts_.next().getId() == id)
 		return true;
-	lex.back();
+    ts_.back();
 	return false;
 }
 
@@ -411,7 +411,7 @@ Node Parser::createGLoVarNode(Type &ty, std::string name)
 	r.varName = name;
 
     if(cheak_redefined(globalenv, name))
-        errorp(lex.getPos(), "redefined global variable : %s", name.c_str());
+        errorp(ts_.getPos(), "redefined global variable : %s", name.c_str());
 
 	globalenv->push_back(r);
 
@@ -423,7 +423,7 @@ Node Parser::createLocVarNode(Type &ty, std::string name)
 	r.varName = name;
 
     if (cheak_redefined(localenv, name))
-        errorp(lex.getPos(), "redefined local variable : %s", name.c_str());
+        errorp(ts_.getPos(), "redefined local variable : %s", name.c_str());
 
 	localenv->push_back(r);
 	return r;
@@ -478,10 +478,10 @@ Node Parser::createIfStmtNode(Node *cond, Node *then, Node *els)
 
 bool Parser::is_type(const Token &t)
 {
-    if (t.getType() == ID)
+    if (t.getType() == T_IDENTIFIER)
         return getCustomType(t.getSval()).type != 0;
 
-	if (t.getType() != KEYWORD)
+	if (t.getType() != T_KEYWORD)
 		return false;
 
 	switch (t.getId())
@@ -498,18 +498,18 @@ bool Parser::is_type(const Token &t)
 */
 bool Parser::is_keyword(Token &t, int id)
 {
-	return (t.getType() == KEYWORD && t.getId() == id);
+	return (t.getType() == T_KEYWORD && t.getId() == id);
 }
 
 void Parser::skip_parenthesis(int *count)
 {
 	for (;;)
 	{
-		Token t = lex.next();
+		Token t = ts_.next();
 		(*count)++;
 
-		if (t.getType() == K_EOF)
-			errorp(lex.getPos(), "error eof");
+		if (t.getType() == T_EOF)
+			errorp(ts_.getPos(), "error eof");
 
 		if (is_keyword(t, '('))
 			skip_parenthesis(count);
@@ -520,9 +520,9 @@ void Parser::skip_parenthesis(int *count)
 }
 void Parser::expect(int id)
 {
-	Token t = lex.next();
+	Token t = ts_.next();
 	if (t.getId() != id)
-		errorp(lex.getPos(), "expect '%c', but not is '%c'", id, t.getId());
+		errorp(ts_.getPos(), "expect '%c', but not is '%c'", id, t.getId());
 }
 
 bool Parser::is_inttype(Type &ty)
@@ -930,11 +930,11 @@ void Parser::createFuncQuad(std::vector<Node> &params)
 		}
 	}
 	if ((fn.kind != NODE_FUNC && fn.kind != NODE_FUNC_DECL) || (fn.params.size() != params.size()))
-		errorp(lex.getPos(), "func call parms size error.");
+		errorp(ts_.getPos(), "func call parms size error.");
 
 _skip_cheak_params_num:
 	for (size_t i = 0; i < fn.params.size(); ++i) {
-		localenv->_call_size += fn.params.at(i).type.size;
+		localenv->_call_size += fn.params.at(i).type.size_;
 	}
 
     out << "call" << "\t" << fn.funcName << "\t" << fn.params.size();

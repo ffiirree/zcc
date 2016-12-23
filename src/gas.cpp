@@ -30,11 +30,11 @@ int Generate::gas_flo_load(const std::string &name, bool isChange)
     else  if (isLocVar(name)) {
         Node var = searchLocvar(name);
         if (var.kind == NODE_GLO_VAR) {
-            gas_tab(gas_fld(var.type.size, var.type.type) + "\t" + "_" + var.varName);
+            gas_tab(gas_fld(var.type.size_, var.type.type) + "\t" + "_" + var.varName);
             return var.type.type;
         }
         else if (var.kind == NODE_LOC_VAR) {
-            gas_tab(gas_fld(var.type.size, var.type.type) + "\t" + loc_var_val(var._off));
+            gas_tab(gas_fld(var.type.size_, var.type.type) + "\t" + loc_var_val(var._off));
             return var.type.type;
         }
     }
@@ -53,12 +53,12 @@ Type Generate::gas_fstp(const std::string &name)
     
     if (isLocVar(name)) {
         var = searchLocvar(name);
-        _size = var.type.size;
+        _size = var.type.size_;
         _des = loc_var_val(var._off);
     }
     else {
         var = gloEnv->search(name);
-        _size = var.type.size;
+        _size = var.type.size_;
         _des = "_" + var.varName;
     }
 
@@ -169,7 +169,7 @@ void Generate::gas_def_arr(Node &n, bool is_fir)
     for (; i < n.lvarinit.size(); ++i) {
         out << getTypeString(n.type) << n.lvarinit.at(i).int_val << std::endl;
     }
-    out << "\t.space\t" << (n.type._all_len - i) * n.type.size << std::endl;
+    out << "\t.space\t" << (n.type._all_len - i) * n.type.size_ << std::endl;
 }
 
 /**
@@ -184,10 +184,10 @@ void Generate::gas_custom(Node &n, bool is_fir)
     int _initsize = 0;
     for (size_t i = 0; i < n.lvarinit.size(); ++i) {
         out << getTypeString(*n.type.fields.at(i)._type) << n.lvarinit.at(i).int_val << std::endl;
-        _initsize += n.type.fields.at(i)._type->size;
+        _initsize += n.type.fields.at(i)._type->size_;
     }
-    if(_initsize < n.type.size)
-        out << "\t.space\t" << n.type.size - _initsize << std::endl;
+    if(_initsize < n.type.size_)
+        out << "\t.space\t" << n.type.size_ - _initsize << std::endl;
 }
 
 /**
@@ -218,17 +218,17 @@ Type Generate::gas_load(const std::string &_q, const std::string &_reg)
 			gas_flo_load(_q, false);
 			// 没有使用通用，释放掉
 			clearRegTemp(_q);
-			return Type(var.type.type, var.type.size, var.type.isUnsig);
+			return Type(var.type.type, var.type.size_, var.type.isUnsig);
 		}
         else if (var.kind == NODE_GLO_VAR) {
-            gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, _reg);
+            gas_ins(movXXl(var.type.size_, var.type.isUnsig), "_" + var.varName, _reg);
             setReg(_reg, _q);
-            return Type(var.type.type, var.type.size, var.type.isUnsig);
+            return Type(var.type.type, var.type.size_, var.type.isUnsig);
         }
         else if (var.kind == NODE_LOC_VAR) {
-            gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), _reg);
+            gas_ins(movXXl(var.type.size_, var.type.isUnsig), loc_var_val(var._off), _reg);
             setReg(_reg, _q);
-            return Type(var.type.type, var.type.size, var.type.isUnsig);
+            return Type(var.type.type, var.type.size_, var.type.isUnsig);
         }
     }
 
@@ -420,8 +420,7 @@ void Generate::gas_ins(const std::string &_i, const std::string &_src, const std
 {
     std::string ins = _i + "\t" + _src + ", " + _des;
     gas_tab(ins);
-    vm_->use_ ? vm_->push_back({ vm_->getInsByOp(_i), _src, _des , ins }) : false;
-
+    vm_->push_back({ vm_->getInsByOp(_i), _src, _des , ins });
 }
 
 
@@ -429,18 +428,18 @@ void Generate::gas_ins(const std::string &_i, const std::string &_des)
 {
     std::string ins = _i + "\t" + _des;
     gas_tab(ins);
-    vm_->use_ ? vm_->push_back({ vm_->getInsByOp(_i), _des, ins }) : false;
+    vm_->push_back({ vm_->getInsByOp(_i), _des, ins });
 }
 
 void Generate::gas_call(const std::string &_des)
 {
     std::string ins = "call\t_" + _des;
     gas_tab(ins);
-    vm_->use_ ? vm_->push_back({ vm_->getInsByOp("call"), "_" + _des , ins }) : false;
+    vm_->push_back({ vm_->getInsByOp("call"), "_" + _des , ins });
 }
 
 void Generate::gas_jxx_label(const std::string &_l)
 {
     gas(_l + ":");
-    vm_->use_ ? vm_->setFuncAddr(_l) : false;
+    vm_->setFuncAddr(_l);
 }

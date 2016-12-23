@@ -11,15 +11,15 @@ void Preprocessor::init()
     _paths.push_back("C:/zcc/include/");
 
     // 包含默认宏定义
-    macros.push_back({ "__ZCC__", Token(INTEGER, "1"), M_PRE});
-    macros.push_back({ "__ZCC_VERSION__", Token(STRING_, "Version 0.02"), M_PRE });
+    macros.push_back({ "__ZCC__", Token(T_INTEGER, "1"), M_PRE});
+    macros.push_back({ "__ZCC_VERSION__", Token(T_STRING, "Version 0.02"), M_PRE });
     macros.push_back({ "__FILE__", M_PRE });
     macros.push_back({ "__LINE__", M_PRE });
     macros.push_back({ "__FUNC__", M_PRE });
     macros.push_back({ "__DATE__", M_PRE });
-    macros.push_back({ "__STDC__", Token(INTEGER, "0"), M_PRE });
+    macros.push_back({ "__STDC__", Token(T_INTEGER, "0"), M_PRE });
     macros.push_back({ "__TIME__" , M_PRE });
-    macros.push_back({ "__cplusplus", Token(INTEGER, "0"), M_PRE });
+    macros.push_back({ "__cplusplus", Token(T_INTEGER, "0"), M_PRE });
 }
 
 void Preprocessor::expand(TokenSequence is, TokenSequence &os)
@@ -31,7 +31,7 @@ void Preprocessor::expand(TokenSequence is, TokenSequence &os)
         std::string _name;
         Token tok = is.peek();
 
-        if (tok.getType() == KEYWORD && tok.getId() == '#') {
+        if (tok.getType() == T_KEYWORD && tok.getId() == '#') {
             if (isExpandExpr)
                 return;
             group_part(is, os);
@@ -43,21 +43,21 @@ void Preprocessor::expand(TokenSequence is, TokenSequence &os)
             if (isOnlyPP) {
                 os.push_back(tok);
             }
-            else if (tok.getType() != TNEWLINE) {
+            else if (tok.getType() != T_NEWLINE) {
                 os.push_back(tok);
             }
             is.next();
         }
-        else if(tok.getType() == ID && ((macro = searchMacro(tok.getSval())))){
+        else if(tok.getType() == T_IDENTIFIER && ((macro = searchMacro(tok.getSval())))){
 
             if (macro->_name == "__LINE__") {
-                Token r(INTEGER, std::to_string(tok.getPos().line));
+                Token r(T_INTEGER, std::to_string(tok.getPos().line));
                 macro->_replist.push_back(r);
                 os.push_back(r);
                 is.next();
             }
             else if (macro->_name == "__FILE__") {
-                Token r(STRING_, is.getCurrentFile().getFileName());
+                Token r(T_STRING, is.getFileName());
                 macro->_replist.push_back(r);
                 os.push_back(r);
                 is.next();
@@ -66,7 +66,7 @@ void Preprocessor::expand(TokenSequence is, TokenSequence &os)
                 is.next();
             }
             else if (macro->_name == "__DATE__") {
-                Token r(STRING_, Date::getDate());
+                Token r(T_STRING, Date::getDate());
                 macro->_replist.push_back(r);
                 os.push_back(r);
                 is.next();
@@ -77,7 +77,7 @@ void Preprocessor::expand(TokenSequence is, TokenSequence &os)
             else if(macro->_type == M_OBJLIKE){
                 tok = is.next();
                 TokenSequence repTs = ts(macro->_name);
-                HideSet *hs = tok._hs ? tok._hs : new HideSet();
+                HideSet *hs = tok.hs_ ? tok.hs_ : new HideSet();
                 hs->insert(macro->_name);
                 TokenSequence substOs;
 
@@ -88,7 +88,7 @@ void Preprocessor::expand(TokenSequence is, TokenSequence &os)
                 tok = is.next();
 
                 TokenSequence repTs = ts(macro->_name);
-                HideSet *hs = tok._hs ? tok._hs : new HideSet();
+                HideSet *hs = tok.hs_ ? tok.hs_ : new HideSet();
                 hs->insert(macro->_name);
                 TokenSequence ap = getAP(is);
                 TokenSequence substOs;
@@ -100,7 +100,7 @@ void Preprocessor::expand(TokenSequence is, TokenSequence &os)
             if (isOnlyPP) {
                 os.push_back(tok);
             }
-            else if (tok.getType() != TNEWLINE) {
+            else if (tok.getType() != T_NEWLINE) {
                 os.push_back(tok);
             }  
             is.next();
@@ -110,18 +110,18 @@ void Preprocessor::expand(TokenSequence is, TokenSequence &os)
 
 
 
-void Preprocessor::group_part(Lex &is, Lex &os)
+void Preprocessor::group_part(TokenSequence &is, TokenSequence &os)
 {
 	Token t = is.peek2();
 
-	if (t.getType() == TNEWLINE)
+	if (t.getType() == T_NEWLINE)
 		return;
 
-	if (t.getType() == INTEGER || t.getType() == FLOAT) {
+	if (t.getType() == T_INTEGER || t.getType() == T_FLOAT) {
 		return;
 	}
 		
-	if (t.getType() == ID) {
+	if (t.getType() == T_IDENTIFIER) {
         if (t.getSval() == "if") {
             _if_(is);
         }
@@ -181,7 +181,7 @@ void Preprocessor::subst(TokenSequence &is, std::vector<std::string> fp, TokenSe
         subst(is, fp, ap, hs, os);
         return;
     }
-    else if (is.test(DS) && (iOfFP = isInFP(is.peek2(), fp)) != -1) {
+    else if (is.test(OP_DS) && (iOfFP = isInFP(is.peek2(), fp)) != -1) {
         is.next();
         is.next();
 
@@ -194,7 +194,7 @@ void Preprocessor::subst(TokenSequence &is, std::vector<std::string> fp, TokenSe
             
         return;
     }
-    else if (is.test(DS)) {
+    else if (is.test(OP_DS)) {
         is.next(); // ##
         TokenSequence t;
         t.push_back(is.next()); //T
@@ -202,7 +202,7 @@ void Preprocessor::subst(TokenSequence &is, std::vector<std::string> fp, TokenSe
         subst(is, fp, ap, hs, os);
         return;
     }
-    else if ((iOfFP = isInFP(is.peek(), fp)) != -1 && is.test2(DS)) {
+    else if ((iOfFP = isInFP(is.peek(), fp)) != -1 && is.test2(OP_DS)) {
         is.next();
         is.next();
         if (select(iOfFP, ap).empty()) {
@@ -247,7 +247,7 @@ void Preprocessor::subst(TokenSequence &is, std::vector<std::string> fp, TokenSe
 int Preprocessor::isInFP(Token &t, std::vector<std::string> fp)
 {
     for (size_t i = 0; i < fp.size(); ++i) {
-        if (t.getType() == ID && t.getSval() == fp.at(i))
+        if (t.getType() == T_IDENTIFIER && t.getSval() == fp.at(i))
             return i;
     }
     return -1;
@@ -262,11 +262,11 @@ void Preprocessor::glue(TokenSequence &ls, TokenSequence &rs)
         Token lt = ls.next();
         Token rt = rs.next();
 
-        Token gt = Token(ID, lt.to_string() + rt.to_string());
-        gt._hs = new HideSet();
+        Token gt = Token(T_IDENTIFIER, lt.toString() + rt.toString());
+        gt.hs_ = new HideSet();
 
-        if(lt._hs != nullptr && rt._hs != nullptr)
-            std::set_intersection(lt._hs->begin(), lt._hs->end(), rt._hs->begin(), rt._hs->end(), std::inserter(*gt._hs, gt._hs->begin()));
+        if(lt.hs_ != nullptr && rt.hs_ != nullptr)
+            std::set_intersection(lt.hs_->begin(), lt.hs_->end(), rt.hs_->begin(), rt.hs_->end(), std::inserter(*gt.hs_, gt.hs_->begin()));
 
         ls.pop_back();
         ls.push_back(gt);
@@ -296,8 +296,8 @@ void Preprocessor::hasadd(HideSet *hs, TokenSequence &ts)
 
     // 如果
     Token &tok = ts.next();
-    tok._hs ? !nullptr : (tok._hs = new HideSet());
-    tok._hs->insert(hs->begin(), hs->end());
+    if(tok.hs_ == nullptr) tok.hs_ = new HideSet();
+    tok.hs_->insert(hs->begin(), hs->end());
 
     hasadd(hs, ts);
 }
@@ -336,9 +336,9 @@ TokenSequence Preprocessor::select(int _i, TokenSequence &ts)
     size_t counter = 0;
     TokenSequence rts;
     for (size_t i = 0; i < ts.size(); ++i) {
-        if (ts.at(i).getType() == KEYWORD && ts.at(i).getId() == ',')
+        if (ts.at(i).getType() == T_KEYWORD && ts.at(i).getId() == ',')
             counter++;
-        if (counter == _i && ts.at(i).to_string() != ",")
+        if (counter == _i && ts.at(i).toString() != ",")
             rts.push_back(ts.at(i));
     }
     return rts;
@@ -354,9 +354,9 @@ TokenSequence Preprocessor::stringize(TokenSequence &ts)
     TokenSequence rts;
     std::string str;
     for (size_t i = 0; i < ts.size(); ++i) {
-        str += ts.at(i).to_string();
+        str += ts.at(i).toString();
     }
-    rts.push_back(Token(STRING_, str));
+    rts.push_back(Token(T_STRING, str));
     return rts;
 }
 
@@ -437,15 +437,15 @@ void Preprocessor::Include(TokenSequence &is, TokenSequence &os)
 
     if (!isQuot) {
         while (!is.test('>')) {
-            _fn += is.next().to_string();
+            _fn += is.next().toString();
         }
         is.expect('>');
     }
     else {
-        _fn = is.next().to_string();
+        _fn = is.next().toString();
         is.expect('\"');
     }
-    if (is.next().getType() != TNEWLINE)
+    if (is.next().getType() != T_NEWLINE)
         error("need new_line.");
 
     // 打开文件并插入
@@ -453,9 +453,9 @@ void Preprocessor::Include(TokenSequence &is, TokenSequence &os)
         std::string _file = path + _fn;
         std::ifstream in(_file, std::ios::_Nocreate);
         if (in.is_open()) {
-            Lex lex(_file);
-            lex.pop_back();        // 删除EOF
-            is.insert(lex);
+            TokenSequence ts;
+            Lex lex(_file, ts);
+            is.insert(ts);
             return;
         }
     }
@@ -466,13 +466,13 @@ void Preprocessor::Include(TokenSequence &is, TokenSequence &os)
 /**
  * @berif #define 
  */
-void Preprocessor::_define_(Lex &is)
+void Preprocessor::_define_(TokenSequence &is)
 {
     is.next();
     is.next();
     Macro _macro;
     Token t = is.next();
-    if (t.getType() == ID) {
+    if (t.getType() == T_IDENTIFIER) {
         _macro._name = t.getSval();
     }
 
@@ -489,21 +489,21 @@ void Preprocessor::_define_(Lex &is)
         }
 
         t = is.next();
-        if (t.getType() != TNEWLINE) {
+        if (t.getType() != T_NEWLINE) {
             do {
                 _macro._replist.push_back(t);
                 t = is.next();
-            } while (t.getType() != TNEWLINE);
+            } while (t.getType() != T_NEWLINE);
         }
     }
     else {
         _macro._type = M_OBJLIKE;
         t = is.next();
-        if (t.getType() != TNEWLINE) {
+        if (t.getType() != T_NEWLINE) {
             do {
                 _macro._replist.push_back(t);
                 t = is.next();
-            } while (t.getType() != TNEWLINE);
+            } while (t.getType() != T_NEWLINE);
         }
     }
     if(!invalid_)
@@ -513,56 +513,56 @@ void Preprocessor::_define_(Lex &is)
 /**
  * @berif #undef
  */
-void Preprocessor::_undef_(Lex &is)
+void Preprocessor::_undef_(TokenSequence &is)
 {
     is.expect('#');
-    if (is.next().to_string() != "undef")
+    if (is.next().toString() != "undef")
         error("not undef macro.");
 
-    if (is.peek().getType() != ID)
+    if (is.peek().getType() != T_IDENTIFIER)
         error("undef need a iden.");
 
     deleteMacro(is.next().getSval());
     
-    if (is.next().getType() != TNEWLINE)
+    if (is.next().getType() != T_NEWLINE)
         error("undef end with a new_line.");
 }
 
 /**
  * @berif #if
  */
-void Preprocessor::_if_(Lex &is)
+void Preprocessor::_if_(TokenSequence &is)
 {
     _BEGIN_IF_();
 
     is.expect('#');
-    if (is.next().to_string() != "if")
+    if (is.next().toString() != "if")
         error("not if macro.");
 
     TokenSequence is_ = is, ts;
     isExpandExpr = true;
     expand(is_, ts);
-    ts.push_back(Token(KEYWORD, ';'));
+    ts.push_back(Token(T_KEYWORD, ';'));
     isExpandExpr = false;
 
     Parser parser(ts);
     invalid_ = (!parser.compute_bool_expr()) || preInvalid_;
 
-    while (is.next().getType() != TNEWLINE);
+    while (is.next().getType() != T_NEWLINE);
 
     stk_if_else.push_back({ "if", invalid_ });
 }
-void Preprocessor::_ifndef_(Lex &is)
+void Preprocessor::_ifndef_(TokenSequence &is)
 {
     _BEGIN_IF_();
 
     is.next();
     is.next();
     Token tok = is.next();
-    if (tok.getType() != ID)
+    if (tok.getType() != T_IDENTIFIER)
         errorp(tok.getPos(), "ifdef need a iden....");
 
-    if (is.next().getType() != TNEWLINE)
+    if (is.next().getType() != T_NEWLINE)
         errorp(tok.getPos(), "should new line.");
 
     invalid_ = searchMacro(tok.getSval()) || preInvalid_;
@@ -572,17 +572,17 @@ void Preprocessor::_ifndef_(Lex &is)
 /**
  * @berif #ifdef
  */
-void Preprocessor::_ifdef_(Lex &is)
+void Preprocessor::_ifdef_(TokenSequence &is)
 {
     _BEGIN_IF_();
 
     is.next(); // #
     is.next(); // ifdef
     Token tok = is.next();
-    if (tok.getType() != ID)
+    if (tok.getType() != T_IDENTIFIER)
         errorp(tok.getPos(), "ifdef need a iden....");
 
-    if (is.next().getType() != TNEWLINE)
+    if (is.next().getType() != T_NEWLINE)
         errorp(tok.getPos(), "should new line.");
 
     invalid_ = !searchMacro(tok.getSval()) || preInvalid_;
@@ -592,37 +592,37 @@ void Preprocessor::_ifdef_(Lex &is)
 /**
  * @berif #elif
  */
-void Preprocessor::_elif_(Lex &is)
+void Preprocessor::_elif_(TokenSequence &is)
 {
     invalid_ = false;
 
     is.expect('#');
-    if (is.next().to_string() != "elif")
+    if (is.next().toString() != "elif")
         error("not if macro.");
 
     TokenSequence is_ = is, ts;
     isExpandExpr = true;
     expand(is_, ts);
-    ts.push_back(Token(KEYWORD, ';'));
+    ts.push_back(Token(T_KEYWORD, ';'));
     isExpandExpr = false;
 
     Parser parser(ts);
     invalid_ = !parser.compute_bool_expr() || preInvalid_ || cheak_else();
 
-    while (is.next().getType() != TNEWLINE);
+    while (is.next().getType() != T_NEWLINE);
 
     stk_if_else.push_back({ "elif", invalid_ });
 }
 /**
  * @berif #elif_groups
  */
-void Preprocessor::_else_(Lex &is)
+void Preprocessor::_else_(TokenSequence &is)
 {
     is.expect('#');
-    if (is.next().to_string() != "else")
+    if (is.next().toString() != "else")
         error("not else .");
 
-    if (is.next().getType() != TNEWLINE)
+    if (is.next().getType() != T_NEWLINE)
         error("else need a new line.");
 
     invalid_ = cheak_else() || preInvalid_;
@@ -631,12 +631,12 @@ void Preprocessor::_else_(Lex &is)
 }
 
 
-void Preprocessor::_endif_(Lex &is)
+void Preprocessor::_endif_(TokenSequence &is)
 {
     is.expect('#');
-    if (is.next().to_string() != "endif")
+    if (is.next().toString() != "endif")
         error("not if macro.");
-    if (is.next().getType() != TNEWLINE)
+    if (is.next().getType() != T_NEWLINE)
         error("endif should be end with new_line.");
 
 
@@ -648,11 +648,11 @@ void Preprocessor::_endif_(Lex &is)
 }
 
 
-void Preprocessor::_line_(Lex &is)
+void Preprocessor::_line_(TokenSequence &is)
 {
 
 }
-void Preprocessor::_pragma_(Lex &is)
+void Preprocessor::_pragma_(TokenSequence &is)
 {
 
 }

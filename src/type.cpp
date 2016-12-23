@@ -4,37 +4,53 @@
 /**
  * Token
  */
-bool operator==(const Token &t1, const Token &t2)
+
+void Token::copying(const Token &t)
 {
-	return (t1.getType() == t2.getType() && t1.getPos() == t2.getPos() && t1.getCounter() == t2.getCounter() &&
-		t1.getCh() == t2.getCh() && t1.getId() == t2.getId() && t1.getSval() == t2.getSval());
+    hs_ = t.hs_;
+    kind_ = t.kind_;
+    pos_ = t.pos_;
+    isbol_ = t.isbol_;
+
+    copyUnion(t);
 }
-bool operator!=(const Token &t1, const Token &t2)
-{
-	return !(t1 == t2);
-}
+
 
 void Token::copyUnion(const Token &t)
 {
 	switch (t.getType()) {
-	case KEYWORD:
-	case K_EOF:
-		id = t.id;
+	case T_KEYWORD:
+	case T_EOF:
+		id_ = t.id_;
 		break;
 
-	case CHAR_:
-		ch = t.ch;
+	case T_CHAR:
+		ch_ = t.ch_;
 		break;
 
-	case ID:
-	case STRING_:
-	case INTEGER:
-	case FLOAT:
-		new(&sval) std::string(t.sval);
+	case T_IDENTIFIER:
+	case T_STRING:
+	case T_INTEGER:
+	case T_FLOAT:
+		new(&sval_) std::string(t.sval_);
 		break;
 	}
 }
 
+bool Token::needExpand()
+{
+    if (!hs_)
+        return true;
+
+    // 是不是只有ID需要展开
+    if (kind_ != T_IDENTIFIER)
+        return false;
+
+    if (hs_->count(sval_))
+        return false;
+    else
+        return true;
+}
 
 
 
@@ -44,7 +60,7 @@ void Token::copyUnion(const Token &t)
 void Type::coping(const Type &t)
 {
     type = t.type;
-    size = t.size;
+    size_ = t.size_;
     isUnsig = t.isUnsig;
     isSta = t.isSta;
     ptr = t.ptr;
@@ -126,7 +142,7 @@ std::string getOnlyFileName(const std::string &_fn)
     if (_index_dot <= _index_separator && _fn.length() > 0) _index_dot = _fn.length() - 1;
 
     std::string _rfn;
-    for (size_t i = _index_separator; i < _index_dot; ++i)
+    for (size_t i = 0; i < _index_dot; ++i)
         _rfn.push_back(_fn.at(i));
 
     return _rfn;
@@ -134,39 +150,39 @@ std::string getOnlyFileName(const std::string &_fn)
 
 std::ostream &operator<<(std::ostream & os, const Token & t)
 {
-    os << t.to_string();
+    os << t.toString();
     return os;
 }
 
-std::string Token::to_string() const
+std::string Token::toString() const
 {
     std::string _r;
 
-    switch (type) {
-    case KEYWORD:
-        switch (id) {
+    switch (kind_) {
+    case T_KEYWORD:
+        switch (id_) {
 #define keyword(_t, _n, _)  case _t: _r = _n; break;
 #define op(_t, _n)          case _t: _r = _n; break;
             KEYWORD_MAP
                 OP_MAP
 #undef keyword
 #undef op
-        default: _r.push_back(static_cast<char>(id)); break;
+        default: _r.push_back(static_cast<char>(id_)); break;
         }
         break;
 
-    case ID:
-    case INTEGER:
+    case T_IDENTIFIER:
+    case T_INTEGER:
     
-    case FLOAT:  _r = sval; break;
-    case STRING_: _r = "\"" + sval + "\""; break;
+    case T_FLOAT:  _r = sval_; break;
+    case T_STRING: _r = "\"" + sval_ + "\""; break;
 
 
-    case CHAR_:  _r.push_back(static_cast<char>(ch)); break;
-    case K_EOF:  break;
-    case TNEWLINE: _r = "\n"; break;
+    case T_CHAR:  _r.push_back(static_cast<char>(ch_)); break;
+    case T_EOF:  break;
+    case T_NEWLINE: _r = "\n"; break;
     default:
-        errorp(pos, "error token");
+        errorp(pos_, "error token");
         break;
     }
     return _r;

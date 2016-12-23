@@ -6,6 +6,7 @@
 #include "parser.h"
 
 enum Instruction {
+    INS_NULL,
     movl, movb, movw,
     subl, addl,
     imull, idivl, call,
@@ -29,6 +30,12 @@ enum Instruction {
     jmp,
     je,
     jne,
+
+    // 
+    ja,
+    jb,
+    jae,
+    jbe
 };
 
 class AsmIns {
@@ -78,7 +85,7 @@ public:
 
     bool isImmediate(const std::string &name);
     int getImmediate(const std::string &name);
-    void push_back(const AsmIns &ai) { text_.push_back(ai); }
+    void push_back(const AsmIns &ai) { if(use_) text_.push_back(ai); }
     void push_data(const std::string name, int val, int size);
     Instruction getInsByOp(const std::string &name);
     void *getOperandAddr(const std::string &name);

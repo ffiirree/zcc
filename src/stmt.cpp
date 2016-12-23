@@ -7,8 +7,8 @@
  */
 Node Parser::statement()
 {
-	Token t = lex.next();
-	if (t.getType() == KEYWORD) {
+	Token t = ts_.next();
+	if (t.getType() == T_KEYWORD) {
 		switch (t.getId())
 		{
 		case '{': return compound_stmt();
@@ -27,13 +27,13 @@ Node Parser::statement()
 	}
 
 	// 标签，goto语句的标签
-	if (t.getType() == ID && next_is(':')) {
+	if (t.getType() == T_IDENTIFIER && next_is(':')) {
 		// label
 		labels.push_back(t.getSval());
 		out << t.getSval() << ":" << std::endl;
 		return Node();      ////////////////////////////修改
 	}
-	lex.back();
+    ts_.back();
 
 	Node r = expr_opt();
 	expect(';');
@@ -66,10 +66,10 @@ Node Parser::compound_stmt()
  */
 void Parser::decl_or_stmt(std::vector<Node> &list)
 {
-	if (lex.peek().getId() == K_EOF)
+	if (ts_.peek().getId() == T_EOF)
 		error("premature end of input");
 
-	if (is_type(lex.peek())) {
+	if (is_type(ts_.peek())) {
 		declaration(list, false);
 	}
 	else {
@@ -210,7 +210,7 @@ Node Parser::switch_stmt()
 		error("Switch only integer!");
 
 	if (r.kind == NODE_INT || r.kind == NODE_CHAR || r.kind == NODE_SHORT || r.kind == NODE_LONG)
-		switch_expr = r.int_val;
+		switch_expr = std::to_string(r.int_val);
 	else if (r.kind == NODE_LOC_VAR || NODE_GLO_VAR)
 		switch_expr = r.varName;
 	else 
@@ -245,11 +245,11 @@ Node Parser::for_stmt()
 
 	expect('(');
     __IN_SCOPE__(localenv, localenv, newLabel("for"));
-	if (is_type(lex.peek())) {
+	if (is_type(ts_.peek())) {
 		std::vector<Node> list;
 		declaration(list,false);
 	}
-	else if (is_keyword(lex.peek(), ';')) {
+	else if (is_keyword(ts_.peek(), ';')) {
 		expect(';');
 	}
 	else {
@@ -259,7 +259,7 @@ Node Parser::for_stmt()
 
 	out << _begin << ":" << std::endl;
 
-	if (is_keyword(lex.peek(), ';')) {
+	if (is_keyword(ts_.peek(), ';')) {
 		expect(';');
 	}
 	else {
@@ -276,7 +276,7 @@ Node Parser::for_stmt()
 
 	// 后循环部分
 	out << _exp3 << ":" << std::endl;
-	if (is_keyword(lex.peek(), ')')) {
+	if (is_keyword(ts_.peek(), ')')) {
 		expect(')');
 	}
 	else {
@@ -303,7 +303,7 @@ Node Parser::for_stmt()
 
 Node Parser::goto_stmt()
 {
-	Token t = lex.next();
+	Token t = ts_.next();
 	labels.push_back_un(t.getSval());
 	expect(';');
 

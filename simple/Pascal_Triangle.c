@@ -28,4 +28,5 @@ void main(int argc, char *argv[])
         printf("\n", 1);
     }
     printf("\n", 1);
+    return 0;
 }

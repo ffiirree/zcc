@@ -5,19 +5,22 @@
 #include <string>
 #include "file.h"
 
-class Lex {
+/**
+ * @class TokenSequence
+ */
+class TokenSequence {
 public:
-	Lex(){}
-	Lex(const std::string &filename);
+    TokenSequence() = default;
+    TokenSequence(const TokenSequence &ts) : tokens(ts.tokens), index(ts.index), filename_(ts.filename_) { }
+    TokenSequence operator=(const TokenSequence &ts) { tokens = ts.tokens; index = ts.index; filename_ = ts.filename_; return *this; }
 
-	Lex(const Lex &lex) :f(lex.f), keywords(lex.keywords), tokens(lex.tokens), index(lex.index), last(lex.last) {  }
-    inline Lex operator=(const Lex &lex) { f = lex.f; keywords = lex.keywords; tokens = lex.tokens; index = lex.index; last = lex.last; return *this; }
-
-    inline void push_back(const Token &_t) { tokens.push_back(_t); }
+    void push_back(const Token &t) { tokens.push_back(t); }
+    inline size_t size() { return tokens.size(); }
     inline void pop_back() { tokens.pop_back(); }
-	Token &next();
-	void back();
-	Token peek();
+
+    Token next();
+    void back();
+    Token peek();
     Token peek2();
     bool test(int _id);
     bool test2(int _id);
@@ -25,29 +28,44 @@ public:
     bool expect(const char id);
     Pos getPos() { return tokens.at(index).getPos(); }
 
-	void scan(const std::string &filename);
-	inline File getCurrentFile() { return f; }
-
     bool empty() { return tokens.empty(); }
     bool end() { return index >= tokens.size(); }
-    size_t size() { return tokens.size(); }
     Token &at(size_t i) { return tokens.at(i); }
-
-    void insertFront(Lex &l);
-    void insertBack(Lex &l);
-    void insert(Lex &l);
-
     inline size_t restSize() { return tokens.size() - index; }
+
+    void insertFront(TokenSequence &l);
+    void insertBack(TokenSequence &l);
+    void insert(TokenSequence &l);
+
+    void setFileName(const std::string &fn) { filename_ = fn; }
+    std::string getFileName() { return filename_; }
+
+private:
+    std::vector<Token> tokens;
+    size_t index = 0;
+    std::string filename_;
+};
+
+/**
+ * @class Lex
+ */
+class Lex {
+public:
+    Lex();
+    Lex(const std::string &filename, TokenSequence &ts) : Lex() { scan(filename, ts); }
+
+    Lex(const Lex &lex) = delete;
+    inline Lex operator=(const Lex &lex) = delete;
+
+    void scan(const std::string &filename, TokenSequence &ts);
 
 private:
 	Token readToken();
-	Token read_op(char exp, int _k, int _else);
-	Token read_op2(char exp1, int _k1, char exp2, int _k2, int _else);
+    void skipComments();
 	Token read_string();
 	Token read_char();
 	Token read_id(char c);
 	Token read_num(char c);
-
 
 	int read_escaped_char();
 	int read_octal_char(int c);
@@ -57,8 +75,6 @@ private:
 
 	File f;
 	std::vector<std::string> keywords;
-	std::vector<Token> tokens;
-    size_t index = 0;
     Token last;
 };
 

@@ -22,7 +22,6 @@
 	printf("Error. %s: #%d ", __FILE__, __LINE__);\
 	printf(fmt, __VA_ARGS__);\
 	printf("\n");\
-    exit(-1);\
 }while (0)
 
 #define errorp(pos, fmt,...) do{\
@@ -30,7 +29,6 @@
 	printf("%d, %d : ", pos.line, pos.cols);\
 	printf(fmt, __VA_ARGS__);\
 	printf("\n");\
-    exit(-1);\
 }while (0)
 
 #define errort(tok, fmt, ...)  do{\

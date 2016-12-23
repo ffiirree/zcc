@@ -1,28 +1,13 @@
-#include<stdio.h>
-#define  N    19
-void main(int argc, char *argv[])
+#include <stdio.h>
+// asdfas
+int main() 
 {
-    int n = 18, a[N][N];
-    for (int i = 1;i <= n; ++i) {
-        a[i][i] = 1;
-        int t1 = a[i][i];
-        a[i][1] = t1;
-    }
-    for (int i = 3;i <= n; ++i) {
-        for (int j = 2;j <= i - 1;j++) {
-            int t1 = a[i - 1][j];
-            int t2 = a[i - 1][j - 1];
-            a[i][j] = t1 + t2;
+    for (float y = 1.5; y > -1.5; y -= 0.1) {
+        for (float x = -1.5; x < 1.5; x += 0.05) {
+            float a = x * x + y * y - 1;
+            a * a * a - x * x * y * y * y <= 0.0 ? putchar('*') : putchar(' ');
         }
+        putchar('\n');
     }
-
-    for (int i = 1; i <= n; ++i) {
-        for (int k = 1; k <= n - i; ++k)
-            printf("   ", 1);  
-        for (int j = 1; j <= i; ++j)
-            printf("%6d", a[i][j]);
-
-        printf("\n", 1);
-    }
-    printf("\n", 1);
+	return 0;
 }

@@ -5,9 +5,6 @@
 #include <ctime>
 #include "zcc.h"
 
-using TokenSequence = Lex;
-
-
 typedef enum {
     M_ZERO,
     M_FUNCLIKE,
@@ -64,7 +61,7 @@ public:
 	Preprocessor(const Preprocessor &) = delete;
 	Preprocessor operator= (const Preprocessor &) = delete;
 
-    void group_part(Lex &is, Lex &os);
+    void group_part(TokenSequence &is, TokenSequence &os);
 
 
     void expand(TokenSequence is, TokenSequence &os);
@@ -84,18 +81,16 @@ public:
 
 
     void Include(TokenSequence &is, TokenSequence &os);
-    void _define_(Lex &is);
-    void _if_(Lex &is);
-    void _ifndef_(Lex &is);
-    void _ifdef_(Lex &is);
-    void _undef_(Lex &is);
-    void _elif_(Lex &is);
-    void _else_(Lex &is);
-    void _endif_(Lex &is);
-    void _line_(Lex &is);
-    void _pragma_(Lex &is);
-    void _elif_group_(Lex &is);
-    void _else_group_(Lex &is);
+    void _define_(TokenSequence &is);
+    void _if_(TokenSequence &is);
+    void _ifndef_(TokenSequence &is);
+    void _ifdef_(TokenSequence &is);
+    void _undef_(TokenSequence &is);
+    void _elif_(TokenSequence &is);
+    void _else_(TokenSequence &is);
+    void _endif_(TokenSequence &is);
+    void _line_(TokenSequence &is);
+    void _pragma_(TokenSequence &is);
 
     bool invalid() { return invalid_; }
 

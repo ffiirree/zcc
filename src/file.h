@@ -8,7 +8,7 @@
 
 class File {
 public:
-	File(){}
+    File() = default;
 	File(const std::string &_filename);
 
 	File(const File &f) :filename(f.filename), buffer(f.buffer), ptr(f.ptr), pos(f.pos) {  }
@@ -18,8 +18,11 @@ public:
 	File open(const std::string &_file);
 
 	char next();
+    void back(char c);
 	char peek();
-	void back(char c);
+    char peek2();
+    bool test(char c);
+    bool test2(char c);
     bool next_is(char c);
 	
 	Pos getPos() { return pos; }

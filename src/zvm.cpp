@@ -204,8 +204,16 @@ Instruction VirtualMachine::getInsByOp(const std::string &name)
     else if (name == "je") return je;
     else if (name == "jne") return jne;
     else if (name == "jmp") return jmp;
+
+    // not support
+    else if (name == "ja") return ja;
+    else if (name == "jae") return jae;
+    else if (name == "jb") return jb;
+    else if (name == "jbe") return jbe;
     else
         error("unknown operator:%s.", name.c_str());
+
+    return INS_NULL;
 }
 
 int VirtualMachine::getRegValByName(const std::string &name)
@@ -224,6 +232,8 @@ int VirtualMachine::getRegValByName(const std::string &name)
         return esp;
     else
         error("unknown register.");
+
+    return NULL;
 }
 /**
  * @attention 浮点数不会出现在指令里面
@@ -240,7 +250,7 @@ bool VirtualMachine::isImmediate(const std::string &name)
 int VirtualMachine::getImmediate(const std::string &name)
 {
     std::string _imm;
-    for (int i = 1; i < name.size(); ++i) {
+    for (size_t i = 1; i < name.size(); ++i) {
         _imm.push_back(name.at(i));
     }
 
@@ -307,6 +317,7 @@ void *VirtualMachine::getOperandAddr(const std::string &name)
     default:
         break;
     }
+    return NULL;
 }
 
 

@@ -24,7 +24,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
             custom_type_tbl.insert(std::pair<std::string, Type>(name, baseType));
 		}
 		else if (ty.isStatic() && !isGlo) {       // 局部static变量
-            errorp(lex.getPos(), "Do not support static.");
+            errorp(ts_.getPos(), "Do not support static.");
 		}
 		else if (params.size() != 0) {
 #ifdef _OVERLOAD_
@@ -87,7 +87,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
                             for (size_t i = 0;i < arr_init.size(); ++i) {
                                 _stk_quad.push_back(arr_init.at(arr_init.size() - i - 1));
                                 _stk_quad.push_back(var.varName);
-                                _stk_quad.push_back(std::to_string(i * var.type.size));
+                                _stk_quad.push_back(std::to_string(i * var.type.size_));
                                 createQuadruple("[]=");
                             }
 					}
@@ -114,7 +114,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
         }
 			
 		if (!next_is(','))
-            errorp(lex.getPos(), "';' or ',' are expected, but got not");
+            errorp(ts_.getPos(), "';' or ',' are expected, but got not");
 	}
 }
 
@@ -122,7 +122,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 std::vector<Node> Parser::decl_init(Type &ty)
 {
 	std::vector<Node> list;
-	if (is_keyword(lex.peek(), '{') || ty.getType() == STRING_) {
+	if (is_keyword(ts_.peek(), '{') || ty.getType() == T_STRING) {
 		init_list(list, ty, 0, false);
 	}
 	else {
@@ -137,7 +137,7 @@ void  Parser::init_list(std::vector<Node> &r, Type &ty, int off, bool designated
 	expect('{');
 	std::vector<Node> list;
 	do {
-		if (is_keyword(lex.peek(), '[') || is_keyword(lex.peek(), '.')) {
+		if (is_keyword(ts_.peek(), '[') || is_keyword(ts_.peek(), '.')) {
 			r.push_back(designator_list());
 			expect('=');
 		}
@@ -158,11 +158,11 @@ Node Parser::designator_list()
 	}
 	else if (next_is('.')) {
 		Node r;
-		Token t = lex.next();
-		if (t.getId() == ID)
+		Token t = ts_.next();
+		if (t.getId() == T_IDENTIFIER)
 			r = localenv->search(t.getSval());
 		if (r.getKind() == 0)
-            errorp(lex.getPos(), "init list error");
+            errorp(ts_.getPos(), "init list error");
 		return r;
 	}
     return Node();                       // for warning 
@@ -189,7 +189,7 @@ Type Parser::conv2ptr(Type ty)
 	Type *ptr = new Type(ty);
 	r.type = PTR;
 	r.ptr = ptr;
-	r.size = 4;
+	r.size_ = 4;
 
 	return r;
 }
@@ -209,9 +209,9 @@ Type Parser::declarator(Type *ty, std::string &name, std::vector<Node> &params, 
 		return t;
 	}
 
-	Token t = lex.peek();
-	if (t.getType() == ID) {
-		lex.next();
+	Token t = ts_.peek();
+	if (t.getType() == T_IDENTIFIER) {
+        ts_.next();
 		name = t.getSval();
 		return direct_decl_tail(ty, params, deal_type);
 	}
@@ -221,10 +221,10 @@ Type Parser::declarator(Type *ty, std::string &name, std::vector<Node> &params, 
 
 Type Parser::decl_spec_opt(int *sclass)
 {
-	if (is_type(lex.peek()))
+	if (is_type(ts_.peek()))
 		return decl_specifiers(sclass);
 
-    warnp(lex.getPos(), "missing type, defalut 'int'.");
+    warnp(ts_.getPos(), "missing type, defalut 'int'.");
 	return Type(K_INT, 4, false);
 }
 
@@ -234,7 +234,7 @@ Type Parser::direct_decl_tail(Type *retty, std::vector<Node> &params, int decl_t
 	if (next_is('[')) {
 		decl_array(retty);
         Type r(ARRAY, retty->_all_len, retty->len);
-        r.size = retty->size;
+        r.size_ = retty->size_;
         return r;
 	}
 
@@ -287,24 +287,24 @@ Type Parser::decl_specifiers(int *rsclass)
     Type custom_type;
 
 	for (;;) {
-		t = lex.next();
-		if (t.getType() == K_EOF)
-            errorp(lex.getPos(), "end of file.");
+		t = ts_.next();
+		if (t.getType() == T_EOF)
+            errorp(ts_.getPos(), "end of file.");
 
-		if (kind == 0 && t.getType()== ID && !custom_type.type) {
+		if (kind == 0 && t.getType()== T_IDENTIFIER && !custom_type.type) {
             custom_type = getCustomType(t.getSval());
-            lex.next();
+            ts_.next();
             if (custom_type.type == 0)
-                errorp(lex.getPos(), "Undefined type: %s", t.getSval().c_str());
+                errorp(ts_.getPos(), "Undefined type: %s", t.getSval().c_str());
 		}
 
-		if (t.getType()!= KEYWORD) {
+		if (t.getType()!= T_KEYWORD) {
 			break;
 		}
 		switch (t.getId())
 		{
 			// Type specifiers
-#define type_spec_cheak(cheak, val, _t) do{if(cheak) errorp(lex.getPos(), "error %s specifier.", _t); else cheak = val;}while(0)
+#define type_spec_cheak(cheak, val, _t) do{if(cheak) errorp(ts_.getPos(), "error %s specifier.", _t); else cheak = val;}while(0)
 			// 只能出现一次
 		case K_VOID:     type_spec_cheak(kind, k_void, "void");break;
 		case K_CHAR:     type_spec_cheak(kind, k_char, "char");break;
@@ -331,19 +331,19 @@ Type Parser::decl_specifiers(int *rsclass)
 
 
         case K_ENUM: custom_type = enum_def(); break;
-        case K_STRUCT: if (custom_type.type != 0) errorp(lex.getPos(), "error struct specifier."); custom_type = struct_def(); break;
-		case K_UNION: errorp(lex.getPos(), "no union."); break;
+        case K_STRUCT: if (custom_type.type != 0) errorp(ts_.getPos(), "error struct specifier."); custom_type = struct_def(); break;
+		case K_UNION: errorp(ts_.getPos(), "no union."); break;
 
 #undef type_spec_cheak
 			// Storage-class specifiers
 			// 只能出现在声明的首位，且只能一次
 			// Type qualifiers
-		case K_CONST: errorp(lex.getPos(), "no const."); break;
-		case K_RESTRICT: errorp(lex.getPos(), "no restrict."); break;
-		case K_VOLATILE: errorp(lex.getPos(), "no volatile."); break;
+		case K_CONST: errorp(ts_.getPos(), "no const."); break;
+		case K_RESTRICT: errorp(ts_.getPos(), "no restrict."); break;
+		case K_VOLATILE: errorp(ts_.getPos(), "no volatile."); break;
 
 			// Function specifiers
-		case K_INLINE: errorp(lex.getPos(), "no inline."); break;
+		case K_INLINE: errorp(ts_.getPos(), "no inline."); break;
 		case ELLIPSIS: 
 			type.create(ELLIPSIS, 0, false);
 			break;
@@ -354,9 +354,7 @@ Type Parser::decl_specifiers(int *rsclass)
 		}
 	}
 _end:
-    lex.back();
-
-    
+    ts_.back();
 
 	if (current_class)
 		*rsclass = current_class;
@@ -390,8 +388,8 @@ std::vector<Node> Parser::initializer(Type &ty)
 
 Type Parser::enum_def()
 {
-    if (lex.peek().getType() == ID)
-        lex.next();
+    if (ts_.peek().getType() == T_IDENTIFIER)
+        ts_.next();
 
     expect('{');
 
@@ -400,28 +398,28 @@ Type Parser::enum_def()
     std::string _v;
     std::string _n;
     do {
-        t = lex.next();
-        if (t.getType() == ID) {
+        t = ts_.next();
+        if (t.getType() == T_IDENTIFIER) {
             // 常量名
             _n = t.getSval();
             Node n = globalenv->search(_n);
             if (!n.varName.empty())
-                errorp(lex.getPos(), "redefined var : %s", _n.c_str());
+                errorp(ts_.getPos(), "redefined var : %s", _n.c_str());
             if(!searchEnum(_n).empty())
-                errorp(lex.getPos(), "redefined var : %s", _n.c_str());
+                errorp(ts_.getPos(), "redefined var : %s", _n.c_str());
 
             // 常量值
             if (next_is('=')) {
-                t = lex.next();
+                t = ts_.next();
 
-                if (t.getType() == INTEGER) {
+                if (t.getType() == T_INTEGER) {
                     if (atoi(t.getSval().c_str()) < _val)
-                        errorp(lex.getPos(), "Inc val.");
+                        errorp(ts_.getPos(), "Inc val.");
                     _val = atoi(t.getSval().c_str()) + 1;
                     _v = t.getSval();
                 }
                 else {
-                    errorp(lex.getPos(), "need interger.");
+                    errorp(ts_.getPos(), "need interger.");
                 }
 
             }
@@ -431,10 +429,10 @@ Type Parser::enum_def()
             }
         }
         else
-            errorp(lex.getPos(), "Ench member need a name.");
+            errorp(ts_.getPos(), "Ench member need a name.");
 
         enum_const.insert(std::pair<std::string, std::string>(_n, _v));
-    } while (next_is(',') && lex.peek().getId() != '}');
+    } while (next_is(',') && ts_.peek().getId() != '}');
     expect('}');
 
     return Type(K_ENUM);
@@ -456,11 +454,11 @@ Type Parser::struct_def()
     std::string _new_type_name;
     r.type = K_STRUCT;
 
-    Token t = lex.peek();
-    if (t.getType() != ID) {
-        errorp(lex.getPos(), "Struct need a type name.");
+    Token t = ts_.peek();
+    if (t.getType() != T_IDENTIFIER) {
+        errorp(ts_.getPos(), "Struct need a type name.");
     }
-    t = lex.next();
+    t = ts_.next();
     _new_type_name = t.getSval();
 
     Type *_ft;
@@ -468,24 +466,24 @@ Type Parser::struct_def()
     int _fo = 0;
     
     if (!next_is('{')) {
-        lex.back();
+        ts_.back();
         return Type();
     }
         
 
     int sclass = 0;
-    while (lex.peek().getId() != '}' && lex.peek().getType() != K_EOF) {
+    while (ts_.peek().getId() != '}' && ts_.peek().getType() != T_EOF) {
         _ft = new Type(decl_spec_opt(&sclass));
 
-        if (lex.peek().getType() != ID)
-            errorp(lex.getPos(), "expect a identier.");
-        _fn = lex.next().getSval();
+        if (ts_.peek().getType() != T_IDENTIFIER)
+            errorp(ts_.getPos(), "expect a identier.");
+        _fn = ts_.next().getSval();
         expect(';');
 
         r.fields.push_back(Field(_fn, _ft, _fo));
-        _fo += _ft->size;
+        _fo += _ft->size_;
     }
-    r.size = _fo;
+    r.size_ = _fo;
     expect('}');
 
     custom_type_tbl.insert(std::pair<std::string, Type>(_new_type_name, r));

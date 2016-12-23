@@ -65,11 +65,11 @@ Node Parser::comma_expr()
 Node Parser::assignment_expr()
 {
 	Node *node = new Node(logical_or_expr());
-	Token t = lex.next();
+	Token t = ts_.next();
 	
 	if (is_keyword(t, '?')) {
         conditional_expr(node);
-        lex.next();
+        ts_.next();
 	}
 
 	int cop = get_compound_assign_op(t); // * + * ..
@@ -109,7 +109,7 @@ Node Parser::assignment_expr()
 
 		return createBinOpNode(node->getType(), '=', node, right);
 	}
-	lex.back();
+    ts_.back();
 	return *node;
 }
 
@@ -313,8 +313,8 @@ Node Parser::shift_expr()
 			break;
 		Node *right = new Node(add_expr());
 
-        if (cheak_is_int_type(*node)) errorp(lex.getPos(), "shift operator need a interger object.");
-        if (cheak_is_int_type(*right)) errorp(lex.getPos(), "shift operator need a interger object.");
+        if (cheak_is_int_type(*node)) errorp(ts_.getPos(), "shift operator need a interger object.");
+        if (cheak_is_int_type(*right)) errorp(ts_.getPos(), "shift operator need a interger object.");
 
 		node = new Node(createBinOpNode(node->getType(), op, new Node(*node), new Node(*right)));
         if (op == OP_SAL) 
@@ -380,8 +380,8 @@ Node Parser::multi_expr()
 		else if (next_is('%')) {
             Node *right = new Node(cast_expr());
 
-            if (!cheak_is_int_type(*node)) errorp(lex.getPos(), "mod op need a interger object.");
-            if (!cheak_is_int_type(*right)) errorp(lex.getPos(), "mod op need a interger object.");
+            if (!cheak_is_int_type(*node)) errorp(ts_.getPos(), "mod op need a interger object.");
+            if (!cheak_is_int_type(*right)) errorp(ts_.getPos(), "mod op need a interger object.");
 
 			node = new Node(binop('%', *node, *right));
 			createQuadruple("%");
@@ -397,10 +397,10 @@ Node Parser::multi_expr()
  */
 Node Parser::cast_expr()
 {
-    if (lex.test('(')) {
-        if (is_type(lex.peek2())) {
-            lex.next();
-            lex.next();
+    if (ts_.test('(')) {
+        if (is_type(ts_.peek2())) {
+            ts_.next();
+            ts_.next();
             expect(')');
         }
     }
@@ -409,8 +409,8 @@ Node Parser::cast_expr()
 
 Node Parser::unary_expr()
 {
-    Token tok = lex.next();
-    if (tok.getType() == KEYWORD) {
+    Token tok = ts_.next();
+    if (tok.getType() == T_KEYWORD) {
         Node r;
         switch (tok.getId()) {
         case K_SIZEOF:
@@ -432,10 +432,12 @@ Node Parser::unary_expr()
 
         case '*':
             r = unary_deref(tok);
-            if(lex.peek().to_string() == "=")
-                createUnaryQuadruple("*=");
-            else 
-                createUnaryQuadruple("*U");
+            //if(lex.peek().toString() == "=")
+            //    createUnaryQuadruple("*=");
+            //else 
+            //    createUnaryQuadruple("*U");
+
+            createUnaryQuadruple("*U");
             return r;
 
             // 不完全
@@ -462,7 +464,7 @@ Node Parser::unary_expr()
             return r;
         }
     }
-    lex.back();
+    ts_.back();
     return postfix_expr();
 }
 
@@ -519,13 +521,13 @@ Node Parser::postfix_expr_tail(Node &node)
 
             
 
-			if (lex.peek().getId() == '=')
+			if (ts_.peek().getId() == '=')
 				createQuadruple("[]&");
 			else
 				createQuadruple("[]");
         }
         if (next_is('.')) {
-            Token t = lex.next();
+            Token t = ts_.next();
             int _off = 0;
             for (size_t i = 0; i < node.type.fields.size(); ++i){
                 if (t.getSval() == node.type.fields.at(i)._name)
@@ -533,13 +535,13 @@ Node Parser::postfix_expr_tail(Node &node)
             }
             _stk_quad.push_back(std::to_string(_off));
             
-            if(lex.peek().getId() == '=')
+            if(ts_.peek().getId() == '=')
                 createQuadruple(".&");
             else 
                 createQuadruple(".");
 		}
 		if (next_is(OP_ARROW)) {
-            Token t = lex.next();
+            Token t = ts_.next();
             int _off = 0;
             for (size_t i = 0; i < node.type.ptr->fields.size(); ++i) {
                 if (t.getSval() == node.type.ptr->fields.at(i)._name)
@@ -547,13 +549,13 @@ Node Parser::postfix_expr_tail(Node &node)
             }
             _stk_quad.push_back(std::to_string(_off));
 
-            if (lex.peek().getId() == '=')
+            if (ts_.peek().getId() == '=')
                 createQuadruple("->&");
             else
                 createQuadruple("->");
             
 		}
-		Token tok = lex.peek();
+		Token tok = ts_.peek();
 		// 后置++/--
 		if (next_is(OP_INC) || next_is(OP_DEC)) {
 			ensure_lvalue(node);
@@ -573,7 +575,7 @@ Node Parser::postfix_expr_tail(Node &node)
 
 Node Parser::primary_expr()
 {
-	Token tok = lex.next();
+	Token tok = ts_.next();
 	std::string strl;
     std::string Lfloat;
 
@@ -586,15 +588,15 @@ Node Parser::primary_expr()
 	switch (tok.getType()) {
 		
 		// 如果是ID， 则可能为变量或函数调用
-	case ID:
+	case T_IDENTIFIER:
 		return var_or_func(tok);
 
 		// 常量
-	case INTEGER:
+	case T_INTEGER:
 		pushQuadruple(tok.getSval());
 		return createIntNode(tok, 4, false);
 
-	case FLOAT:
+	case T_FLOAT:
         Lfloat = newLabel("f");
 		float_const.push_back(tok.getSval());
         float_const.push_back(Lfloat);
@@ -602,22 +604,22 @@ Node Parser::primary_expr()
 		pushQuadruple(Lfloat);
 		return createFloatNode(tok);
 
-	case CHAR_:
+	case T_CHAR:
 		pushQuadruple(std::to_string(tok.getCh()));
 		return createIntNode(tok, 1, true);
 
-	case STRING_:
+	case T_STRING:
 		strl = newLabel("LSTR");
 		pushQuadruple(strl);
 		const_string.push_back(StrCard(tok.getSval(), strl));
 		return createStrNode(tok);
 
-	case KEYWORD:
-		lex.back();
+	case T_KEYWORD:
+        ts_.back();
 		return NULL;
 
 	default:
-		errorp(lex.getPos(), "internal error: unknown token kind");
+		errorp(ts_.getPos(), "internal error: unknown token kind");
 	}
     return Node();       // for warning
 }
@@ -640,7 +642,7 @@ Node Parser::var_or_func(Token &t)
     if (iter != enum_const.end())
         pushQuadruple(t.getSval());
     else if (r.kind == NODE_NULL)
-        errorp(lex.getPos(), "undefined var : %s！", t.getSval().c_str());
+        errorp(ts_.getPos(), "undefined var : %s!", t.getSval().c_str());
 #endif // _OVERLOAD_
 
 	return r;
@@ -681,7 +683,7 @@ Type Parser::usual_arith_conv(Type &t, Type &u)
 	}
 	if (is_floattype(t))
 		return t;
-	if (t.getSize() > u.getSize())
+	if (t.size_ > u.size_)
 		return t;
 
 	if (t.isUnsigned() == u.isUnsigned())
@@ -695,7 +697,7 @@ Type Parser::usual_arith_conv(Type &t, Type &u)
 void Parser::ensure_inttype(Node &node) 
 {
 	if (!is_inttype(node.getType()))
-        errorp(lex.getPos(), "integer type expected");
+        errorp(ts_.getPos(), "integer type expected");
 }
 
 
@@ -724,7 +726,7 @@ Node Parser::unary_deref(Token &t)
 {
 	Node *operand = new Node(cast_expr());
 	if (operand->type.getType() != PTR)
-        errorp(lex.getPos(), "pointer type expected.");
+        errorp(ts_.getPos(), "pointer type expected.");
 	if (operand->type.getType() == NODE_FUNC)
 		return *operand;
 	return createUnaryNode(NODE_DEREF, *(operand->type.ptr), *operand);
@@ -735,7 +737,7 @@ Node Parser::unary_bitnot(Token &t)
 	Node *expr = new Node(cast_expr());
 
 	if (!is_inttype(expr->type))
-        errorp(lex.getPos(), "invalid use of '~'.");
+        errorp(ts_.getPos(), "invalid use of '~'.");
 	return createUnaryNode('~', expr->type, *expr);
 }
 Node Parser::unary_lognot()

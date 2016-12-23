@@ -73,6 +73,25 @@ char File::peek()
 	return c;
 }
 
+char File::peek2()
+{
+    char c1 = next();
+    char c2 = next();
+    back(c2);
+    back(c1);
+    return c2;
+}
+
+bool File::test(char c)
+{
+    return peek() == c;
+}
+
+bool File::test2(char c)
+{
+    return peek2() == c;
+}
+
 bool File::next_is(char ch)
 {
     char c = next();

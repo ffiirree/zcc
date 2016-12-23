@@ -96,16 +96,16 @@ void Generate::getReg(std::vector<std::string> &_q)
         if (isLocVar(_q1)) {
             var = searchLocvar(_q1);
             if (var.kind == NODE_GLO_VAR) {
-                gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, "%eax");
+                gas_ins(movXXl(var.type.size_, var.type.isUnsig), "_" + var.varName, "%eax");
             }
             else if (var.kind == NODE_LOC_VAR) {
-                gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), "%eax");
+                gas_ins(movXXl(var.type.size_, var.type.isUnsig), loc_var_val(var._off), "%eax");
             }
         }
         else {
             error("pre * var error");
         }
-        gas_ins(movXXl(var.type.size, var.type.isUnsig), "0(%eax)", "%eax");
+        gas_ins(movXXl(var.type.size_, var.type.isUnsig), "0(%eax)", "%eax");
 
 		temp_save(_q2, var.type, "%eax");
 	}
@@ -117,10 +117,10 @@ void Generate::getReg(std::vector<std::string> &_q)
         if (isLocVar(_q1)) {
             var = searchLocvar(_q1);
             if (var.kind == NODE_GLO_VAR) {
-                gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, "%eax");
+                gas_ins(movXXl(var.type.size_, var.type.isUnsig), "_" + var.varName, "%eax");
             }
             else if (var.kind == NODE_LOC_VAR) {
-                gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), "%eax");
+                gas_ins(movXXl(var.type.size_, var.type.isUnsig), loc_var_val(var._off), "%eax");
             }
         }
         else {
@@ -139,9 +139,9 @@ void Generate::getReg(std::vector<std::string> &_q)
         Type _ty = getStructFieldType(var, _q1);
 
         if (var.kind == NODE_GLO_VAR)
-            gas_ins(movXXl(_ty.size, _ty.isUnsig), "_" + var.varName + "+" + _q1, "%eax");
+            gas_ins(movXXl(_ty.size_, _ty.isUnsig), "_" + var.varName + "+" + _q1, "%eax");
         else if (var.kind == NODE_LOC_VAR)
-            gas_ins(movXXl(_ty.size, _ty.isUnsig), std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)", "%eax");
+            gas_ins(movXXl(_ty.size_, _ty.isUnsig), std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)", "%eax");
 
         // 保存
         TempVar _temp(_q3, "%eax");
@@ -151,7 +151,7 @@ void Generate::getReg(std::vector<std::string> &_q)
     else if (_q_0_is(".=")) {
         Node var = searchLocvar(_q2);
         Type _ty = getStructFieldType(var, _q1);
-        gas_ins(mov2stk(_ty.size), "$" + _q3, std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)");
+        gas_ins(mov2stk(_ty.size_), "$" + _q3, std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)");
     }
     // 取数组和结构体的某一元素的地址，用来赋值
     else if (_q_0_is(".&")) {
@@ -159,7 +159,7 @@ void Generate::getReg(std::vector<std::string> &_q)
         Node var = searchLocvar(_q2);
         if (var.kind == NODE_GLO_VAR) {
             Type _ty = getStructFieldType(var, _q1);
-            gas_ins(movXXl(_ty.size, _ty.isUnsig), "$_" + var.varName + "+" + _q1, "%eax");
+            gas_ins(movXXl(_ty.size_, _ty.isUnsig), "$_" + var.varName + "+" + _q1, "%eax");
         }
         else if (var.kind == NODE_LOC_VAR) {
             gas_ins("leal", std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)", "%eax");
@@ -181,13 +181,13 @@ void Generate::getReg(std::vector<std::string> &_q)
                     Type _ty = getPtrType(var);
                     if (isNumber(_q1)) {
                         gas_ins("movl", loc_var_val(var._off), "%eax");
-                        gas_ins("addl", "$" + std::to_string(_ty.size * atoi(_q1.c_str())), "%eax");
-                        gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                        gas_ins("addl", "$" + std::to_string(_ty.size_ * atoi(_q1.c_str())), "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                     else if (isEnumConst(_q1)) {
                         gas_ins("movl", loc_var_val(var._off), "%eax");
-                        gas_ins("addl", "$" + std::to_string(_ty.size * atoi(parser->searchEnum(_q1).c_str())), "%eax");
-                        gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                        gas_ins("addl", "$" + std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())), "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                     else if (isLocVar(_q1)) {
                         Node _loc = searchLocvar(_q1);
@@ -195,25 +195,25 @@ void Generate::getReg(std::vector<std::string> &_q)
                             getReg("%edx");
                             gas_ins("movl", loc_var_val(var._off), "%eax");
                             gas_ins("movl", "_" + _loc.varName, "%edx");
-                            gas_ins("imull", "$" + std::to_string(var.type.size), "%edx");
+                            gas_ins("imull", "$" + std::to_string(var.type.size_), "%edx");
                             gas_ins("addl", "%edx", "%eax");
-                            gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                            gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                         }
                         else if (var.kind == NODE_LOC_VAR) {
                             getReg("%ecx");
                             gas_ins("movl", loc_var_val(var._off), "%eax");
                             gas_ins("movl", loc_var_val(_loc._off), "%ecx");
-                            gas_ins("imull", "$" + std::to_string(var.type.size), "%ecx");
+                            gas_ins("imull", "$" + std::to_string(var.type.size_), "%ecx");
                             gas_ins("addl", "%ecx", "%eax");
-                            gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                            gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                         }
                     }
                     else if (isTempVar(_q1)) {
                         TempVar _loc = searchTempvar(_q1);
                         gas_ins("movl", loc_var_val(var._off), "%eax");
-                        gas_ins("imull", "$" + std::to_string(var.type.size), _loc._reg);
+                        gas_ins("imull", "$" + std::to_string(var.type.size_), _loc._reg);
                         gas_ins("addl", _loc._reg, "%eax");
-                        gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                     else {
                         error("error.");
@@ -222,34 +222,34 @@ void Generate::getReg(std::vector<std::string> &_q)
                 else if (var.getType().getType() == ARRAY) {
                     Type _ty = var.getType();
                     if (isNumber(_q1))
-                        gas_ins(movXXl(_ty.size, _ty.isUnsig), std::to_string(var._off + var.type.size * atoi(_q1.c_str())) + "(%ebp)", "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), std::to_string(var._off + var.type.size_ * atoi(_q1.c_str())) + "(%ebp)", "%eax");
                     else if (isEnumConst(_q1))
-                        gas_ins(movXXl(_ty.size, _ty.isUnsig), std::to_string(var._off + var.type.size * atoi(parser->searchEnum(_q1).c_str())) + "(%ebp)", "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), std::to_string(var._off + var.type.size_ * atoi(parser->searchEnum(_q1).c_str())) + "(%ebp)", "%eax");
                     else if (isLocVar(_q1)) {
                         Node _loc = searchLocvar(_q1);
                         if (_loc.kind == NODE_GLO_VAR) {
                             getReg("%edx");
                             gas_ins("leal", std::to_string(var._off) + "(%ebp)", "%eax");
                             gas_ins("movl", "_" + _loc.varName, "%edx");
-                            gas_ins("imull", "$" + std::to_string(var.type.size), "%edx");
+                            gas_ins("imull", "$" + std::to_string(var.type.size_), "%edx");
                             gas_ins("addl", "%edx", "%eax");
-                            gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                            gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                         }
                         else if (var.kind == NODE_LOC_VAR) {
                             getReg("%ecx");
                             gas_ins("leal", std::to_string(var._off) + "(%ebp)", "%eax");
                             gas_ins("movl", loc_var_val(_loc._off), "%ecx");
-                            gas_ins("imull", "$" + std::to_string(var.type.size), "%ecx");
+                            gas_ins("imull", "$" + std::to_string(var.type.size_), "%ecx");
                             gas_ins("addl", "%ecx", "%eax");
-                            gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                            gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                         }
                     }
                     else if (isTempVar(_q1)) {
                         TempVar _loc = searchTempvar(_q1);
                         gas_ins("leal", std::to_string(var._off) + "(%ebp)", "%eax");
-                        gas_ins("imull", "$" + std::to_string(var.type.size), _loc._reg);
+                        gas_ins("imull", "$" + std::to_string(var.type.size_), _loc._reg);
                         gas_ins("addl", _loc._reg, "%eax");
-                        gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                     else {
                         error("error.");
@@ -262,13 +262,13 @@ void Generate::getReg(std::vector<std::string> &_q)
                     Type _ty = getPtrType(var);
                     if (isNumber(_q1)) {
                         gas_ins("movl", "_" + var.varName, "%eax");
-                        gas_ins("addl", "$" + std::to_string(_ty.size * atoi(_q1.c_str())), "%eax");
-                        gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                        gas_ins("addl", "$" + std::to_string(_ty.size_ * atoi(_q1.c_str())), "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                     else if (isEnumConst(_q1)) {
                         gas_ins("movl", "_" + var.varName, "%eax");
-                        gas_ins("addl", "$" + std::to_string(_ty.size * atoi(parser->searchEnum(_q1).c_str())), "%eax");
-                        gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                        gas_ins("addl", "$" + std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())), "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                     else if (isLocVar(_q1)) {
                         Node _loc = searchLocvar(_q1);
@@ -276,25 +276,25 @@ void Generate::getReg(std::vector<std::string> &_q)
                             getReg("%edx");
                             gas_ins("movl", "_" + var.varName, "%eax");
                             gas_ins("movl", "_" + _loc.varName, "%edx");
-                            gas_ins("imull", "$" + std::to_string(var.type.size), "%edx");
+                            gas_ins("imull", "$" + std::to_string(var.type.size_), "%edx");
                             gas_ins("addl", "%edx", "%eax");
-                            gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                            gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                         }
                         else if (var.kind == NODE_LOC_VAR) {
                             getReg("%ecx");
                             gas_ins("movl", "_" + var.varName, "%eax");
                             gas_ins("movl", loc_var_val(_loc._off), "%ecx");
-                            gas_ins("imull", "$" + std::to_string(var.type.size), "%ecx");
+                            gas_ins("imull", "$" + std::to_string(var.type.size_), "%ecx");
                             gas_ins("addl", "%ecx", "%eax");
-                            gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                            gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                         }
                     }
                     else if (isTempVar(_q1)) {
                         TempVar _loc = searchTempvar(_q1);
                         gas_ins("movl", "_" + var.varName, "%eax");
-                        gas_ins("imull", "$" + std::to_string(_ty.size), _loc._reg);
+                        gas_ins("imull", "$" + std::to_string(_ty.size_), _loc._reg);
                         gas_ins("addl", _loc._reg, "%eax");
-                        gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                     else {
                         error("error.");
@@ -304,33 +304,33 @@ void Generate::getReg(std::vector<std::string> &_q)
                     Type _ty = var.getType();
 
                     if (isNumber(_q1))
-                        gas_ins(movXXl(_ty.size, _ty.isUnsig), "_" + var.varName + "+" + std::to_string(var.type.size * atoi(_q1.c_str())), "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), "_" + var.varName + "+" + std::to_string(var.type.size_ * atoi(_q1.c_str())), "%eax");
                     else if (isEnumConst(_q1))
-                        gas_ins(movXXl(_ty.size, _ty.isUnsig), "_" + var.varName + "+" + std::to_string(var.type.size * atoi(parser->searchEnum(_q1).c_str())), "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), "_" + var.varName + "+" + std::to_string(var.type.size_ * atoi(parser->searchEnum(_q1).c_str())), "%eax");
                     else if (isLocVar(_q1)) {
                         Node _loc = searchLocvar(_q1);
                         getReg("%ecx");
                         gas_ins("leal", "_" + var.varName, "%eax");
                         gas_ins("movl", loc_var_val(_loc._off), "%ecx");
-                        gas_ins("imull", "$" + std::to_string(var.type.size), "%ecx");
+                        gas_ins("imull", "$" + std::to_string(var.type.size_), "%ecx");
                         gas_ins("addl", "%ecx", "%eax");
-                        gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                     else if (isTempVar(_q1)) {
                         TempVar _loc = searchTempvar(_q1);
                         gas_ins("leal", "_" + var.varName, "%eax");
-                        gas_ins("imull", "$" + std::to_string(var.type.size), _loc._reg);
+                        gas_ins("imull", "$" + std::to_string(var.type.size_), _loc._reg);
                         gas_ins("addl", _loc._reg, "%eax");
-                        gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                     else {
                         Node _glo = gloEnv->search(_q1);
                         getReg("%edx");
                         gas_ins("leal", "_" + var.varName, "%eax");
                         gas_ins("movl", "_" + _glo.varName, "%edx");
-                        gas_ins("imull", "$" + std::to_string(_ty.size), "%edx");
+                        gas_ins("imull", "$" + std::to_string(_ty.size_), "%edx");
                         gas_ins("addl", "%edx", "%eax");
-                        gas_ins(movXXl(_ty.size, _ty.isUnsig), "(%eax)", "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                 }
                 
@@ -343,7 +343,7 @@ void Generate::getReg(std::vector<std::string> &_q)
     }
     else if (_q_0_is("[]=")) {
         Node var = searchLocvar(_q2);
-        gas_ins(mov2stk(var.type.size), "$" + _q3, std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)");
+        gas_ins(mov2stk(var.type.size_), "$" + _q3, std::to_string(var._off + atoi(_q1.c_str())) + "(%ebp)");
     }
 
     else if (_q_0_is("[]&")) {
@@ -358,11 +358,11 @@ void Generate::getReg(std::vector<std::string> &_q)
                     Type _ty = getPtrType(var);
                     if (isNumber(_q1)) {
                         gas_ins("movl", loc_var_val(var._off), "%eax");
-                        gas_ins("addl", "$" + std::to_string(_ty.size * atoi(_q1.c_str())), "%eax");
+                        gas_ins("addl", "$" + std::to_string(_ty.size_ * atoi(_q1.c_str())), "%eax");
                     }
                     else if (isEnumConst(_q1)) {
                         gas_ins("movl", loc_var_val(var._off), "%eax");
-                        gas_ins("addl", "$" + std::to_string(_ty.size * atoi(parser->searchEnum(_q1).c_str())), "%eax");
+                        gas_ins("addl", "$" + std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())), "%eax");
                     }
                     else if (isLocVar(_q1)) {
                         Node _loc = searchLocvar(_q1);
@@ -370,21 +370,21 @@ void Generate::getReg(std::vector<std::string> &_q)
                             getReg("%edx");
                             gas_ins("movl", loc_var_val(var._off), "%eax");
                             gas_ins("movl", "_" + _loc.varName, "%edx");
-                            gas_ins("imull", "$" + std::to_string(var.type.size), "%edx");
+                            gas_ins("imull", "$" + std::to_string(var.type.size_), "%edx");
                             gas_ins("addl", "%edx", "%eax");
                         }
                         else if (var.kind == NODE_LOC_VAR) {
                             getReg("%ecx");
                             gas_ins("movl", loc_var_val(var._off), "%eax");
                             gas_ins("movl", loc_var_val(_loc._off), "%ecx");
-                            gas_ins("imull", "$" + std::to_string(var.type.size), "%ecx");
+                            gas_ins("imull", "$" + std::to_string(var.type.size_), "%ecx");
                             gas_ins("addl", "%ecx", "%eax");
                         }
                     }
                     else if (isTempVar(_q1)) {
                         TempVar _loc = searchTempvar(_q1);
                         gas_ins("movl", loc_var_val(var._off), "%eax");
-                        gas_ins("imull", "$" + std::to_string(_ty.size), _loc._reg);
+                        gas_ins("imull", "$" + std::to_string(_ty.size_), _loc._reg);
                         gas_ins("addl", _loc._reg, "%eax");
                     }
                     else {
@@ -395,21 +395,21 @@ void Generate::getReg(std::vector<std::string> &_q)
                     Type _ty = var.getType();
 
                     if (isNumber(_q1))
-                        gas_ins("leal", std::to_string(var._off + _ty.size * atoi(_q1.c_str())) + "(%ebp)", "%eax");
+                        gas_ins("leal", std::to_string(var._off + _ty.size_ * atoi(_q1.c_str())) + "(%ebp)", "%eax");
                     else if (isEnumConst(_q1))
-                        gas_ins("leal", std::to_string(var._off + _ty.size * atoi(parser->searchEnum(_q1).c_str())) + "(%ebp)", "%eax");
+                        gas_ins("leal", std::to_string(var._off + _ty.size_ * atoi(parser->searchEnum(_q1).c_str())) + "(%ebp)", "%eax");
                     else if (isLocVar(_q1)) {
                         Node _loc = searchLocvar(_q1);
                         getReg("%ecx");
                         gas_ins("leal", std::to_string(var._off) + "(%ebp)", "%eax");
                         gas_ins("movl", loc_var_val(_loc._off), "%ecx");
-                        gas_ins("imull", "$" + std::to_string(_ty.size), "%ecx");
+                        gas_ins("imull", "$" + std::to_string(_ty.size_), "%ecx");
                         gas_ins("addl", "%ecx", "%eax");
                     }
                     else if (isTempVar(_q1)) {
                         TempVar _loc = searchTempvar(_q1);
                         gas_ins("leal", std::to_string(var._off) + "(%ebp)", "%eax");
-                        gas_ins("imull", "$" + std::to_string(_ty.size), _loc._reg);
+                        gas_ins("imull", "$" + std::to_string(_ty.size_), _loc._reg);
                         gas_ins("addl", _loc._reg, "%eax");
                     }
                     else {
@@ -417,7 +417,7 @@ void Generate::getReg(std::vector<std::string> &_q)
                         getReg("%edx");
                         gas_ins("leal", std::to_string(var._off) + "(%ebp)", "%eax");
                         gas_ins("movl", "_" + _glo.varName, "%edx");
-                        gas_ins("imull", "$" + std::to_string(_ty.size), "%edx");
+                        gas_ins("imull", "$" + std::to_string(_ty.size_), "%edx");
                         gas_ins("addl", "%edx", "%eax");
                     }
                 }
@@ -428,11 +428,11 @@ void Generate::getReg(std::vector<std::string> &_q)
                     Type _ty = getPtrType(var);
                     if (isNumber(_q1)) {
                         gas_ins("movl", "_" + var.varName, "%eax");
-                        gas_ins("addl", "$" + std::to_string(_ty.size * atoi(_q1.c_str())), "%eax");
+                        gas_ins("addl", "$" + std::to_string(_ty.size_ * atoi(_q1.c_str())), "%eax");
                     }
                     else if (isEnumConst(_q1)) {
                         gas_ins("movl", "_" + var.varName, "%eax");
-                        gas_ins("addl", "$" + std::to_string(_ty.size * atoi(parser->searchEnum(_q1).c_str())), "%eax");
+                        gas_ins("addl", "$" + std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())), "%eax");
                     }
                     else if (isLocVar(_q1)) {
                         Node _loc = searchLocvar(_q1);
@@ -440,21 +440,21 @@ void Generate::getReg(std::vector<std::string> &_q)
                             getReg("%edx");
                             gas_ins("movl", "_" + var.varName, "%eax");
                             gas_ins("movl", "_" + _loc.varName, "%edx");
-                            gas_ins("imull", "$" + std::to_string(var.type.size), "%edx");
+                            gas_ins("imull", "$" + std::to_string(var.type.size_), "%edx");
                             gas_ins("addl", "%edx", "%eax");
                         }
                         else if (var.kind == NODE_LOC_VAR) {
                             getReg("%ecx");
                             gas_ins("movl", "_" + var.varName, "%eax");
                             gas_ins("movl", loc_var_val(_loc._off), "%ecx");
-                            gas_ins("imull", "$" + std::to_string(var.type.size), "%ecx");
+                            gas_ins("imull", "$" + std::to_string(var.type.size_), "%ecx");
                             gas_ins("addl", "%ecx", "%eax");
                         }
                     }
                     else if (isTempVar(_q1)) {
                         TempVar _loc = searchTempvar(_q1);
                         gas_ins("movl", "_" + var.varName, "%eax");
-                        gas_ins("imull", "$" + std::to_string(_ty.size), _loc._reg);
+                        gas_ins("imull", "$" + std::to_string(_ty.size_), _loc._reg);
                         gas_ins("addl", _loc._reg, "%eax");
                     }
                     else {
@@ -465,21 +465,21 @@ void Generate::getReg(std::vector<std::string> &_q)
                     Type _ty = var.getType();
 
                     if (isNumber(_q1))
-                        gas_ins("leal", "_" + var.varName + "+" + std::to_string(_ty.size * atoi(_q1.c_str())), "%eax");
+                        gas_ins("leal", "_" + var.varName + "+" + std::to_string(_ty.size_ * atoi(_q1.c_str())), "%eax");
                     else if (isEnumConst(_q1))
-                        gas_ins("leal", "_" + var.varName + "+" + std::to_string(_ty.size * atoi(parser->searchEnum(_q1).c_str())), "%eax");
+                        gas_ins("leal", "_" + var.varName + "+" + std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())), "%eax");
                     else if (isLocVar(_q1)) {
                         Node _loc = searchLocvar(_q1);
                         getReg("%ecx");
                         gas_ins("leal", "_" + var.varName, "%eax");
                         gas_ins("movl", loc_var_val(_loc._off), "%ecx");
-                        gas_ins("imull", "$" + std::to_string(_ty.size), "%ecx");
+                        gas_ins("imull", "$" + std::to_string(_ty.size_), "%ecx");
                         gas_ins("addl", "%ecx", "%eax");
                     }
                     else if (isTempVar(_q1)) {
                         TempVar _loc = searchTempvar(_q1);
                         gas_ins("leal", "_" + var.varName, "%eax");
-                        gas_ins("imull", "$" + std::to_string(_ty.size), _loc._reg);
+                        gas_ins("imull", "$" + std::to_string(_ty.size_), _loc._reg);
                         gas_ins("addl", _loc._reg, "%eax");
                     }
                     else {
@@ -487,7 +487,7 @@ void Generate::getReg(std::vector<std::string> &_q)
                         getReg("%edx");
                         gas_ins("leal", "_" + var.varName, "%edx");
                         gas_ins("movl", "_" + _glo.varName, "%eax");
-                        gas_ins("imull", "$" + std::to_string(_ty.size), "%eax");
+                        gas_ins("imull", "$" + std::to_string(_ty.size_), "%eax");
                         gas_ins("addl", "%edx", "%eax");
                     }
                 }
@@ -523,7 +523,7 @@ void Generate::getReg(std::vector<std::string> &_q)
                     _struct_ty = *(_ty.fields.at(i)._type);
                 }
             }
-            gas_ins(movXXl(_struct_ty.size, _struct_ty.isUnsig), "(%eax)", "%eax");
+            gas_ins(movXXl(_struct_ty.size_, _struct_ty.isUnsig), "(%eax)", "%eax");
         }
             
 
@@ -625,32 +625,32 @@ void Generate::genIncDec(const std::string &_obj, const std::string &op)
 
         if (var.type.getType() == PTR) {
             if (var.kind == NODE_GLO_VAR) {
-                gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, _des);
+                gas_ins(movXXl(var.type.size_, var.type.isUnsig), "_" + var.varName, _des);
                 if(op.at(0) == 'a')
-                    gas_ins("addl", "$" + std::to_string(var.type.ptr->size), _des);
+                    gas_ins("addl", "$" + std::to_string(var.type.ptr->size_), _des);
                 else 
-                    gas_ins("subl", "$" + std::to_string(var.type.ptr->size), _des);
-                gas_ins(mov2stk(var.type.size), reg2stk(_des, var.type.size), "_" + var.varName);
+                    gas_ins("subl", "$" + std::to_string(var.type.ptr->size_), _des);
+                gas_ins(mov2stk(var.type.size_), reg2stk(_des, var.type.size_), "_" + var.varName);
             }
             else if (var.kind == NODE_LOC_VAR) {
-                gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), _des);
+                gas_ins(movXXl(var.type.size_, var.type.isUnsig), loc_var_val(var._off), _des);
                 if (op.at(0) == 'a')
-                    gas_ins("addl", "$" + std::to_string(var.type.ptr->size), _des);
+                    gas_ins("addl", "$" + std::to_string(var.type.ptr->size_), _des);
                 else
-                    gas_ins("subl", "$" + std::to_string(var.type.ptr->size), _des);
-                gas_ins(mov2stk(var.type.size), reg2stk(_des, var.type.size), loc_var_val(var._off));
+                    gas_ins("subl", "$" + std::to_string(var.type.ptr->size_), _des);
+                gas_ins(mov2stk(var.type.size_), reg2stk(_des, var.type.size_), loc_var_val(var._off));
             }
         }
         else {
             if (var.kind == NODE_GLO_VAR) {
-                gas_ins(movXXl(var.type.size, var.type.isUnsig), "_" + var.varName, _des);
+                gas_ins(movXXl(var.type.size_, var.type.isUnsig), "_" + var.varName, _des);
                 gas_tab(op + _des);
-                gas_ins(mov2stk(var.type.size), reg2stk(_des, var.type.size), "_" + var.varName);
+                gas_ins(mov2stk(var.type.size_), reg2stk(_des, var.type.size_), "_" + var.varName);
             }
             else if (var.kind == NODE_LOC_VAR) {
-                gas_ins(movXXl(var.type.size, var.type.isUnsig), loc_var_val(var._off), _des);
+                gas_ins(movXXl(var.type.size_, var.type.isUnsig), loc_var_val(var._off), _des);
                 gas_tab(op + _des);
-                gas_ins(mov2stk(var.type.size), reg2stk(_des, var.type.size), loc_var_val(var._off));
+                gas_ins(mov2stk(var.type.size_), reg2stk(_des, var.type.size_), loc_var_val(var._off));
             }
         }
     }
@@ -698,7 +698,7 @@ void Generate::genMulOrModAsm(std::vector<std::string> &_q)
 
         if (_l.kind == NODE_GLO_VAR) {
             getReg("%ecx");
-            gas_ins(movXXl(_l.type.size, _l.type.isUnsig), "_" + _l.varName, "%ecx");
+            gas_ins(movXXl(_l.type.size_, _l.type.isUnsig), "_" + _l.varName, "%ecx");
             gas_ins("idivl", "%ecx");
         }
         else if (_l.kind == NODE_LOC_VAR) {

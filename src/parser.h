@@ -112,9 +112,9 @@ class Parser {
 public:
 	Parser(){}
     // 构造函数，为了预处理器分析表达式的使用
-    Parser(Lex &l) :lex(l) { }
+    Parser(TokenSequence &ts) :ts_(ts) { }
 
-	Parser(Lex &l, const std::string &_ofn) :lex(l), _of_name(_ofn + ".q") { 
+	Parser(TokenSequence &ts, const std::string &_ofn) :ts_(ts), _of_name(_ofn + ".q") {
 		globalenv = new Env(nullptr); 
         globalenv->setName(_of_name);
 		createQuadFile();
@@ -284,8 +284,7 @@ private:
     bool cheak_is_int_type(const Node &n);
     bool cheak_is_custom_type(const Node &n);
 
-
-	Lex lex;
+    TokenSequence ts_;
 	Env *globalenv = nullptr;                               // 全局
 	Env *localenv = nullptr;                                // 临时
 	Env *funcCall = nullptr;                                // 记录函数调用

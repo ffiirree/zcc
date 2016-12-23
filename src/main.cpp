@@ -70,8 +70,8 @@ int main(int argc, char *argv[])
         if(_ofn.empty())
             _ofn = getOnlyFileName(fileName.at(i));
 
-        Lex is(fileName.at(i));
-        TokenSequence os;
+        TokenSequence is, os;
+        Lex lex(fileName.at(i), is);
 
         // ‘§¥¶¿Ì
         Preprocessor pp(isOnlyPP);
