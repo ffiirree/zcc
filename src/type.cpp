@@ -73,20 +73,6 @@ void Type::coping(const Type &t)
     is_struct = t.is_struct;
 }
 
-/**
- * Node
- */
-
-Node::Node(const Node &n)
-{
-	copying(n);
-}
-Node Node::operator=(const Node &n)
-{
-	copying(n);
-	return *this;
-}
-
 inline void Node::copying(const Node &n)
 {
 	kind = n.kind;

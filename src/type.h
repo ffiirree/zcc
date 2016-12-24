@@ -165,14 +165,15 @@ public:
 	Pos() :line(1), cols(1) {  }
 	Pos(int _line, int _cols) :line(_line), cols(_cols) {  }
 	Pos(const Pos &p) : line(p.line), cols(p.cols) {  }
-	Pos operator=(const Pos &p) { line = p.line; cols = p.cols; return (*this); }
+	Pos &operator=(const Pos &p) { line = p.line; cols = p.cols; return (*this); }
+    ~Pos() = default;
 
 	int line;
 	int cols;
 };
 
 /**
- * �ʷ���Ԫ
+ * @class Token
  */
 class Token {
 public:
@@ -180,10 +181,9 @@ public:
     Token(int id) :kind_(T_KEYWORD), id_(id) { }
 	Token(int kind, const std::string &sval) : kind_(kind), sval_(sval) { }
 	Token(int kind, char ch) : kind_(kind), pos_(), ch_(ch) { }
-	~Token() { if (kind_ == T_IDENTIFIER || kind_ == T_STRING || kind_ == T_INTEGER || kind_ == T_FLOAT)sval_.~basic_string(); }
-
     Token(const Token &t) { copying(t); }
-    Token operator=(const Token &t) { copying(t); return (*this); }
+    Token &operator=(const Token &t) { copying(t); return (*this); }
+	~Token() { if (kind_ == T_IDENTIFIER || kind_ == T_STRING || kind_ == T_INTEGER || kind_ == T_FLOAT)sval_.~basic_string(); }
 
 	inline int getType() const { return kind_; }
 	inline Pos getPos() const { return pos_; }
@@ -226,8 +226,8 @@ public:
     Field(const std::string &name) :_name(name) {}
     Field(const std::string &name, Type *_t, int _o) : _name(name), _type(_t), _off(_o){}
     Field(const Field &f) : _name(f._name), _type(f._type), _off(f._off) {}
-    Field operator=(const Field &f) { _name = f._name;  _type = f._type; _off = f._off; return *this; }
-
+    Field &operator=(const Field &f) { _name = f._name;  _type = f._type; _off = f._off; return *this; }
+    ~Field() = default;
 
     std::string _name;
     Type *_type = nullptr;
@@ -235,7 +235,7 @@ public:
 };
 
 /**
- * �ڵ�������
+ * @class Type
  */
 class Type {
 public:
@@ -246,7 +246,8 @@ public:
 	Type(int ty, Type *ret, std::vector<Node> _params) : type(ty), retType(ret), params(_params) { }
 
     Type(const Type &t) { coping(t); }
-    inline Type operator=(const Type &t) { coping(t); return *this; }
+    Type &operator=(const Type &t) { coping(t); return *this; }
+    ~Type() = default;
 
 	inline Type create(int ty, int s, bool isuns) { type = ty, size_ = s, isUnsig = isuns; return *this; }
 
@@ -263,7 +264,7 @@ public:
 	bool isUnsig = false;
 	bool isSta = false;
 
-	// ָ���������飬�б�������������
+    // 
 	Type *ptr = nullptr;
 
 	// array length
@@ -271,8 +272,8 @@ public:
 	std::vector<int> len;
 
     // struct or union
-    std::vector<Field> fields;      // ÿ����Ա�����֣� ���ͣ� ƫ��
-    bool is_struct = true;                       // struct or union
+    std::vector<Field> fields;
+    bool is_struct = true;
 
 	//function
 	Type *retType= nullptr;
@@ -329,9 +330,9 @@ public:
 	Node(int k, Type &ty, long val) :kind(k), type(ty), int_val(val) { }
 	Node(int k, Type &ty, double val) :kind(k), type(ty), float_val(val) { }
 
-	Node(const Node &n);
-	Node operator=(const Node &n);
-	~Node() { }
+    Node(const Node &n) { copying(n); }
+    Node &operator=(const Node &n) { copying(n); return *this; }
+    ~Node() = default;
 
 	inline int getKind() const { return kind; }
 	inline Type getType() const { return type; }

@@ -1,10 +1,6 @@
 #include "parser.h"
 #include "error.h"
 
-typedef struct Test {
-    int a;
-}Tsdf;
-
 void Parser::declaration(std::vector<Node> &list, bool isGlo)
 {
 	int sclass = 0;

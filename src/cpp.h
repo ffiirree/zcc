@@ -8,6 +8,9 @@ class Date {
 #define __s(x) std::to_string(x)
 public:
     Date() { reset(); }
+    Date(const Date &) = delete;
+    Date &operator=(const Date&) = delete;
+    ~Date() = default;
 
     static std::string getDate() {
         Date date;
@@ -45,7 +48,7 @@ public:
     Macro(const std::string &n, Token v, MacroType ty) :name_(n), type_(ty), params_() { replist_.push_back(v); }
 
     Macro(const Macro&m) :type_(m.type_), name_(m.name_), params_(m.params_), replist_(m.replist_) {  }
-    Macro operator=(const Macro &m) { type_ = m.type_; name_ = m.name_; params_ = m.params_; replist_ = m.replist_; return *this; }
+    Macro &operator=(const Macro &m) { type_ = m.type_; name_ = m.name_; params_ = m.params_; replist_ = m.replist_; return *this; }
     ~Macro() = default;
 
     MacroType type_ = M_ZERO;
@@ -61,7 +64,7 @@ class Preprocessor {
 public:
     Preprocessor(bool _only) : isOnlyPP(_only) { init(); }
 	Preprocessor(const Preprocessor &) = delete;
-	Preprocessor operator= (const Preprocessor &) = delete;
+	Preprocessor &operator= (const Preprocessor &) = delete;
     ~Preprocessor() = default;
 
     /**

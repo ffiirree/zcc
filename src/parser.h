@@ -26,6 +26,10 @@ class Env {
 public:
 	Env():Env(nullptr) {}
 	Env(Env *p) :_pre(p), nodes() { }
+    Env(const Env&) = delete;
+    Env &operator=(const Env&) = delete;
+    ~Env() = default;
+
 	void push_back(Node &n);
 	void pop_back() { nodes.pop_back(); }
 	Node &back() { return nodes.back(); }
@@ -50,12 +54,16 @@ private:
 };
 
 /**
- * @berif ��ǩ
+ * @class Label
  */
 class Label {
 public:
 	Label() :Label(nullptr) {}
 	Label(Env *p): labels() { }
+    Label(const Label&) = delete;
+    Label &operator=(const Label&) = delete;
+    ~Label() = default;
+
 	void push_back(const std::string &_l);
 	void push_back_un(const std::string &_l){
 		if (!_exist(_l)) {
@@ -79,13 +87,14 @@ private:
 };
 
 /**
- * @berif bool����ʽ��ʹ�õı�ǩ
+ * @berif BoolLabel
  */
 class BoolLabel{
 public:
 	BoolLabel() :_begin(), _true(), _false(), _next(){}
 	BoolLabel(const BoolLabel &bl):_begin(bl._begin), _true(bl._true), _false(bl._false), _next(bl._next), _leaf(bl._leaf){}
-	BoolLabel operator=(const BoolLabel &bl) { _begin = bl._begin; _true = bl._true, _false = bl._false; _next = bl._next;_leaf = bl._leaf; return *this; }
+	BoolLabel &operator=(const BoolLabel &bl) { _begin = bl._begin; _true = bl._true, _false = bl._false; _next = bl._next;_leaf = bl._leaf; return *this; }
+    ~BoolLabel() = default;
 
 	std::string _begin;
 	std::string _true;
@@ -110,10 +119,8 @@ public:
  */
 class Parser {
 public:
-	Parser(){}
-    // ���캯����Ϊ��Ԥ��������������ʽ��ʹ��
+    Parser() = default;
     Parser(TokenSequence &ts) :ts_(ts) { }
-
 	Parser(TokenSequence &ts, const std::string &_ofn) :ts_(ts), _of_name(_ofn + ".q") {
 		globalenv = new Env(nullptr); 
         globalenv->setName(_of_name);
@@ -122,7 +129,8 @@ public:
         trans_unit();
 	}
 	Parser(const Parser &p) = delete;
-	Parser operator=(const Parser &p) = delete;
+	Parser &operator=(const Parser &p) = delete;
+    ~Parser() = default;
 
 	std::vector<Node> trans_unit();
 	Env *getGloEnv() { return globalenv; }
@@ -133,7 +141,8 @@ public:
     inline std::vector<std::string> getFloatConst() { return float_const; }
     std::string searchEnum(const std::string &key);
     bool compute_bool_expr();
-    Node expr();       // ����Ԥ������ʹ��
+    Node expr(); 
+
 private:
     bool cheak_redefined(Env *_env, const std::string &_name);
 	Type conv2ptr(Type ty);
@@ -275,7 +284,6 @@ private:
     std::string getOverLoadName(const std::string &name, std::vector<Node> &_p);
 #endif
 
-    // ����
     void ensure_inttype(Node &node);
     bool ensure_lvalue(const Node &node);
     Type usual_arith_conv(Type &t, Type &u);
@@ -284,19 +292,19 @@ private:
     bool cheak_is_custom_type(const Node &n);
 
     TokenSequence ts_;
-	Env *globalenv = nullptr;                               // ȫ��
-	Env *localenv = nullptr;                                // ��ʱ
-	Env *funcCall = nullptr;                                // ��¼��������
-	Label labels;                                           // Դ�����е�Label
-	std::vector<StrCard> const_string;                      // �ַ�������
-    std::vector<std::string> float_const;                   // ����������
+	Env *globalenv = nullptr;
+	Env *localenv = nullptr;
+	Env *funcCall = nullptr;
+	Label labels;
+	std::vector<StrCard> const_string;
+    std::vector<std::string> float_const;
     std::map<std::string, std::string> enum_const;
 
 	std::string label_break;
 	std::vector<std::string> _stk_if_goto;
 	std::vector<std::string> _stk_if_goto_op;
 	std::vector<std::string> _stk_if_goto_out;
-	std::vector<std::string> _stk_ctl_bg_l;                 // break ..con..
+	std::vector<std::string> _stk_ctl_bg_l;
 	std::vector<std::string> _stk_ctl_end_l;
 
 	std::string switch_case_label;
@@ -315,7 +323,7 @@ private:
 };
 
 /**
- * @berif �﷨���������У����㳣���Ѿ����޳�������ֻ������
+ * @berif Cheak whether the string is a number.
  */
 inline bool isNumber(const std::string &str)
 {
@@ -326,7 +334,6 @@ inline bool isNumber(const std::string &str)
 		|| (str.at(0) == '-' || str.at(0) == '+')))
 		return false;
 
-	// �Ҹ�����
 	bool _has_dot = false;
 	for (size_t i = 1; i < str.size();++i) {
 		if (!((str.at(i) >= '0' && str.at(i) <= '9') || (str.at(i) == '.' && _has_dot == false)))

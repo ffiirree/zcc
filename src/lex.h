@@ -12,7 +12,7 @@ class TokenSequence {
 public:
     TokenSequence() = default;
     TokenSequence(const TokenSequence &ts) : tokens_(ts.tokens_), index_(ts.index_), filename_(ts.filename_) { }
-    TokenSequence operator=(const TokenSequence &ts) { tokens_ = ts.tokens_; index_ = ts.index_; filename_ = ts.filename_; return *this; }
+    TokenSequence &operator=(const TokenSequence &ts) { tokens_ = ts.tokens_; index_ = ts.index_; filename_ = ts.filename_; return *this; }
     ~TokenSequence() = default;
 
     /**
@@ -72,7 +72,7 @@ public:
     Lex() = default;
     Lex(const std::string &filename, TokenSequence &ts) { scan(filename, ts); }
     Lex(const Lex &) = delete;
-    Lex operator=(const Lex &) = delete;
+    Lex &operator=(const Lex &) = delete;
     ~Lex() = default;
 
     /**

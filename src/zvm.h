@@ -23,18 +23,18 @@ public:
     AsmIns(Instruction optor, const std::string lopand, const std::string ropand, const std::string &ins) : operator_(optor), lstr_(lopand), rstr_(ropand), ins_(ins) {}
 
     AsmIns(const AsmIns &ai) { copying(ai); }
-    AsmIns operator=(const AsmIns &ai) { copying(ai); return *this; }
+    AsmIns &operator=(const AsmIns &ai) { copying(ai); return *this; }
     ~AsmIns() = default;
 
 public:
-    Instruction operator_;           // ������
+    Instruction operator_;
 
-    void *loperand_ = nullptr;       // ��������
-    void *roperand_ = nullptr;       // �Ҳ�����
+    void *loperand_ = nullptr;
+    void *roperand_ = nullptr;
 
-    std::string ins_;                // ����ָ��,DEBUG
-    std::string lstr_;               // ��������
-    std::string rstr_;               // �Ҳ�����
+    std::string ins_;
+    std::string lstr_;
+    std::string rstr_;
 private:
     void copying(const AsmIns&ai);
 };
@@ -47,7 +47,7 @@ class VirtualMachine {
 public:
     VirtualMachine(bool use = false, bool debug = false);
     VirtualMachine(const VirtualMachine &vm) = delete;
-    VirtualMachine operator=(const VirtualMachine &vm) = delete;
+    VirtualMachine &operator=(const VirtualMachine &vm) = delete;
     ~VirtualMachine() = default;
 
     void create(Parser *p);

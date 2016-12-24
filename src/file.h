@@ -12,7 +12,7 @@ public:
 	File(const std::string &_filename);
 
 	File(const File &f) :filename(f.filename), buffer(f.buffer), ptr(f.ptr), pos(f.pos) {  }
-	inline File operator=(const File &f) { filename = f.filename; buffer = f.buffer; ptr = f.ptr; pos = f.pos; return *this; }
+	File &operator=(const File &f) { filename = f.filename; buffer = f.buffer; ptr = f.ptr; pos = f.pos; return *this; }
 	~File() {}
 
 	File open(const std::string &_file);

@@ -33,7 +33,9 @@ public:
 	Reg(const std::string &_r):_reg(_r), _var(){}
 	Reg(const std::string &_r, const std::string &_v) :_reg(_r), _var(_v) {  }
 	Reg(const Reg& r) :_reg(r._reg), _var(r._var), is_const(r.is_const) {}
-	Reg operator= (const Reg &r) { _reg = r._reg; _var = r._var; is_const = r.is_const; return *this; }
+	Reg &operator= (const Reg &r) { _reg = r._reg; _var = r._var; is_const = r.is_const; return *this; }
+    ~Reg() = default;
+
 	std::string _reg;
 	std::string _var;
 	bool is_const = false;
@@ -49,7 +51,8 @@ public:
     TempVar(const std::string &_n, const std::string &_r) :_name(_n), _reg(_r) {  }
 	TempVar(const std::string &_r, int _v) :_name(_r), _size(_v) {  }
 	TempVar(const TempVar& r) :_name(r._name), _size(r._size),  _reg(r._reg), type(r.type){ }
-    TempVar operator= (const TempVar &r) { _name = r._name; _size = r._size;  _reg = r._reg;type = r.type; return *this; }
+    TempVar &operator= (const TempVar &r) { _name = r._name; _size = r._size;  _reg = r._reg;type = r.type; return *this; }
+    ~TempVar() = default;
 
     int type;
 	std::string _name;             // ±äÁ¿Ãû
@@ -66,7 +69,7 @@ class Generate{
 public:
 	Generate(Parser *parser, VirtualMachine *vm);
 	Generate(const Generate &) = delete;
-	Generate operator= (const Generate &) = delete;
+	Generate &operator= (const Generate &) = delete;
 	~Generate() { out.close(); }
 
 	void run();
