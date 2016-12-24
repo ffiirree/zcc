@@ -97,7 +97,7 @@ void Generate::run()
     // ¸¡µãÊý
     std::vector<std::string> floatConst = parser->getFloatConst();
     if (!floatConst.empty())
-        gas_tab(".section .rdata,\"dr\"");
+        gas_tab(".section .rodata");
 
     for (size_t i = floatConst.size()/3; i > 0; --i) {
         std::string size = floatConst.back(); floatConst.pop_back();
@@ -127,7 +127,7 @@ void Generate::const_str()
 	if (parser->getStrTbl().empty())
 		return;
 
-    gas("\t.section  .rdata,\"dr\"");
+    gas("\t.section  .rodata");
 	std::vector<StrCard> strTbl = parser->getStrTbl();
 	for (size_t i = strTbl.size(); i > 0; --i) {
 

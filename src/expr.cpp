@@ -609,7 +609,7 @@ Node Parser::primary_expr()
 
 	case T_KEYWORD:
         ts_.back();
-		return NULL;
+		return Node();
 
 	default:
 		errorp(ts_.getPos(), "internal error: unknown token kind");
@@ -619,10 +619,11 @@ Node Parser::primary_expr()
 
 Node Parser::var_or_func(Token &t)
 {
+	Node r;
 #if defined(WIN32)
-    Node r = localenv->search("_" + t.getSval());
-#elif defined(linux)
-    Node r = localenv->search(t.getSval());
+    r = localenv->search("_" + t.getSval());
+#elif defined(__linux__)
+    r = localenv->search(t.getSval());
 #endif
 
 	if (r.kind == NODE_GLO_VAR || r.kind == NODE_LOC_VAR)

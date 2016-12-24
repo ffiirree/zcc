@@ -347,14 +347,14 @@ public:
     inline void setFuncName(const std::string &name) { 
 #if defined(WIN32)
         funcName = "_" + name;
-#elif
+#elif defined(__linux__)
         funcName = name;
 #endif
     }
     inline void setVarName(const std::string &name) {
 #if defined(WIN32)
         varName = "_" + name;
-#elif
+#elif defined(__linux__)
         varName = name;
 #endif
     }
@@ -427,7 +427,7 @@ public:
 	// Compound statement
 	std::vector<Node> stmts;
 private:
-	inline void copying(const Node &n);
+	void copying(const Node &n);
     std::string funcName;
     std::string varName;
 };

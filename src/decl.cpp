@@ -4,7 +4,7 @@
 void Parser::declaration(std::vector<Node> &list, bool isGlo)
 {
 	int sclass = 0;
-	Type baseType = decl_spec_opt(&sclass);               // ÉùÃ÷µÄ»ù±¾ÀàÐÍ
+	Type baseType = decl_spec_opt(&sclass);               // ï¿½ï¿½ï¿½ï¿½ï¿½Ä»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (next_is(';'))
 		return;
 
@@ -12,14 +12,14 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 		std::string name;
 		std::vector<Node> params;
 
-		Type ty = declarator(&baseType, name, params, DECL_BODY);  // ¶¨Òå
+		Type ty = declarator(&baseType, name, params, DECL_BODY);  // ï¿½ï¿½ï¿½ï¿½
 		ty.setStatic(sclass == K_STATIC);
 
-		if(sclass == K_TYPEDEF){                  //typedef ¶¨Òå
+		if(sclass == K_TYPEDEF){                  //typedef ï¿½ï¿½ï¿½ï¿½
             baseType.type = K_TYPEDEF;
             custom_type_tbl.insert(std::pair<std::string, Type>(name, baseType));
 		}
-		else if (ty.isStatic() && !isGlo) {       // ¾Ö²¿static±äÁ¿
+		else if (ty.isStatic() && !isGlo) {       // ï¿½Ö²ï¿½staticï¿½ï¿½ï¿½ï¿½
             errorp(ts_.getPos(), "Do not support static.");
 		}
 		else if (params.size() != 0) {
@@ -39,7 +39,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 
 #if defined(WIN32)
 				pushQuadruple("_" + name);
-#elif defined(linux)
+#elif defined(__linux__)
                 pushQuadruple(name);
 #endif
 			}
@@ -47,8 +47,8 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 			if (next_is('=')) {
 				list.push_back(createDeclNode(var, decl_init(ty)));
 
-				// ³õÊ¼»¯¸¡µãÊý
-				// Ö±½ÓÊÇÕûÊý³£Á¿ÎÞ·¨³õÊ¼»¯¸¡µãÊý
+				// ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+				// Ö±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Þ·ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 				if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
 					std::string _i2f = _stk_quad.back();
 					if (isNumber(_i2f)) {
@@ -92,7 +92,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
                             }
 					}
                     else if (var.type.type == K_STRUCT || var.type.type == K_TYPEDEF) {
-                        // ÐèÒªÈ«²¿³õÊ¼»¯
+                        // ï¿½ï¿½ÒªÈ«ï¿½ï¿½ï¿½ï¿½Ê¼ï¿½ï¿½
                         int _off = 0;
                         for (size_t i = ty.fields.size(); i > 0; --i) {
                             _stk_quad.push_back(var.name());
@@ -175,7 +175,7 @@ Node Parser::designator_list()
  * declarator = ['*'] ID direct_declarator_tail
  *            | ['*'] '(' declarator ')' direct_declarator_tail
  *
- * \\ Ö»Ö§³Ö¶¨³¤Êý×é,[]ºÍ[10]ÐÎÊ½
+ * \\ Ö»Ö§ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½,[]ï¿½ï¿½[10]ï¿½ï¿½Ê½
  * direct_declarator_tail = '[' ']' direct_declarator_tail
                           |'[' conditional_expr ']' direct_declarator_tail
 
@@ -196,7 +196,7 @@ Type Parser::conv2ptr(Type ty)
 
 Type Parser::declarator(Type *ty, std::string &name, std::vector<Node> &params, int deal_type)
 {
-	// Ö¸Õë±äÁ¿
+	// Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (next_is('*')) {
 		return declarator(new Type(conv2ptr(*ty)), name, params, deal_type);
 	}
@@ -230,7 +230,7 @@ Type Parser::decl_spec_opt(int *sclass)
 
 Type Parser::direct_decl_tail(Type *retty, std::vector<Node> &params, int decl_type)
 {
-	// Ö»Ö§³Ö¶¨³¤Êý×é
+	// Ö»Ö§ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if (next_is('[')) {
 		decl_array(retty);
         Type r(ARRAY, retty->_all_len, retty->len);
@@ -238,7 +238,7 @@ Type Parser::direct_decl_tail(Type *retty, std::vector<Node> &params, int decl_t
         return r;
 	}
 
-	// Èç¹ûÊÇÀ¨ºÅ£¬ÔòÎªº¯Êý
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½
 	if (next_is('(')) {
 		if (decl_type == DECL_BODY)
 			decl_type = NODE_FUNC_DECL;
@@ -305,7 +305,7 @@ Type Parser::decl_specifiers(int *rsclass)
 		{
 			// Type specifiers
 #define type_spec_cheak(cheak, val, _t) do{if(cheak) errorp(ts_.getPos(), "error " + std::string(_t) +" specifier"); else cheak = val;}while(0)
-			// Ö»ÄÜ³öÏÖÒ»´Î
+			// Ö»ï¿½Ü³ï¿½ï¿½ï¿½Ò»ï¿½ï¿½
 		case K_VOID:     type_spec_cheak(kind, k_void, "void");break;
 		case K_CHAR:     type_spec_cheak(kind, k_char, "char");break;
         case K_SHORT:    type_spec_cheak(kind, k_short, "short"); break;
@@ -336,7 +336,7 @@ Type Parser::decl_specifiers(int *rsclass)
 
 #undef type_spec_cheak
 			// Storage-class specifiers
-			// Ö»ÄÜ³öÏÖÔÚÉùÃ÷µÄÊ×Î»£¬ÇÒÖ»ÄÜÒ»´Î
+			// Ö»ï¿½Ü³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½Ò»ï¿½ï¿½
 			// Type qualifiers
 		case K_CONST: errorp(ts_.getPos(), "no const."); break;
 		case K_RESTRICT: errorp(ts_.getPos(), "no restrict."); break;
@@ -400,7 +400,7 @@ Type Parser::enum_def()
     do {
         t = ts_.next();
         if (t.getType() == T_IDENTIFIER) {
-            // ³£Á¿Ãû
+            // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
             _n = t.getSval();
             Node n = globalenv->search(_n);
             if (!n.name().empty())
@@ -408,7 +408,7 @@ Type Parser::enum_def()
             if(!searchEnum(_n).empty())
                 errorp(ts_.getPos(), "redefined var :"+ _n);
 
-            // ³£Á¿Öµ
+            // ï¿½ï¿½ï¿½ï¿½Öµ
             if (next_is('=')) {
                 t = ts_.next();
 

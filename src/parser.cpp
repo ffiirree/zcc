@@ -128,7 +128,7 @@ Node Parser::funcDef()
 
 #ifdef WIN32
 	out << "_" + funcName << ":" << std::endl;
-#elif defined(linux)
+#elif defined(__linux__)
     out << funcName << ":" << std::endl;
 #endif
 

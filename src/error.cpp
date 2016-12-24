@@ -5,7 +5,7 @@
 
 void error(const std::string &strerr)
 {
-    std::cout << "Error. " << __FILE__ << ": #" + __LINE__ << " ";
+    std::cout << "Error. " << __FILE__ << ": #" << __LINE__ << " ";
     std::cout << strerr << "." << std::endl;
     exit(-1);
 }

@@ -11,12 +11,11 @@ void Preprocessor::init()
 #ifdef WIN32
     paths_.push_back("D:/zcc/include/");
     paths_.push_back("C:/zcc/include/");
-#elif defined(linux)
-    paths_.push_back("D:/zcc/include/");
-    paths_.push_back("C:/zcc/include/");
+#elif defined(__linux__)
+    paths_.push_back("/usr/include/zcc/");
 #endif
 
-    // 包含默认宏定义
+    // 閿熸枻鎷烽敓鏂ゆ嫹榛橀敓杈冨畯瀹氶敓鏂ゆ嫹
     macros_.push_back({ "__ZCC__", {T_INTEGER, "1"}, Macro::M_PRE });
     macros_.push_back({ "__ZCC_VERSION__", { T_STRING, "Version 0.02" }, Macro::M_PRE });
     macros_.push_back({ "__FILE__", Macro::M_PRE });
@@ -219,14 +218,6 @@ void Preprocessor::subst(TokenSequence &is, const std::vector<std::string> &fp, 
     subst(is, fp, ap, hs, os);
 }
 
-
-/**
- * @berif 检查一个Token是否是宏形参，是则返回其位置
- * @param[in] t:Token
- * @param[fp] fp: formal parameters
- * @ret -1: no
- *      > -1: 在fp中的位置
- */
 int Preprocessor::isInFP(const Token &t, const std::vector<std::string> &fp)
 {
     for (size_t i = 0; i < fp.size(); ++i) {
@@ -264,12 +255,6 @@ void Preprocessor::glue(TokenSequence &ls, TokenSequence &rs)
     glue(ls, rs);
 }
 
-/**
- * @berif 向ts中添加hs中的元素
- * @param[in] hs: Hide set
- * @param[out] ts: TokenSequence
- * @ret None
- */
 void Preprocessor::hasadd(HideSet *hs, TokenSequence &ts)
 {
     if (ts.end())
@@ -277,7 +262,6 @@ void Preprocessor::hasadd(HideSet *hs, TokenSequence &ts)
     if (!hs)
         return;
 
-    // 如果
     Token &tok = ts.next();
     if(tok.hs_ == nullptr) tok.hs_ = new HideSet();
     tok.hs_->insert(hs->begin(), hs->end());
@@ -285,11 +269,6 @@ void Preprocessor::hasadd(HideSet *hs, TokenSequence &ts)
     hasadd(hs, ts);
 }
 
-/**
- * @berif 接收一个宏名字，返回它的替换列表
- * @param[in] _macro_name 宏名字
- * @ret   rts 宏的替换列表
- */
 TokenSequence Preprocessor::ts(const std::string &_macro_name)
 {
     TokenSequence rts;
@@ -308,12 +287,6 @@ TokenSequence Preprocessor::fp(const std::string &_macro_name)
     return rts;
 }
 
-/**
- * @berif 以逗号为分割从ts中找到并返回第i个逗号之后的所有Token
- * @param[in] _i
- * @param[in] ts
- * @ret rts
- */
 TokenSequence Preprocessor::select(int _i, const TokenSequence &ts)
 {
     size_t counter = 0;
@@ -327,11 +300,6 @@ TokenSequence Preprocessor::select(int _i, const TokenSequence &ts)
     return rts;
 }
 
-/**
- * @berif 将ts序列转换为一个字符串Token
- * @param[in] ts: 输入的Tokensequence
- * @ret rts: 包含一个字符串的Token序列
- */
 TokenSequence Preprocessor::stringize(const TokenSequence &ts)
 {
     TokenSequence rts;
@@ -343,11 +311,6 @@ TokenSequence Preprocessor::stringize(const TokenSequence &ts)
     return rts;
 }
 
-/**
- * @berif 从输入is中获取实际参数
- * @param[in] is: input sequence
- * @ret rts: actuls parameters
- */
 TokenSequence Preprocessor::getAP(TokenSequence &is)
 {
     TokenSequence rts;
@@ -359,12 +322,6 @@ TokenSequence Preprocessor::getAP(TokenSequence &is)
     return rts;
 }
 
-/**
- * @berif 检查一个字符串是否为宏定义
- * @param[in] _n: 待检查的名字
- * @ret -1: 不是宏定义
- *      > -1: 在宏列表中的位置
- */
 int Preprocessor::isMacro(const std::string &_n)
 {
     for (size_t i = 0;i < macros_.size(); ++i) {
@@ -375,12 +332,6 @@ int Preprocessor::isMacro(const std::string &_n)
     return -1;
 }
 
-/**
- * @berif 查找并返回宏定义的指针
- * @param[in] _n: 宏名字
- * @ret nullptr: 未找到
- *      !nullptr: 指向找到的宏的指针
- */
 Macro *Preprocessor::searchMacro(const std::string &_n)
 {
     for (auto iter = macros_.begin(); iter != macros_.end(); ++iter) {
@@ -431,9 +382,10 @@ void Preprocessor::Include(TokenSequence &is, TokenSequence &os)
     if (is.next().getType() != T_NEWLINE)
         error("need new_line.");
 
-    // 打开文件并插入
     for (const std::string path: paths_) {
+        
         std::string _file = path + _fn;
+        std::cout << _file <<std::endl;
         std::ifstream in(_file, std::ios::in);
         if (in.is_open()) {
             TokenSequence ts;

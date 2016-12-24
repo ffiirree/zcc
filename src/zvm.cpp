@@ -207,7 +207,7 @@ int VirtualMachine::getRegValByName(const std::string &name)
     else
         error("unknown register.");
 
-    return NULL;
+    return 0;
 }
 /**
  * @attention 浮点数不会出现在指令里面
