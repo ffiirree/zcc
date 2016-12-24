@@ -27,14 +27,14 @@ public:
     ~AsmIns() = default;
 
 public:
-    Instruction operator_;           // ²Ù×÷·û
+    Instruction operator_;           // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-    void *loperand_ = nullptr;       // ×ó²Ù×÷Êý
-    void *roperand_ = nullptr;       // ÓÒ²Ù×÷Êý
+    void *loperand_ = nullptr;       // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    void *roperand_ = nullptr;       // ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ï¿½
 
-    std::string ins_;                // »ã±àÖ¸Áî,DEBUG
-    std::string lstr_;               // ×ó²Ù×÷Êý
-    std::string rstr_;               // ÓÒ²Ù×÷Êý
+    std::string ins_;                // ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½,DEBUG
+    std::string lstr_;               // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    std::string rstr_;               // ï¿½Ò²ï¿½ï¿½ï¿½ï¿½ï¿½
 private:
     void copying(const AsmIns&ai);
 };

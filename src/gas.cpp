@@ -1,14 +1,10 @@
 #include "gen.h"
 #include "error.h"
 
-/**
- * @加载浮点数到内存中
- */
 int Generate::gas_flo_load(const std::string &name, bool isChange)
 {
     std::string _src;
 
-    // 如果是常量
     std::string fn = searchFLoat(name);
     if (!fn.empty()) {
         gas_tab(gas_fld(4, K_FLOAT) + "\t" + name);
@@ -20,7 +16,6 @@ int Generate::gas_flo_load(const std::string &name, bool isChange)
 		return K_FLOAT;
 	}
 
-    // 寄存器、局部和全局
     if (isFloatTemVar(name)) {
         TempVar temp = searchFloatTempvar(name);
         if (isChange)
@@ -104,9 +99,8 @@ std::string Generate::searchFLoat(const std::string &fl)
     return std::string();
 }
 
-/**
- * @berif 整形全局变量的定义
- */
+
+
 void Generate::gas_def_int(const std::string &n, int size, int init, bool is_fir)
 {
     gas_tab(".globl\t_" + n);
@@ -121,12 +115,9 @@ void Generate::gas_def_int(const std::string &n, int size, int init, bool is_fir
         error("Error data size.");
         break;
     }
-    vm_->use_ ? vm_->push_data("_" + n, init, size) : false;
+    if(vm_->use_) vm_->push_data("_" + n, init, size);
 }
 
-/**
- * @berif 浮点型全局变量的定义
- */
 void Generate::gas_def_flo(const std::string &n, int size, const std::string &init, bool is_fir)
 {
     gas_tab(".globl\t_" + n);
@@ -144,9 +135,6 @@ void Generate::gas_def_flo(const std::string &n, int size, const std::string &in
 }
 
 
-/**
- * 声明
- */
 void Generate::gas_dec(const std::string &n, int size)
 {
     out << "\t.comm\t";
@@ -156,9 +144,6 @@ void Generate::gas_dec(const std::string &n, int size)
     out << std::endl;
 }
 
-/**
- * @berif 数组定义
- */
 void Generate::gas_def_arr(Node &n, bool is_fir)
 {
     gas_tab(".globl\t_" + n.varName);
@@ -172,9 +157,6 @@ void Generate::gas_def_arr(Node &n, bool is_fir)
     out << "\t.space\t" << (n.type._all_len - i) * n.type.size_ << std::endl;
 }
 
-/**
- * 自定义数据类型结构体
- */
 void Generate::gas_custom(Node &n, bool is_fir)
 {
     gas_tab(".globl\t_" + n.varName);
@@ -190,13 +172,8 @@ void Generate::gas_custom(Node &n, bool is_fir)
         out << "\t.space\t" << n.type.size_ - _initsize << std::endl;
 }
 
-/**
- * 加载数据到寄存器
- * @ret 是否为有符号数
- */
 Type Generate::gas_load(const std::string &_q, const std::string &_reg)
 {
-    // 加载立即数
     if (isNumber(_q)) {
         gas_ins("movl", "$" + _q, _reg);
         setReg(_reg, _q);
@@ -209,14 +186,11 @@ Type Generate::gas_load(const std::string &_q, const std::string &_reg)
         return Type(K_INT, 4, false);
     }
 
-    // 加载变量
     Node var;
     if (isLocVar(_q)) {
         var = searchLocvar(_q);
-		// 加载浮点数
 		if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
 			gas_flo_load(_q, false);
-			// 没有使用通用，释放掉
 			clearRegTemp(_q);
 			return Type(var.type.type, var.type.size_, var.type.isUnsig);
 		}
@@ -239,7 +213,6 @@ Type Generate::gas_load(const std::string &_q, const std::string &_reg)
 		return Type(K_FLOAT, 4, false);
 	}
 
-    // 加载临时变量
     if (isTempVar(_q)) {
         TempVar var = searchTempvar(_q);
         gas_ins("movl", var._reg, _reg);
@@ -289,9 +262,6 @@ void Generate::gas_jxx(const std::string &op, const std::string &des, Type &_t)
         gas_ins("jne", des);
 }
 
-/**
- * @berif 保存临时变量
- */
 void Generate::temp_save(const std::string &_n, int type, bool is_unsig, const std::string &_reg)
 {
 	TempVar _t_save(_n);
@@ -337,9 +307,6 @@ void Generate::temp_save(const std::string &_n, Type &_t, const std::string &_re
 		_stk_temp_var.push_back(_t_save);
 }
 
-/**
- * @berif 无限制(寄存器等)二元操作符
- */
 void Generate::unlimited_binary_op(std::vector<std::string> &_q, const std::string &op)
 {
 	Type _save, _t;
@@ -380,9 +347,6 @@ void Generate::add_sub_with_ptr(std::vector<std::string> &_q, const std::string 
     temp_save(_q.at(3), _save, _q2_reg);
 }
 
-/**
- * @berif 移位操作符
- */
 void Generate::shift_op(std::vector<std::string> &_q, const std::string &op)
 {
 	Type _save, _t;

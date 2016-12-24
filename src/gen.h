@@ -5,7 +5,7 @@
 #include <iostream>
 #include "file.h"
 #include "parser.h"
-#include "ZVM.H"
+#include "zvm.h"
 
 #define st(x) do{x} while(0)
 
@@ -114,7 +114,7 @@ private:
 
     void gas_jxx(const std::string &op, const std::string &des, Type &_t);
     void unlimited_binary_op(std::vector<std::string> &_q, const std::string &op);
-    void Generate::add_sub_with_ptr(std::vector<std::string> &_q, const std::string &op);
+    void add_sub_with_ptr(std::vector<std::string> &_q, const std::string &op);
     void shift_op(std::vector<std::string> &_q, const std::string &op);
 	void genMulOrModAsm(std::vector<std::string> &_q);
     void genIncDec(const std::string &_obj, const std::string &op);
@@ -122,14 +122,14 @@ private:
     void temp_save(const std::string &_n, int type, bool is_unsig = false, const std::string &_reg = "%st");
     void temp_save(const std::string &_n, Type &_t, const std::string &_reg);
     
-    std::string Generate::getEmptyReg();
+    std::string getEmptyReg();
     void setReg(const std::string &_reg, const std::string &_var);
-    std::string Generate::getReg(const std::string &_reg);
+    std::string getReg(const std::string &_reg);
     void getReg(std::vector<std::string> &_q);
     bool isReg(const std::string &_t);
     void clearRegTemp(const std::string &var);
 
-    std::string Generate::searchFLoat(const std::string &fl);
+    std::string searchFLoat(const std::string &fl);
     LocVar &searchLocvar(const std::string &name);
     TempVar &searchTempvar(const std::string &name);
 	TempVar &searchFloatTempvar(const std::string &name);

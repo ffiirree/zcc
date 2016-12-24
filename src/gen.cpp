@@ -1,4 +1,3 @@
-#include<iomanip>
 #include "gen.h"
 #include "type.h"
 #include "error.h"
@@ -154,7 +153,7 @@ void Generate::func_decl(Node &n)
     gas_glo(n.funcName);
     gas_func_def(n.funcName);
     gas_label("_" + n.funcName);
-    vm_->use_ ? vm_->setFuncAddr("_" + n.funcName) : false;
+    if(vm_->use_ ) vm_->setFuncAddr("_" + n.funcName);
 
     gas_tab(".cfi_startproc");
     gas_ins("pushl", "%ebp");
@@ -421,11 +420,11 @@ void Generate::generate(std::vector<std::string> &_q)
         }
 
         gas_tab("leave");
-        vm_->use_ ? vm_->push_back({ vm_->getInsByOp("leave"), "leave" }) : false;
+        if(vm_->use_ ) vm_->push_back({ vm_->getInsByOp("leave"), "leave" });
         gas_tab(".cfi_restore 5");
         gas_tab(".cfi_def_cfa 4, 4");
         gas_tab("ret");
-        vm_->use_ ? vm_->push_back({ vm_->getInsByOp("ret"), "ret" }) : false;
+        if(vm_->use_ ) vm_->push_back({ vm_->getInsByOp("ret"), "ret" });
 	}
 	else if (_q_0_is(".end")) {
         gas_tab(".cfi_endproc");

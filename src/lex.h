@@ -18,7 +18,7 @@ public:
     /**
      * @berif Get, peek or test a token.
      */
-    inline Token next() { if (index_ >= tokens_.size()) return{}; return tokens_.at(index_++); }
+    inline Token &next() { if (index_ >= tokens_.size()) return*(new Token()); return tokens_.at(index_++); }
     inline Token &at(size_t i) { return tokens_.at(i); }
     void back();
     inline Token peek() const { if (index_ >= tokens_.size()) return{}; return tokens_.at(index_); }
@@ -51,9 +51,9 @@ public:
      * \ the last postion
      * \ current postion
      */
-    void insertFront(TokenSequence &l);
-    void insertBack(TokenSequence &l);
-    void insert(TokenSequence &l);
+    void insertFront(TokenSequence l);
+    void insertBack(TokenSequence l);
+    void insert(TokenSequence l);
 
     inline void setFileName(const std::string &fn) { filename_ = fn; }
     inline std::string getFileName() const { return filename_; }

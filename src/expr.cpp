@@ -1,4 +1,4 @@
-﻿#include "parser.h"
+#include "parser.h"
 #include "error.h"
 
 Node Parser::expr()
@@ -74,15 +74,12 @@ Node Parser::assignment_expr()
 
 	int cop = get_compound_assign_op(t); // * + * ..
 
-	// 如果是赋值运算符
 	if (is_keyword(t, '=') || cop) {
-		// 右侧值
 		Node value = assignment_expr();
 		Node _temp;
 		if (cop) {
 			_temp = binop(cop, *node, value);
 			pushQuadruple((*node).varName);
-			// 交换后两个的顺序，-= 和 -生成的操作数顺序不统一
 			std::string _1, _2;
 			_1 = _stk_quad.back(); _stk_quad.pop_back();
 			_2 = _stk_quad.back(); _stk_quad.pop_back();
@@ -226,7 +223,7 @@ Node Parser::bit_or_expr()
 {
 	Node *node = new Node(bit_xor_expr());
 	while (next_is('|')) {
-		node = new Node(binop('|', *node, bit_xor_expr()));
+		node = new Node(binop('|', *node, *(new Node(bit_xor_expr()))));
 		createQuadruple("|");
 	}
 		
@@ -236,7 +233,7 @@ Node Parser::bit_xor_expr()
 {
 	Node *node = new Node(bit_and_expr());
 	while (next_is('^')) {
-		node = new Node(binop('^', *node, bit_and_expr()));
+		node = new Node(binop('^', *node, *(new Node(bit_and_expr()))));
 		createQuadruple("^");
 	}
 		
@@ -246,7 +243,7 @@ Node Parser::bit_and_expr()
 {
 	Node *node = new Node(equal_expr());
 	while (next_is('&')) {
-		node = new Node(binop('&', *node, equal_expr()));
+		node = new Node(binop('&', *node, *(new Node(equal_expr()))));
 		createQuadruple("&");
 	}
 		
@@ -258,11 +255,11 @@ Node Parser::equal_expr()
 	Node r;
 
 	if (next_is(OP_EQ)) {
-		r = binop(OP_EQ, *node, equal_expr());
+		r = binop(OP_EQ, *node, *(new Node(equal_expr())));
 		createBoolGenQuadruple("==");
 	}
 	else if (next_is(OP_NE)) {
-		r = binop(OP_NE, *node, equal_expr());
+		r = binop(OP_NE, *node, *(new Node(equal_expr())));
 		createBoolGenQuadruple("!=");
 	}
 	else {
@@ -277,21 +274,21 @@ Node Parser::relational_expr()
 	Node *node = new Node(shift_expr());
 	for (;;) {
 		if (next_is('<')) {
-			node = new Node(binop('<', *node, shift_expr()));
+			node = new Node(binop('<', *node, *(new Node(shift_expr()))));
 			createBoolGenQuadruple("<");
 		}
 			
 		else if (next_is('>')) {
-			node = new Node(binop('>', *node, shift_expr()));
+			node = new Node(binop('>', *node, *(new Node(shift_expr()))));
 			createBoolGenQuadruple(">");
 		}
 		else if (next_is(OP_LE)) {
-			node = new Node(binop(OP_LE, *node, shift_expr()));
+			node = new Node(binop(OP_LE, *node, *(new Node(shift_expr()))));
 			createBoolGenQuadruple("<=");
 		}
 			
 		else if (next_is(OP_GE)) {
-			node = new Node(binop(OP_GE, *node, shift_expr()));
+			node = new Node(binop(OP_GE, *node, *(new Node(shift_expr()))));
 			createBoolGenQuadruple(">=");
 		}
 		else   
@@ -440,13 +437,12 @@ Node Parser::unary_expr()
             createUnaryQuadruple("*U");
             return r;
 
-            // 不完全
+
         case '+':
             r = cast_expr();
             createUnaryQuadruple("+U");
             return r;
 
-            // 不完全
         case '-':
             r = unary_minus();
             createUnaryQuadruple("-U");
@@ -473,9 +469,9 @@ Node Parser::unary_minus()
     Node *expr = new Node(cast_expr());
 
     if (is_inttype(expr->type))
-        return binop('-', createIntNode(expr->type, 0), *expr);
+		return binop('-', *(new Node(createIntNode(expr->type, 0))), *expr);
 
-    return binop('-', createFloatNode(expr->type, 0.0), *expr);
+	return binop('-', *(new Node(createFloatNode(expr->type, 0.0))), *expr);
 }
 
 Node Parser::postfix_expr()
@@ -556,7 +552,6 @@ Node Parser::postfix_expr_tail(Node &node)
             
 		}
 		Token tok = ts_.peek();
-		// 后置++/--
 		if (next_is(OP_INC) || next_is(OP_DEC)) {
 			ensure_lvalue(node);
 			int op = is_keyword(tok, OP_INC) ? OP_POST_INC : OP_POST_DEC;
@@ -586,12 +581,10 @@ Node Parser::primary_expr()
 	}
 
 	switch (tok.getType()) {
-		
-		// 如果是ID， 则可能为变量或函数调用
+
 	case T_IDENTIFIER:
 		return var_or_func(tok);
 
-		// 常量
 	case T_INTEGER:
 		pushQuadruple(tok.getSval());
 		return createIntNode(tok, 4, false);
@@ -627,7 +620,6 @@ Node Parser::primary_expr()
 Node Parser::var_or_func(Token &t)
 {
 	Node r = localenv->search(t.getSval());
-    // 如果是重载函数做参数，无法根据函数名获取到参数中调用的函数
 
 	if (r.kind == NODE_GLO_VAR || r.kind == NODE_LOC_VAR)
 		pushQuadruple(r.varName);
@@ -672,8 +664,6 @@ Node Parser::binop(int op, Node &lhs, Node &rhs)
 
 	return createBinOpNode(r, op, new Node(wrap(r, lhs)), new Node(wrap(r, rhs)));
 }
-
-// 常规算术转换规则
 Type Parser::usual_arith_conv(Type &t, Type &u)
 {
 	if (t.getType() < u.getType()) {

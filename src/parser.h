@@ -50,7 +50,7 @@ private:
 };
 
 /**
- * @berif ±êÇ©
+ * @berif ï¿½ï¿½Ç©
  */
 class Label {
 public:
@@ -79,7 +79,7 @@ private:
 };
 
 /**
- * @berif bool±í´ïÊ½ÖÐÊ¹ÓÃµÄ±êÇ©
+ * @berif boolï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½Ê¹ï¿½ÃµÄ±ï¿½Ç©
  */
 class BoolLabel{
 public:
@@ -106,12 +106,12 @@ public:
 };
 
 /**
- * @ Parser,Óï·¨·ÖÎöºÍÖÐ¼ä´úÂëÉú³É
+ * @ Parser,ï¿½ï·¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 class Parser {
 public:
 	Parser(){}
-    // ¹¹Ôìº¯Êý£¬ÎªÁËÔ¤´¦ÀíÆ÷·ÖÎö±í´ïÊ½µÄÊ¹ÓÃ
+    // ï¿½ï¿½ï¿½ìº¯ï¿½ï¿½ï¿½ï¿½Îªï¿½ï¿½Ô¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê½ï¿½ï¿½Ê¹ï¿½ï¿½
     Parser(TokenSequence &ts) :ts_(ts) { }
 
 	Parser(TokenSequence &ts, const std::string &_ofn) :ts_(ts), _of_name(_ofn + ".q") {
@@ -133,7 +133,7 @@ public:
     inline std::vector<std::string> getFloatConst() { return float_const; }
     std::string searchEnum(const std::string &key);
     bool compute_bool_expr();
-    Node expr();       // ÔÊÐíÔ¤´¦ÀíÆ÷Ê¹ÓÃ
+    Node expr();       // ï¿½ï¿½ï¿½ï¿½Ô¤ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½
 private:
     bool cheak_redefined(Env *_env, const std::string &_name);
 	Type conv2ptr(Type ty);
@@ -153,9 +153,9 @@ private:
 
 	bool next_is(int id);
 	void expect(int id);
-	bool is_keyword(Token &t, int id);
+	bool is_keyword(Token t, int id);
 	bool is_type(const Token &t);
-	bool is_inttype(Type &ty);
+	bool is_inttype(Type ty);
 	bool is_floattype(Type &ty);
 	bool is_arithtype(Type &ty);
 	Type get_type(std::string key);
@@ -163,22 +163,21 @@ private:
 	std::string get_compound_assign_op_signal(Token &t);
 
 	//
-	Node createFuncNode(Type &ty, std::string & funcName, std::vector<Node> params, Node *body);
+	Node createFuncNode(Type ty, std::string & funcName, std::vector<Node> params, Node *body);
 	Node createIntNode(Token &t, int size, bool isch);
-	Node createIntNode(Type &ty, int val);
-	Node createFloatNode(Type &ty, double val);
-	Node createFloatNode(Token &t);
-	Node createStrNode(Token &t);
+	Node createIntNode(Type ty, int val);
+	Node createFloatNode(Type ty, double val);
+	Node createFloatNode(Token t);
+	Node createStrNode(Token t);
 	Node createCompoundStmtNode(std::vector<Node> &stmts);
 	Node createDeclNode(Node &var);
-	Node createDeclNode(Node &var, std::vector<Node> &init);
-	Node createGLoVarNode(Type &ty, std::string name);
-	Node createLocVarNode(Type &ty, std::string name);
-	Node createFuncDeclParams(Type &ty);
-	Node createFuncDecl(Type &ty, std::string & funcName, std::vector<Node> params);
-	// Á½Ôª²Ù×÷·û
-	Node createBinOpNode(Type &ty, int kind, Node *left, Node *right);
-	Node createUnaryNode(int kind, Type &ty, Node &node);
+	Node createDeclNode(Node &var, std::vector<Node> init);
+	Node createGLoVarNode(Type ty, std::string name);
+	Node createLocVarNode(Type ty, std::string name);
+	Node createFuncDeclParams(Type ty);
+	Node createFuncDecl(Type ty, std::string & funcName, std::vector<Node> params);
+	Node createBinOpNode(Type ty, int kind, Node *left, Node *right);
+	Node createUnaryNode(int kind, Type ty, Node &node);
 
 	Node createRetStmtNode(Node *n);
 	Node createJumpNode(std::string label);
@@ -276,7 +275,7 @@ private:
     std::string getOverLoadName(const std::string &name, std::vector<Node> &_p);
 #endif
 
-    // ¼ì²é
+    // ï¿½ï¿½ï¿½ï¿½
     void ensure_inttype(Node &node);
     bool ensure_lvalue(const Node &node);
     Type usual_arith_conv(Type &t, Type &u);
@@ -285,12 +284,12 @@ private:
     bool cheak_is_custom_type(const Node &n);
 
     TokenSequence ts_;
-	Env *globalenv = nullptr;                               // È«¾Ö
-	Env *localenv = nullptr;                                // ÁÙÊ±
-	Env *funcCall = nullptr;                                // ¼ÇÂ¼º¯Êýµ÷ÓÃ
-	Label labels;                                           // Ô´³ÌÐòÖÐµÄLabel
-	std::vector<StrCard> const_string;                      // ×Ö·û´®³£Á¿
-    std::vector<std::string> float_const;                   // ¸¡µãÊý³£Á¿
+	Env *globalenv = nullptr;                               // È«ï¿½ï¿½
+	Env *localenv = nullptr;                                // ï¿½ï¿½Ê±
+	Env *funcCall = nullptr;                                // ï¿½ï¿½Â¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+	Label labels;                                           // Ô´ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½Label
+	std::vector<StrCard> const_string;                      // ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+    std::vector<std::string> float_const;                   // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     std::map<std::string, std::string> enum_const;
 
 	std::string label_break;
@@ -316,7 +315,7 @@ private:
 };
 
 /**
- * @berif Óï·¨·ÖÎö¹ý³ÌÖÐ£¬¸¡µã³£Á¿ÒÑ¾­±»ÌÞ³ý£¬ËùÒÔÖ»ÓÐÕûÊý
+ * @berif ï¿½ï·¨ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð£ï¿½ï¿½ï¿½ï¿½ã³£ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½Þ³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 inline bool isNumber(const std::string &str)
 {
@@ -327,7 +326,7 @@ inline bool isNumber(const std::string &str)
 		|| (str.at(0) == '-' || str.at(0) == '+')))
 		return false;
 
-	// ÇÒ¸¡µãÊý
+	// ï¿½Ò¸ï¿½ï¿½ï¿½ï¿½ï¿½
 	bool _has_dot = false;
 	for (size_t i = 1; i < str.size();++i) {
 		if (!((str.at(i) >= '0' && str.at(i) <= '9') || (str.at(i) == '.' && _has_dot == false)))

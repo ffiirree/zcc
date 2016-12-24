@@ -3,7 +3,7 @@
 #include "error.h"
 
 /**
- * @berif Ã¿Ò»¸ö¾ä×Ó¶¼ÊÇÒ»¸ö½Úµã
+ * @berif Ã¿Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ó¶ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Úµï¿½
  */
 Node Parser::statement()
 {
@@ -26,12 +26,12 @@ Node Parser::statement()
 		}
 	}
 
-	// ±êÇ©£¬gotoÓï¾äµÄ±êÇ©
+	// ï¿½ï¿½Ç©ï¿½ï¿½gotoï¿½ï¿½ï¿½ï¿½ï¿½Ä±ï¿½Ç©
 	if (t.getType() == T_IDENTIFIER && next_is(':')) {
 		// label
 		labels.push_back(t.getSval());
 		out << t.getSval() << ":" << std::endl;
-		return Node();      ////////////////////////////ÐÞ¸Ä
+		return Node();      ////////////////////////////ï¿½Þ¸ï¿½
 	}
     ts_.back();
 
@@ -126,7 +126,7 @@ Node Parser::while_stmt()
 	std::string _begin = newLabel("wb");   // begin = newLabel
 	std::string _snext = newLabel("sn");   
 
-	// break ºÍ continue
+	// break ï¿½ï¿½ continue
 	_stk_ctl_bg_l.push_back(_begin);
 	_stk_ctl_end_l.push_back(_snext);
 
@@ -194,7 +194,7 @@ Node Parser::do_stmt()
 	_stk_ctl_bg_l.pop_back();
 	_stk_ctl_end_l.pop_back();
 
-	return *r; ////////////////////ÕâÀïÒªÐÞ¸Ä
+	return *r; ////////////////////ï¿½ï¿½ï¿½ï¿½Òªï¿½Þ¸ï¿½
 }
 
 Node Parser::switch_stmt()
@@ -269,12 +269,12 @@ Node Parser::for_stmt()
 		expect(';');
 	}
 
-	// boolÅÐ¶Ï²¿·Ö
+	// boolï¿½Ð¶Ï²ï¿½ï¿½ï¿½
 	boolLabel.push_back(_for);
 	generateIfGoto();
     out << "clr" << std::endl;
 
-	// ºóÑ­»·²¿·Ö
+	// ï¿½ï¿½Ñ­ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	out << _exp3 << ":" << std::endl;
 	if (is_keyword(ts_.peek(), ')')) {
 		expect(')');
@@ -288,7 +288,7 @@ Node Parser::for_stmt()
 	out << "goto " << _begin << std::endl;
 	out << _for._true << ":" << std::endl;
 
-	// Ñ­»·Ìå
+	// Ñ­ï¿½ï¿½ï¿½ï¿½
 	statement();
     __OUT_SCOPE__(localenv);
 	out << "goto " << _exp3 << std::endl;
@@ -309,7 +309,7 @@ Node Parser::goto_stmt()
 
 	out << std::left << std::setw(10) << "goto " << t.getSval() << std::endl;
 
-	return Node(); /////////ÐÞ¸Ä
+	return Node(); /////////ï¿½Þ¸ï¿½
 }
 
 Node Parser::continue_stmt()

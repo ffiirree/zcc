@@ -269,20 +269,20 @@ bool TokenSequence::expect(const char id)
 }
 
 
-void TokenSequence::insertFront(TokenSequence &l)
+void TokenSequence::insertFront(TokenSequence l)
 {
     for (size_t i = l.size(); i > 0; --i) {
         tokens_.insert(tokens_.begin(), l.at(i - 1));
     }
 }
-void TokenSequence::insertBack(TokenSequence &l)
+void TokenSequence::insertBack(TokenSequence l)
 {
     for (size_t i = 0; i < l.size(); ++i) {
         tokens_.push_back(l.at(i));
     }
 }
 
-void TokenSequence::insert(TokenSequence &l) 
+void TokenSequence::insert(TokenSequence l) 
 {
     for (size_t i = l.size(); i > 0; --i) {
         tokens_.insert(tokens_.begin() + index_, l.at(i - 1));

@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
         pp.expand(is, os);
 
         //  «∑Ò¥Ú”°
-        to_print ? print_pp(os) : false;
+		if(to_print) print_pp(os);
 
         // 
         if (!isOnlyPP) {
@@ -91,7 +91,7 @@ int main(int argc, char *argv[])
             }
             else {
                 if (!stopAsm) {
-                    std::string runGccSys = "gcc " + _ofn + ".s -o" + _ofn + ".exe";
+                    std::string runGccSys = "gcc " + _ofn + ".s -o" + _ofn + ".exe -m32";
                     auto ret = system(runGccSys.c_str());
                 }
             }

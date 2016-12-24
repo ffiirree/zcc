@@ -42,7 +42,7 @@ public:
 public:
     Macro() :name_(), params_(), replist_() { }
     Macro(const std::string &n, MacroType ty) :name_(n), type_(ty), params_(), replist_() {}
-    Macro(const std::string &n, Token & v, MacroType ty) :name_(n), type_(ty), params_() { replist_.push_back(v); }
+    Macro(const std::string &n, Token v, MacroType ty) :name_(n), type_(ty), params_() { replist_.push_back(v); }
 
     Macro(const Macro&m) :type_(m.type_), name_(m.name_), params_(m.params_), replist_(m.replist_) {  }
     Macro operator=(const Macro &m) { type_ = m.type_; name_ = m.name_; params_ = m.params_; replist_ = m.replist_; return *this; }
@@ -74,9 +74,9 @@ public:
     TokenSequence ts(const std::string &_macro_name);
     TokenSequence fp(const std::string &_macro_name);
     TokenSequence select(int i, TokenSequence &ts);
-    TokenSequence stringize(TokenSequence &ts);
+    TokenSequence stringize(TokenSequence ts);
     TokenSequence getAP(TokenSequence &is);
-    int isInFP(Token &t, std::vector<std::string> fp);
+    int isInFP(Token t, std::vector<std::string> fp);
 
     Macro *searchMacro(const std::string &_n);
     int isMacro(const std::string &_n);

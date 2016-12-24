@@ -2,11 +2,6 @@
 #include "parser.h"
 #include "error.h"
 
-
-/**
- * @berif 一个翻译单元，一个文件
- * 
- */
 std::vector<Node> Parser::trans_unit()
 {
 	std::vector<Node> list;
@@ -41,12 +36,9 @@ void Env::push_back(Node &n) {
 
 	nodes.push_back(n);
 }
-/**
- * @berif 添加标签
- */
+
 void Label::push_back(const std::string &_l) {
 
-	// 如果添加过了
 	for (size_t i = 0; i < labels.size(); ++i) {
 		if (_l == labels.at(i)) {
 			if (enLabels.at(i) == false) {
@@ -60,7 +52,6 @@ void Label::push_back(const std::string &_l) {
 		}
 	}
 
-	// 从未添加过
 	labels.push_back(_l);
 	enLabels.push_back(true);
 }
@@ -74,16 +65,11 @@ bool Label::cheak()
 	return true;
 }
 
-
-/**
- * @berif 检查是否是函数定义
- */
 bool Parser::isFuncDef()
 {
 	int count = 0;
 	Token t;
 
-	// 返回类型
 	do {
 		t = ts_.next();
 		count++;
@@ -123,18 +109,15 @@ _end:
 	return true;
 }
 
-/**
- * @berif 函数定义
- */
 Node Parser::funcDef()
 {
 	int current_class = 0;                                                  // static ...
-	std::string funcName;                                                   // 函数名字
+	std::string funcName;                                                   // 锟斤拷锟斤拷锟斤拷锟斤拷
 	std::vector<Node> params;
     __IN_SCOPE__(localenv, globalenv, newLabel("fun"));
 
-	Type *retty = new Type(decl_spec_opt(&current_class));                  // 获取函数的返回类型
-	Type functype = declarator(retty, funcName, params, FUNC_BODY);         // 函数定义类型，函数描述
+	Type *retty = new Type(decl_spec_opt(&current_class));                  
+	Type functype = declarator(retty, funcName, params, FUNC_BODY);
 	if (functype.type == PTR) {
 		errorp(ts_.getPos(), "Ptr not can be function.");
 	}
@@ -145,9 +128,9 @@ Node Parser::funcDef()
 
 	out << funcName << ":" << std::endl;
 
-	functype.setStatic(current_class == K_STATIC);                          // 函数是否是static
+	functype.setStatic(current_class == K_STATIC);
 	expect('{');
-	Node r = func_body(functype, funcName, params);                         // 函数体
+	Node r = func_body(functype, funcName, params);
 
 	__OUT_SCOPE__(localenv);
 	out << ".end" << std::endl;
@@ -241,7 +224,7 @@ void Env::setFuncDef(Node &_def)
 }
 
 /**
-* 从当前作用域开始查找标识符
+* 锟接碉拷前锟斤拷锟斤拷锟斤拷锟斤拷始锟斤拷锟揭憋拷识锟斤拷
 */
 Type Parser::get_type(std::string key)
 {
@@ -317,7 +300,7 @@ Node Parser::createIntNode(Token &t, int size, bool isch)
 }
 
 
-Node Parser::createIntNode(Type &ty, int val)
+Node Parser::createIntNode(Type ty, int val)
 {
 	Node node(NODE_INT);
 	node.int_val = val;
@@ -325,7 +308,7 @@ Node Parser::createIntNode(Type &ty, int val)
 	return node;
 }
 
-Node Parser::createFloatNode(Type &ty, double val)
+Node Parser::createFloatNode(Type ty, double val)
 {
 	Node node(NODE_DOUBLE);
 
@@ -335,7 +318,7 @@ Node Parser::createFloatNode(Type &ty, double val)
 }
 
 
-Node Parser::createFloatNode(Token &t)
+Node Parser::createFloatNode(Token t)
 {
 	Node node(NODE_DOUBLE);
 
@@ -344,7 +327,7 @@ Node Parser::createFloatNode(Token &t)
 	return node;
 }
 
-Node Parser::createStrNode(Token &t)
+Node Parser::createStrNode(Token t)
 {
 	Node node(NODE_STRING);
 
@@ -352,7 +335,7 @@ Node Parser::createStrNode(Token &t)
 	return node;
 }
 
-Node Parser::createFuncNode(Type &ty, std::string & funcName, std::vector<Node> params, Node *body)
+Node Parser::createFuncNode(Type ty, std::string & funcName, std::vector<Node> params, Node *body)
 {
 	Node node(NODE_FUNC, ty);
 	node.funcName = funcName;
@@ -364,7 +347,7 @@ Node Parser::createFuncNode(Type &ty, std::string & funcName, std::vector<Node> 
 	return node;
 }
 
-Node Parser::createFuncDecl(Type &ty, std::string & funcName, std::vector<Node> params)
+Node Parser::createFuncDecl(Type ty, std::string & funcName, std::vector<Node> params)
 {
 	Node node(NODE_FUNC_DECL, ty);
 	node.funcName = funcName;
@@ -389,7 +372,7 @@ Node Parser::createDeclNode(Node &var)
 	node.decl_var = &var;
 	return node;
 }
-Node Parser::createDeclNode(Node &var, std::vector<Node> &init)
+Node Parser::createDeclNode(Node &var, std::vector<Node> init)
 {
 	Node node(NODE_DECL);
 	node.decl_var = &var;
@@ -405,7 +388,7 @@ Node Parser::createDeclNode(Node &var, std::vector<Node> &init)
 	return node;
 }
 
-Node Parser::createGLoVarNode(Type &ty, std::string name)
+Node Parser::createGLoVarNode(Type ty, std::string name)
 {
 	Node r(NODE_GLO_VAR, ty);
 	r.varName = name;
@@ -417,7 +400,7 @@ Node Parser::createGLoVarNode(Type &ty, std::string name)
 
 	return r;
 }
-Node Parser::createLocVarNode(Type &ty, std::string name)
+Node Parser::createLocVarNode(Type ty, std::string name)
 {
 	Node r(NODE_LOC_VAR, ty);
 	r.varName = name;
@@ -429,13 +412,13 @@ Node Parser::createLocVarNode(Type &ty, std::string name)
 	return r;
 }
 
-Node Parser::createFuncDeclParams(Type &ty)
+Node Parser::createFuncDeclParams(Type ty)
 {
 	Node r(NODE_DECL_PARAM, ty);
 	return r;
 }
 
-Node Parser::createBinOpNode(Type &ty, int kind, Node *left, Node *right)
+Node Parser::createBinOpNode(Type ty, int kind, Node *left, Node *right)
 {
 	Node r(kind, ty);
 	r.left = left;
@@ -443,7 +426,7 @@ Node Parser::createBinOpNode(Type &ty, int kind, Node *left, Node *right)
 	return r;
 }
 
-Node Parser::createUnaryNode(int kind, Type &ty, Node &node)
+Node Parser::createUnaryNode(int kind, Type ty, Node &node)
 {
 	Node r(kind);
 	r.type = ty;
@@ -494,9 +477,9 @@ bool Parser::is_type(const Token &t)
 }
 
 /**
-* 检查是否是关键字id
+* 锟斤拷锟斤拷锟角凤拷锟角关硷拷锟斤拷id
 */
-bool Parser::is_keyword(Token &t, int id)
+bool Parser::is_keyword(Token t, int id)
 {
 	return (t.getType() == T_KEYWORD && t.getId() == id);
 }
@@ -525,7 +508,7 @@ void Parser::expect(int id)
 		errorp(ts_.getPos(), "expect '%c', but not is '%c'", id, t.getId());
 }
 
-bool Parser::is_inttype(Type &ty)
+bool Parser::is_inttype(Type ty)
 {
 	switch (ty.getType())
 	{
@@ -751,7 +734,6 @@ void Parser::createBoolGenQuadruple(const std::string &op)
 
 std::string getReulst(std::string &v1, std::string &v2, const std::string &op)
 {
-	// 注意入栈出栈的顺序
 	int _var1 = atoi(v2.c_str());
 	int _var2 = atoi(v1.c_str());
 
@@ -822,7 +804,6 @@ void Parser::createUnaryQuadruple(const std::string &op)
 	std::string tempName = newLabel("uy");
 	_out_str += "\t" + tempName;
 
-	// 添加到生成四元式的栈中
 	_stk_quad.push_back(tempName);
 
 	out << _out_str << std::endl;
@@ -830,8 +811,6 @@ void Parser::createUnaryQuadruple(const std::string &op)
 
 // + - * / % & | ^ 
 // +f -f *f /f
-// 不进行 
-// 赋值运算和二元操作符
 void Parser::createQuadruple(const std::string &op)
 {
 	std::string _out_str = op;
@@ -868,7 +847,6 @@ void Parser::createQuadruple(const std::string &op)
         std::string tempName = newLabel("var");
         _out_str += "\t" + tempName;
 
-        // 添加到生成四元式的栈中
         _stk_quad.push_back(tempName);
     }
     else if (op == ".=" || op == "[]=") {
@@ -884,29 +862,24 @@ void Parser::createQuadruple(const std::string &op)
 		v1 = _stk_quad.back(); _stk_quad.pop_back();
 		v2 = _stk_quad.back(); _stk_quad.pop_back();
 
-		// 如果两个参数都是常量那么，优化掉
 		if (isNumber(v1) && isNumber(v2)) {
 			_stk_quad.push_back(getReulst(v1, v2, op));
 			return;
 		}
 
-		// 如果不全是常量
 		_out_str += "\t" + v1;
 		_out_str += "\t" + v2;
 
 		std::string tempName = newLabel("var");
 		_out_str += "\t" + tempName;
 
-		// 添加到生成四元式的栈中
 		_stk_quad.push_back(tempName);
 	}
 
 	out << _out_str << std::endl;
 }
 
-/**
- * @berif 生成函数调用四元式
- */
+
 void Parser::createFuncQuad(std::vector<Node> &params)
 {
 	out << std::endl;
@@ -923,10 +896,9 @@ void Parser::createFuncQuad(std::vector<Node> &params)
 	Node fn = localenv->search(func_name);
 	_stk_quad.pop_back();
 
-	// 检查参数个数
 	for (size_t i = 0;i < fn.params.size(); ++i) {
 		if (fn.params.at(i).type.getType() == ELLIPSIS) {
-			goto _skip_cheak_params_num;             // 如果是变参，跳过参数检查
+			goto _skip_cheak_params_num;
 		}
 	}
 	if ((fn.kind != NODE_FUNC && fn.kind != NODE_FUNC_DECL) || (fn.params.size() != params.size()))

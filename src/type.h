@@ -130,19 +130,19 @@ enum TokenKind {
 #define op(ty, _) ty,
     OP_MAP
 #undef op
-    OP_SHR,                // Âß¼­ÓÒÒÆ
-    OP_SHL,                // Âß¼­×óÒÆ£¬Í¬ËãÊõ×óÒÆ
+    OP_SHR,                // ï¿½ß¼ï¿½ï¿½ï¿½ï¿½ï¿½
+    OP_SHL,                // ï¿½ß¼ï¿½ï¿½ï¿½ï¿½Æ£ï¿½Í¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     OP_A_SHR,
     OP_A_SHL,
     OP_PRE_INC,
     OP_PRE_DEC,
     OP_POST_INC,
     OP_POST_DEC,
-    CONV,                 // ÀàÐÍ×ª»»
+    CONV,                 // ï¿½ï¿½ï¿½ï¿½×ªï¿½ï¿½
     CAST,
 
     // preprocessor,
-    OP_BACKLASH,          // ·´Ð±¸Ü
+    OP_BACKLASH,          // ï¿½ï¿½Ð±ï¿½ï¿½
     OP_DS,                // '##'
 };
 
@@ -172,7 +172,7 @@ public:
 };
 
 /**
- * ´Ê·¨µ¥Ôª
+ * ï¿½Ê·ï¿½ï¿½ï¿½Ôª
  */
 class Token {
 public:
@@ -235,7 +235,7 @@ public:
 };
 
 /**
- * ½ÚµãµÄÀàÐÍ
+ * ï¿½Úµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
  */
 class Type {
 public:
@@ -263,7 +263,7 @@ public:
 	bool isUnsig = false;
 	bool isSta = false;
 
-	// Ö¸Õë»òÕßÊý×é£¬ÖÐ±£´æµÄÊý¾ÝÀàÐÍ
+	// Ö¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é£¬ï¿½Ð±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	Type *ptr = nullptr;
 
 	// array length
@@ -271,7 +271,7 @@ public:
 	std::vector<int> len;
 
     // struct or union
-    std::vector<Field> fields;      // Ã¿¸ö³ÉÔ±µÄÃû×Ö£¬ ÀàÐÍ£¬ Æ«ÒÆ
+    std::vector<Field> fields;      // Ã¿ï¿½ï¿½ï¿½ï¿½Ô±ï¿½ï¿½ï¿½ï¿½ï¿½Ö£ï¿½ ï¿½ï¿½ï¿½Í£ï¿½ Æ«ï¿½ï¿½
     bool is_struct = true;                       // struct or union
 
 	//function
@@ -279,7 +279,7 @@ public:
 	std::vector<Node> params;
 
 private:
-    inline void coping(const Type &t);
+    void coping(const Type &t);
 };
 
 enum NodeKind{
@@ -335,7 +335,7 @@ public:
 
 	inline int getKind() const { return kind; }
 	inline Type getType() const { return type; }
-	inline void setType(Type &ty) { type = ty; }
+	inline void setType(Type ty) { type = ty; }
 
 public:
 	int kind = NODE_NULL;

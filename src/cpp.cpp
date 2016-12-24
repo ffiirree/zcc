@@ -11,7 +11,7 @@ void Preprocessor::init()
     paths_.push_back("C:/zcc/include/");
 
     // 包含默认宏定义
-    macros_.push_back({ "__ZCC__", Token(T_INTEGER, "1"), Macro::M_PRE});
+    macros_.push_back({ "__ZCC__", Token(T_INTEGER, "1"), Macro::M_PRE });
     macros_.push_back({ "__ZCC_VERSION__", Token(T_STRING, "Version 0.02"), Macro::M_PRE });
     macros_.push_back({ "__FILE__", Macro::M_PRE });
     macros_.push_back({ "__LINE__", Macro::M_PRE });
@@ -81,7 +81,7 @@ void Preprocessor::expand(TokenSequence is, TokenSequence &os)
                 hs->insert(macro->name_);
                 TokenSequence substOs;
 
-                subst(repTs, std::vector<std::string>(), TokenSequence(), hs, substOs);
+                subst(repTs, std::vector<std::string>(), *(new TokenSequence()), hs, substOs);
                 is.insert(substOs);
             }
             else if (macro->type_ == Macro::M_FUNCLIKE) {
@@ -165,7 +165,7 @@ void Preprocessor::subst(TokenSequence &is, std::vector<std::string> fp, TokenSe
         if (select(iOfFP, ap).empty())
             subst(is, fp, ap, hs, os);
         else {
-            glue(os, select(iOfFP, ap));
+            glue(os, *(new TokenSequence(select(iOfFP, ap))));
             subst(is, fp, ap, hs, os);
         }
             
@@ -221,7 +221,7 @@ void Preprocessor::subst(TokenSequence &is, std::vector<std::string> fp, TokenSe
  * @ret -1: no
  *      > -1: 在fp中的位置
  */
-int Preprocessor::isInFP(Token &t, std::vector<std::string> fp)
+int Preprocessor::isInFP(Token t, std::vector<std::string> fp)
 {
     for (size_t i = 0; i < fp.size(); ++i) {
         if (t.getType() == T_IDENTIFIER && t.getSval() == fp.at(i))
@@ -326,7 +326,7 @@ TokenSequence Preprocessor::select(int _i, TokenSequence &ts)
  * @param[in] ts: 输入的Tokensequence
  * @ret rts: 包含一个字符串的Token序列
  */
-TokenSequence Preprocessor::stringize(TokenSequence &ts)
+TokenSequence Preprocessor::stringize(TokenSequence ts)
 {
     TokenSequence rts;
     std::string str;
@@ -379,7 +379,7 @@ Macro *Preprocessor::searchMacro(const std::string &_n)
 {
     for (auto iter = macros_.begin(); iter != macros_.end(); ++iter) {
         if (_n == (*iter).name_)
-            return iter._Ptr;
+            return &*iter;
     }
     return nullptr;
 }
@@ -428,7 +428,7 @@ void Preprocessor::Include(TokenSequence &is, TokenSequence &os)
     // 打开文件并插入
     for (const std::string path: paths_) {
         std::string _file = path + _fn;
-        std::ifstream in(_file, std::ios::_Nocreate);
+        std::ifstream in(_file, std::ios::in);
         if (in.is_open()) {
             TokenSequence ts;
             Lex lex(_file, ts);
