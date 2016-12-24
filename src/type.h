@@ -324,19 +324,40 @@ enum NodeKind{
 class Node;
 class Node {
 public:
-	Node() : Node(NODE_NULL) { }
-	Node(int k) :kind(k) { }
-	Node(int k, Type &ty) :kind(k), type(ty) { }
-	Node(int k, Type &ty, long val) :kind(k), type(ty), int_val(val) { }
-	Node(int k, Type &ty, double val) :kind(k), type(ty), float_val(val) { }
+    Node() : Node(NODE_NULL) { }
+    Node(int k) :kind(k) { }
+    Node(int k, const Type &ty) :kind(k), type(ty) { }
+    Node(int k, const Type &ty, long val) :kind(k), type(ty), int_val(val) { }
+    Node(int k, const Type &ty, double val) :kind(k), type(ty), float_val(val) { }
 
     Node(const Node &n) { copying(n); }
     Node &operator=(const Node &n) { copying(n); return *this; }
     ~Node() = default;
 
-	inline int getKind() const { return kind; }
-	inline Type getType() const { return type; }
-	inline void setType(Type ty) { type = ty; }
+    inline int getKind() const { return kind; }
+    inline Type getType() const { return type; }
+    inline void setType(Type ty) { type = ty; }
+
+    std::string name() const {
+        if (kind == NODE_GLO_VAR || kind == NODE_LOC_VAR) return varName;
+        if (kind == NODE_FUNC || kind == NODE_FUNC_DECL) return funcName;
+
+        return std::string();
+    }
+    inline void setFuncName(const std::string &name) { 
+#if defined(WIN32)
+        funcName = "_" + name;
+#elif
+        funcName = name;
+#endif
+    }
+    inline void setVarName(const std::string &name) {
+#if defined(WIN32)
+        varName = "_" + name;
+#elif
+        varName = name;
+#endif
+    }
 
 public:
 	int kind = NODE_NULL;
@@ -360,7 +381,7 @@ public:
 	/**
      * \ Local/global variable
      */
-    std::string varName;
+    // private: std::string varName;
     int _off = 0;
     std::vector<Node> lvarinit;
 
@@ -378,7 +399,7 @@ public:
 	/**
      * \function define and function declartion
      */
-	std::string funcName;
+    // private: std::string funcName;
 	std::vector<Node> params;
 	Node *body = nullptr;
 
@@ -407,6 +428,8 @@ public:
 	std::vector<Node> stmts;
 private:
 	inline void copying(const Node &n);
+    std::string funcName;
+    std::string varName;
 };
 
 #endif // !_ZCC_TYPE_H

@@ -24,13 +24,13 @@ std::vector<Node> Parser::trans_unit()
 
 void Env::push_back(Node &n) {
 	if (n.kind == NODE_FUNC) {
-		Node r = search(n.funcName);
+		Node r = search(n.name());
 		if (r.kind == NODE_FUNC_DECL) {
             setFuncDef(n);
 			return;
 		}
 		else if (r.kind != 0) {
-			error("Function redefined: %s", n.funcName.c_str());
+			error("Function redefined: " + n.name());
 		}
 	}
 
@@ -46,7 +46,7 @@ void Label::push_back(const std::string &_l) {
 				return;
 			}
 			else {
-				error("%s is existed.", _l.c_str());
+				error(_l + " is existed");
 				return;
 			}
 		}
@@ -60,7 +60,7 @@ bool Label::cheak()
 {
 	for (size_t i = 0; i < labels.size(); ++i) {
 		if (!enLabels.at(i))
-			error("Label '%s' is undefined.", labels.at(i).c_str());
+			error("Label '" + labels.at(i)+ "' is undefined");
 	}
 	return true;
 }
@@ -126,7 +126,11 @@ Node Parser::funcDef()
 	funcName = getOverLoadName(funcName, params);
 #endif
 
-	out << funcName << ":" << std::endl;
+#ifdef WIN32
+	out << "_" + funcName << ":" << std::endl;
+#elif defined(linux)
+    out << funcName << ":" << std::endl;
+#endif
 
 	functype.setStatic(current_class == K_STATIC);
 	expect('{');
@@ -198,7 +202,7 @@ Node &Env::search(const std::string &key)
 
 	while (ptr) {
 		for (size_t i = 0; i < ptr->nodes.size(); ++i) {
-			if (key == ptr->nodes.at(i).varName || key == ptr->nodes.at(i).funcName)
+			if (key == ptr->nodes.at(i).name() || key == ptr->nodes.at(i).name())
 				return ptr->nodes.at(i);
 		}
 		ptr = ptr->pre();
@@ -215,7 +219,7 @@ void Env::setFuncDef(Node &_def)
 
 	while (ptr) {
 		for (size_t i = 0; i < ptr->nodes.size(); ++i) {
-			if (_def.funcName == ptr->nodes.at(i).funcName) {
+			if (_def.name() == ptr->nodes.at(i).name()) {
                 ptr->nodes.at(i) = _def;
 			}
 		}
@@ -281,7 +285,7 @@ bool Parser::next_is(int id)
 	return false;
 }
 
-Node Parser::createIntNode(Token &t, int size, bool isch)
+Node Parser::createIntNode(const Token &t, int size, bool isch)
 {
 	if (isch) {
 		Node node(NODE_CHAR);
@@ -300,7 +304,7 @@ Node Parser::createIntNode(Token &t, int size, bool isch)
 }
 
 
-Node Parser::createIntNode(Type ty, int val)
+Node Parser::createIntNode(const Type &ty, int val)
 {
 	Node node(NODE_INT);
 	node.int_val = val;
@@ -308,7 +312,7 @@ Node Parser::createIntNode(Type ty, int val)
 	return node;
 }
 
-Node Parser::createFloatNode(Type ty, double val)
+Node Parser::createFloatNode(const Type &ty, double val)
 {
 	Node node(NODE_DOUBLE);
 
@@ -318,7 +322,7 @@ Node Parser::createFloatNode(Type ty, double val)
 }
 
 
-Node Parser::createFloatNode(Token t)
+Node Parser::createFloatNode(const Token &t)
 {
 	Node node(NODE_DOUBLE);
 
@@ -327,7 +331,7 @@ Node Parser::createFloatNode(Token t)
 	return node;
 }
 
-Node Parser::createStrNode(Token t)
+Node Parser::createStrNode(const Token &t)
 {
 	Node node(NODE_STRING);
 
@@ -335,10 +339,10 @@ Node Parser::createStrNode(Token t)
 	return node;
 }
 
-Node Parser::createFuncNode(Type ty, std::string & funcName, std::vector<Node> params, Node *body)
+Node Parser::createFuncNode(const Type &ty, const std::string & funcName, std::vector<Node> params, Node *body)
 {
 	Node node(NODE_FUNC, ty);
-	node.funcName = funcName;
+	node.setFuncName(funcName);
 	node.params = params;
 	node.body = body;
 
@@ -347,10 +351,10 @@ Node Parser::createFuncNode(Type ty, std::string & funcName, std::vector<Node> p
 	return node;
 }
 
-Node Parser::createFuncDecl(Type ty, std::string & funcName, std::vector<Node> params)
+Node Parser::createFuncDecl(const Type &ty, const std::string & funcName, const std::vector<Node> &params)
 {
 	Node node(NODE_FUNC_DECL, ty);
-	node.funcName = funcName;
+	node.setFuncName(funcName);
 	node.params = params;
 
 	globalenv->push_back(node);
@@ -388,37 +392,37 @@ Node Parser::createDeclNode(Node &var, std::vector<Node> init)
 	return node;
 }
 
-Node Parser::createGLoVarNode(Type ty, std::string name)
+Node Parser::createGLoVarNode(const Type &ty, const std::string name)
 {
 	Node r(NODE_GLO_VAR, ty);
-	r.varName = name;
+	r.setVarName(name);
 
-    if(cheak_redefined(globalenv, name))
-        errorp(ts_.getPos(), "redefined global variable : %s", name.c_str());
+    if(cheak_redefined(globalenv, r.name()))
+        errorp(ts_.getPos(), "redefined global variable : " + r.name());
 
 	globalenv->push_back(r);
 
 	return r;
 }
-Node Parser::createLocVarNode(Type ty, std::string name)
+Node Parser::createLocVarNode(const Type &ty, const std::string name)
 {
 	Node r(NODE_LOC_VAR, ty);
-	r.varName = name;
+    r.setVarName(name);
 
-    if (cheak_redefined(localenv, name))
-        errorp(ts_.getPos(), "redefined local variable : %s", name.c_str());
+    if (cheak_redefined(localenv, r.name()))
+        errorp(ts_.getPos(), "redefined local variable : " + r.name());
 
 	localenv->push_back(r);
 	return r;
 }
 
-Node Parser::createFuncDeclParams(Type ty)
+Node Parser::createFuncDeclParams(const Type &ty)
 {
 	Node r(NODE_DECL_PARAM, ty);
 	return r;
 }
 
-Node Parser::createBinOpNode(Type ty, int kind, Node *left, Node *right)
+Node Parser::createBinOpNode(const Type &ty, int kind, Node *left, Node *right)
 {
 	Node r(kind, ty);
 	r.left = left;
@@ -426,7 +430,7 @@ Node Parser::createBinOpNode(Type ty, int kind, Node *left, Node *right)
 	return r;
 }
 
-Node Parser::createUnaryNode(int kind, Type ty, Node &node)
+Node Parser::createUnaryNode(int kind, const Type &ty, Node &node)
 {
 	Node r(kind);
 	r.type = ty;
@@ -441,7 +445,7 @@ Node Parser::createRetStmtNode(Node *n)
 	return r;
 }
 
-Node Parser::createJumpNode(std::string label)
+Node Parser::createJumpNode(const std::string &label)
 {
 	Node r(NODE_GOTO);
 	r.label = label;
@@ -505,7 +509,7 @@ void Parser::expect(int id)
 {
 	Token t = ts_.next();
 	if (t.getId() != id)
-		errorp(ts_.getPos(), "expect '%c', but not is '%c'", id, t.getId());
+		errorp(ts_.getPos(), std::string("expect '") + (char)id+ "', but not is '" + (char)t.getId() + "'");
 }
 
 bool Parser::is_inttype(Type ty)
@@ -909,7 +913,7 @@ _skip_cheak_params_num:
 		localenv->_call_size += fn.params.at(i).type.size_;
 	}
 
-    out << "call" << "\t" << fn.funcName << "\t" << fn.params.size();
+    out << "call" << "\t" << fn.name() << "\t" << fn.params.size();
 
     std::string ret_;
     if (fn.type.type != K_VOID || fn.type.retType != nullptr) {

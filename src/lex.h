@@ -20,6 +20,7 @@ public:
      */
     inline Token &next() { if (index_ >= tokens_.size()) return*(new Token()); return tokens_.at(index_++); }
     inline Token &at(size_t i) { return tokens_.at(i); }
+    inline Token at(size_t i) const { return tokens_.at(i); }
     void back();
     inline Token peek() const { if (index_ >= tokens_.size()) return{}; return tokens_.at(index_); }
     inline Token peek2() const { if (index_ + 1 >= tokens_.size()) return{}; return tokens_.at(index_ + 1); }

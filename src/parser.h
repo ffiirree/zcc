@@ -115,7 +115,7 @@ public:
 };
 
 /**
- * @ Parser,�﷨�������м���������
+ * @ Parser
  */
 class Parser {
 public:
@@ -133,12 +133,12 @@ public:
     ~Parser() = default;
 
 	std::vector<Node> trans_unit();
-	Env *getGloEnv() { return globalenv; }
-	Env *getLocEnv() { return localenv; }
-	std::vector<StrCard> getStrTbl() { return const_string; }
+	Env *getGloEnv() const { return globalenv; }
+	Env *getLocEnv() const { return localenv; }
+	std::vector<StrCard> getStrTbl() const { return const_string; }
 	std::string newLabel(const std::string &_l);
-    std::string getQuadrupleFileName() { return _of_name; }
-    inline std::vector<std::string> getFloatConst() { return float_const; }
+    std::string getQuadrupleFileName() const { return _of_name; }
+    inline std::vector<std::string> getFloatConst() const { return float_const; }
     std::string searchEnum(const std::string &key);
     bool compute_bool_expr();
     Node expr(); 
@@ -172,27 +172,26 @@ private:
 	std::string get_compound_assign_op_signal(Token &t);
 
 	//
-	Node createFuncNode(Type ty, std::string & funcName, std::vector<Node> params, Node *body);
-	Node createIntNode(Token &t, int size, bool isch);
-	Node createIntNode(Type ty, int val);
-	Node createFloatNode(Type ty, double val);
-	Node createFloatNode(Token t);
-	Node createStrNode(Token t);
+	Node createFuncNode(const Type &ty, const std::string & funcName, std::vector<Node> params, Node *body);
+	Node createIntNode(const Token &t, int size, bool isch);
+	Node createIntNode(const Type &ty, int val);
+	Node createFloatNode(const Type &ty, double val);
+	Node createFloatNode(const Token &t);
+	Node createStrNode(const Token &t);
 	Node createCompoundStmtNode(std::vector<Node> &stmts);
 	Node createDeclNode(Node &var);
 	Node createDeclNode(Node &var, std::vector<Node> init);
-	Node createGLoVarNode(Type ty, std::string name);
-	Node createLocVarNode(Type ty, std::string name);
-	Node createFuncDeclParams(Type ty);
-	Node createFuncDecl(Type ty, std::string & funcName, std::vector<Node> params);
-	Node createBinOpNode(Type ty, int kind, Node *left, Node *right);
-	Node createUnaryNode(int kind, Type ty, Node &node);
+	Node createGLoVarNode(const Type &ty, const std::string name);
+	Node createLocVarNode(const Type &ty, const std::string name);
+	Node createFuncDeclParams(const Type &ty);
+	Node createFuncDecl(const Type &ty, const std::string & funcName, const std::vector<Node> &params);
+	Node createBinOpNode(const Type &ty, int kind, Node *left, Node *right);
+	Node createUnaryNode(int kind, const Type &ty, Node &node);
 
 	Node createRetStmtNode(Node *n);
-	Node createJumpNode(std::string label);
+	Node createJumpNode(const std::string &label);
 
 	Node createIfStmtNode(Node *cond, Node *then, Node *els);
-
 
 	//
 	bool isFuncDef();

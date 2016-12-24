@@ -73,7 +73,7 @@ void VirtualMachine::link()
                 ins.loperand_ = new int(iter->second);
             }
             else
-                error("unknown label :%s.", ins.lstr_.c_str());
+                error("unknown label :" + ins.lstr_);
         }
     }
 }
@@ -186,7 +186,7 @@ Instruction VirtualMachine::getInsByOp(const std::string &name)
         if (name == ins.first)
             return ins.second;
     }
-    error("unknown operator:%s.", name.c_str());
+    error("unknown operator:" + name);
     return INS_NULL;
 }
 
@@ -247,7 +247,7 @@ void *VirtualMachine::getOperandAddr(const std::string &name)
         if (iter != data_.end())
             return (int *)iter->second;
         else
-            error("%s is not exist.", name.c_str());
+            error(name + " is not exist.");
         break;
 
     case '%':

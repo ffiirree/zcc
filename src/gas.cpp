@@ -25,7 +25,7 @@ int Generate::gas_flo_load(const std::string &name, bool isChange)
     else  if (isLocVar(name)) {
         Node var = searchLocvar(name);
         if (var.kind == NODE_GLO_VAR) {
-            gas_tab(gas_fld(var.type.size_, var.type.type) + "\t" + "_" + var.varName);
+            gas_tab(gas_fld(var.type.size_, var.type.type) + "\t" + var.name());
             return var.type.type;
         }
         else if (var.kind == NODE_LOC_VAR) {
@@ -54,7 +54,7 @@ Type Generate::gas_fstp(const std::string &name)
     else {
         var = gloEnv->search(name);
         _size = var.type.size_;
-        _des = "_" + var.varName;
+        _des = var.name();
     }
 
     switch (var.type.type)
@@ -105,7 +105,7 @@ void Generate::gas_def_int(const std::string &n, int size, int init, bool is_fir
 {
     gas_tab(".globl\t_" + n);
     if (is_fir) gas_tab(".data");
-    gas("_" + n + ":");
+    gas(n + ":");
     switch (size)
     {
     case 1: gas_tab(".byte\t" + std::to_string(init)); break;
@@ -115,7 +115,7 @@ void Generate::gas_def_int(const std::string &n, int size, int init, bool is_fir
         error("Error data size.");
         break;
     }
-    if(vm_->use_) vm_->push_data("_" + n, init, size);
+    if(vm_->use_) vm_->push_data(n, init, size);
 }
 
 void Generate::gas_def_flo(const std::string &n, int size, const std::string &init, bool is_fir)
@@ -123,7 +123,7 @@ void Generate::gas_def_flo(const std::string &n, int size, const std::string &in
     gas_tab(".globl\t_" + n);
     if (is_fir) gas_tab(".data");
     gas_tab(".align\t" + std::to_string(size));
-    gas("_" + n + ":");
+    gas(n + ":");
     switch (size)
     {
     case 4: gas_tab(".float\t" + init); break;
@@ -138,7 +138,7 @@ void Generate::gas_def_flo(const std::string &n, int size, const std::string &in
 void Generate::gas_dec(const std::string &n, int size)
 {
     out << "\t.comm\t";
-    out << "_" + n;
+    out <<  n;
     out << "," << size;
    // out << ", " << ((size / 2 < 3) ? size / 2 : 3);
     out << std::endl;
@@ -146,9 +146,9 @@ void Generate::gas_dec(const std::string &n, int size)
 
 void Generate::gas_def_arr(Node &n, bool is_fir)
 {
-    gas_tab(".globl\t_" + n.varName);
+    gas_tab(".globl\t" + n.name());
     if (is_fir) gas("\t.data");
-    gas("_" + n.varName + ":");
+    gas(n.name() + ":");
 
     size_t i = 0;
     for (; i < n.lvarinit.size(); ++i) {
@@ -159,9 +159,9 @@ void Generate::gas_def_arr(Node &n, bool is_fir)
 
 void Generate::gas_custom(Node &n, bool is_fir)
 {
-    gas_tab(".globl\t_" + n.varName);
+    gas_tab(".globl\t" + n.name());
     if (is_fir) gas("\t.data");
-    gas("_" + n.varName + ":");
+    gas(n.name() + ":");
 
     int _initsize = 0;
     for (size_t i = 0; i < n.lvarinit.size(); ++i) {
@@ -195,7 +195,7 @@ Type Generate::gas_load(const std::string &_q, const std::string &_reg)
 			return Type(var.type.type, var.type.size_, var.type.isUnsig);
 		}
         else if (var.kind == NODE_GLO_VAR) {
-            gas_ins(movXXl(var.type.size_, var.type.isUnsig), "_" + var.varName, _reg);
+            gas_ins(movXXl(var.type.size_, var.type.isUnsig), var.name(), _reg);
             setReg(_reg, _q);
             return Type(var.type.type, var.type.size_, var.type.isUnsig);
         }
@@ -370,7 +370,7 @@ Type Generate::getStructFieldType(Node &var, std::string &_off)
             return *(var.type.fields.at(i)._type);
         }
     }
-    error("%s do not have this field.", var.varName.c_str());
+    error(var.name() + " do not have this field");
     return Type();
 }
 
@@ -397,9 +397,9 @@ void Generate::gas_ins(const std::string &_i, const std::string &_des)
 
 void Generate::gas_call(const std::string &_des)
 {
-    std::string ins = "call\t_" + _des;
+    std::string ins = "call\t" + _des;
     gas_tab(ins);
-    vm_->push_back({ vm_->getInsByOp("call"), "_" + _des , ins });
+    vm_->push_back({ vm_->getInsByOp("call"), _des , ins });
 }
 
 void Generate::gas_jxx_label(const std::string &_l)

@@ -79,7 +79,7 @@ Node Parser::assignment_expr()
 		Node _temp;
 		if (cop) {
 			_temp = binop(cop, *node, value);
-			pushQuadruple((*node).varName);
+			pushQuadruple((*node).name());
 			std::string _1, _2;
 			_1 = _stk_quad.back(); _stk_quad.pop_back();
 			_2 = _stk_quad.back(); _stk_quad.pop_back();
@@ -619,22 +619,26 @@ Node Parser::primary_expr()
 
 Node Parser::var_or_func(Token &t)
 {
-	Node r = localenv->search(t.getSval());
+#if defined(WIN32)
+    Node r = localenv->search("_" + t.getSval());
+#elif defined(linux)
+    Node r = localenv->search(t.getSval());
+#endif
 
 	if (r.kind == NODE_GLO_VAR || r.kind == NODE_LOC_VAR)
-		pushQuadruple(r.varName);
+		pushQuadruple(r.name());
 #ifdef _OVERLOAD_
 	else 
-		pushQuadruple(t.getSval());
+		pushQuadruple(r.name());
 #else
 	else if (r.kind == NODE_FUNC || r.kind == NODE_FUNC_DECL)
-		pushQuadruple(t.getSval());
+		pushQuadruple(r.name());
 
     std::map<std::string, std::string> ::iterator iter = enum_const.find(t.getSval());
     if (iter != enum_const.end())
         pushQuadruple(t.getSval());
     else if (r.kind == NODE_NULL)
-        errorp(ts_.getPos(), "undefined var : %s!", t.getSval().c_str());
+        errorp(ts_.getPos(), "undefined var : " + t.getSval());
 #endif // _OVERLOAD_
 
 	return r;

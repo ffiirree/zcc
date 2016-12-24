@@ -3,23 +3,29 @@
 #include "cpp.h"
 #include "error.h"
 
-
 void Preprocessor::init()
 {
-    // 包含默认路径
+    /**
+     * \ The header file paths
+     */
+#ifdef WIN32
     paths_.push_back("D:/zcc/include/");
     paths_.push_back("C:/zcc/include/");
+#elif defined(linux)
+    paths_.push_back("D:/zcc/include/");
+    paths_.push_back("C:/zcc/include/");
+#endif
 
     // 包含默认宏定义
-    macros_.push_back({ "__ZCC__", Token(T_INTEGER, "1"), Macro::M_PRE });
-    macros_.push_back({ "__ZCC_VERSION__", Token(T_STRING, "Version 0.02"), Macro::M_PRE });
+    macros_.push_back({ "__ZCC__", {T_INTEGER, "1"}, Macro::M_PRE });
+    macros_.push_back({ "__ZCC_VERSION__", { T_STRING, "Version 0.02" }, Macro::M_PRE });
     macros_.push_back({ "__FILE__", Macro::M_PRE });
     macros_.push_back({ "__LINE__", Macro::M_PRE });
     macros_.push_back({ "__FUNC__", Macro::M_PRE });
     macros_.push_back({ "__DATE__", Macro::M_PRE });
-    macros_.push_back({ "__STDC__", Token(T_INTEGER, "0"), Macro::M_PRE });
+    macros_.push_back({ "__STDC__", {T_INTEGER, "0"}, Macro::M_PRE });
     macros_.push_back({ "__TIME__" , Macro::M_PRE });
-    macros_.push_back({ "__cplusplus", Token(T_INTEGER, "0"), Macro::M_PRE });
+    macros_.push_back({ "__cplusplus", {T_INTEGER, "0"}, Macro::M_PRE });
 }
 
 void Preprocessor::expand(TokenSequence is, TokenSequence &os)
@@ -144,7 +150,7 @@ void Preprocessor::group_part(TokenSequence &is, TokenSequence &os)
  * @param os: output sequence
  * @ret None
  */ 
-void Preprocessor::subst(TokenSequence &is, std::vector<std::string> fp, TokenSequence &ap, HideSet* hs, TokenSequence& os)
+void Preprocessor::subst(TokenSequence &is, const std::vector<std::string> &fp, const TokenSequence &ap, HideSet* hs, TokenSequence& os)
 {
     int iOfFP = 0;
     if (is.end()) {
@@ -221,7 +227,7 @@ void Preprocessor::subst(TokenSequence &is, std::vector<std::string> fp, TokenSe
  * @ret -1: no
  *      > -1: 在fp中的位置
  */
-int Preprocessor::isInFP(Token t, std::vector<std::string> fp)
+int Preprocessor::isInFP(const Token &t, const std::vector<std::string> &fp)
 {
     for (size_t i = 0; i < fp.size(); ++i) {
         if (t.getType() == T_IDENTIFIER && t.getSval() == fp.at(i))
@@ -293,7 +299,7 @@ TokenSequence Preprocessor::ts(const std::string &_macro_name)
             return m.replist_;
     }
 
-    error("Do not have this macros :%s.", _macro_name.c_str());
+    error("Do not have this macros :" + _macro_name);
     return rts;
 }
 TokenSequence Preprocessor::fp(const std::string &_macro_name)
@@ -308,7 +314,7 @@ TokenSequence Preprocessor::fp(const std::string &_macro_name)
  * @param[in] ts
  * @ret rts
  */
-TokenSequence Preprocessor::select(int _i, TokenSequence &ts)
+TokenSequence Preprocessor::select(int _i, const TokenSequence &ts)
 {
     size_t counter = 0;
     TokenSequence rts;
@@ -326,7 +332,7 @@ TokenSequence Preprocessor::select(int _i, TokenSequence &ts)
  * @param[in] ts: 输入的Tokensequence
  * @ret rts: 包含一个字符串的Token序列
  */
-TokenSequence Preprocessor::stringize(TokenSequence ts)
+TokenSequence Preprocessor::stringize(const TokenSequence &ts)
 {
     TokenSequence rts;
     std::string str;
@@ -436,7 +442,7 @@ void Preprocessor::Include(TokenSequence &is, TokenSequence &os)
             return;
         }
     }
-    error("can not open file : %s.", _fn.c_str());
+    error("can not open file : " +  _fn);
 }
 
 

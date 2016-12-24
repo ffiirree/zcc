@@ -36,9 +36,13 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 			}
 			else {
 				var = createLocVarNode(ty, name);
-				pushQuadruple(name);
+
+#if defined(WIN32)
+				pushQuadruple("_" + name);
+#elif defined(linux)
+                pushQuadruple(name);
+#endif
 			}
-				
 
 			if (next_is('=')) {
 				list.push_back(createDeclNode(var, decl_init(ty)));
@@ -70,7 +74,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 						for (int i = 0; i < var.type._all_len; ++i) {
 							std::string init_val = _stk_quad.back(); 
 
-							if (init_val != var.varName) {
+							if (init_val != var.name()) {
                                 arr_init.push_back(init_val);
                                 _stk_quad.pop_back();
 							}
@@ -82,7 +86,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
                         if(!arr_init.empty())
                             for (size_t i = 0;i < arr_init.size(); ++i) {
                                 _stk_quad.push_back(arr_init.at(arr_init.size() - i - 1));
-                                _stk_quad.push_back(var.varName);
+                                _stk_quad.push_back(var.name());
                                 _stk_quad.push_back(std::to_string(i * var.type.size_));
                                 createQuadruple("[]=");
                             }
@@ -91,7 +95,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
                         // 需要全部初始化
                         int _off = 0;
                         for (size_t i = ty.fields.size(); i > 0; --i) {
-                            _stk_quad.push_back(var.varName);
+                            _stk_quad.push_back(var.name());
                             _stk_quad.push_back(std::to_string(ty.fields.at(i - 1)._off));
                             createQuadruple(".=");
                         }
@@ -291,7 +295,7 @@ Type Parser::decl_specifiers(int *rsclass)
             custom_type = getCustomType(t.getSval());
             ts_.next();
             if (custom_type.type == 0)
-                errorp(ts_.getPos(), "Undefined type: %s", t.getSval().c_str());
+                errorp(ts_.getPos(), "Undefined type: " +  t.getSval());
 		}
 
 		if (t.getType()!= T_KEYWORD) {
@@ -300,7 +304,7 @@ Type Parser::decl_specifiers(int *rsclass)
 		switch (t.getId())
 		{
 			// Type specifiers
-#define type_spec_cheak(cheak, val, _t) do{if(cheak) errorp(ts_.getPos(), "error %s specifier.", _t); else cheak = val;}while(0)
+#define type_spec_cheak(cheak, val, _t) do{if(cheak) errorp(ts_.getPos(), "error " + std::string(_t) +" specifier"); else cheak = val;}while(0)
 			// 只能出现一次
 		case K_VOID:     type_spec_cheak(kind, k_void, "void");break;
 		case K_CHAR:     type_spec_cheak(kind, k_char, "char");break;
@@ -399,10 +403,10 @@ Type Parser::enum_def()
             // 常量名
             _n = t.getSval();
             Node n = globalenv->search(_n);
-            if (!n.varName.empty())
-                errorp(ts_.getPos(), "redefined var : %s", _n.c_str());
+            if (!n.name().empty())
+                errorp(ts_.getPos(), "redefined var : "+ _n);
             if(!searchEnum(_n).empty())
-                errorp(ts_.getPos(), "redefined var : %s", _n.c_str());
+                errorp(ts_.getPos(), "redefined var :"+ _n);
 
             // 常量值
             if (next_is('=')) {

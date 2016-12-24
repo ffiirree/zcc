@@ -1,13 +1,17 @@
 #include <stdio.h>
-// asdfas
-int main() 
-{
-    for (float y = 1.5; y > -1.5; y -= 0.1) {
-        for (float x = -1.5; x < 1.5; x += 0.05) {
-            float a = x * x + y * y - 1;
-            a * a * a - x * x * y * y * y <= 0.0 ? putchar('*') : putchar(' ');
+int main(){
+    float pi = 1.0;
+    float n = 1.0;
+
+    for(int j = 1; j <= 100; j++,n += 1.0){
+        if(j%2 == 0){
+            pi *= n / (n + 1.0);
         }
-        putchar('\n');
+        else{
+            pi *= (n + 1.0) / n;
+        }
     }
-	return 0;
+    pi = 2.0 * pi;
+    printf("pi = %.7f\n",pi);
+    return 0;
 }

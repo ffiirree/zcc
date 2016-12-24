@@ -212,7 +212,7 @@ Node Parser::switch_stmt()
 	if (r.kind == NODE_INT || r.kind == NODE_CHAR || r.kind == NODE_SHORT || r.kind == NODE_LONG)
 		switch_expr = std::to_string(r.int_val);
 	else if (r.kind == NODE_LOC_VAR || NODE_GLO_VAR)
-		switch_expr = r.varName;
+		switch_expr = r.name();
 	else 
 		switch_expr = _stk_quad.back();
 	expect(')');

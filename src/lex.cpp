@@ -214,7 +214,7 @@ int Lex::read_escaped_char() {
 	case 'x': return read_hex_char();
 	case_0_7: return read_octal_char(c);
 	}
-	error("unknown escape character: \\%c", c);
+	error("unknown escape character: " + c);
 	return c;
 }
 
@@ -231,7 +231,7 @@ int Lex::read_octal_char(int c) {
 int Lex::read_hex_char() {
 	int c = f_.next();
 	if (!isxdigit(c))
-		error("\\x is not followed by a hexadecimal character: %c", c);
+		error("\\x is not followed by a hexadecimal character: " + c);
 	int r = 0;
 	for (;; c = f_.next()) {
 		switch (c) {
@@ -264,7 +264,7 @@ bool TokenSequence::expect(const char id)
 {
     if (next_is(id))
         return true;
-    errorp(tokens_.at(index_).getPos(), "expect : %c", id);
+    errorp(tokens_.at(index_).getPos(), "expect : " +  (char)id);
     return false;
 }
 

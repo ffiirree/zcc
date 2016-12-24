@@ -27,25 +27,25 @@ Generate::Generate(Parser *p, VirtualMachine *vm):vm_(vm)
 void Generate::reg_init()
 {
 	// 通用寄存器 //32bits
-	universReg.push_back(Reg("%eax"));
-	universReg.push_back(Reg("%ebx"));
-	universReg.push_back(Reg("%ecx"));
-	universReg.push_back(Reg("%edx"));
+    universReg.push_back({ "%eax" });
+    universReg.push_back({ "%ebx" });
+    universReg.push_back({ "%ecx" });
+    universReg.push_back({ "%edx" });
 
-    float_reg.push_back(Reg("st(7)"));
-    float_reg.push_back(Reg("st(6)"));
-    float_reg.push_back(Reg("st(5)"));
-    float_reg.push_back(Reg("st(4)"));
-    float_reg.push_back(Reg("st(3)"));
-    float_reg.push_back(Reg("st(2)"));
-    float_reg.push_back(Reg("st(1)"));
-    float_reg.push_back(Reg("st(0)"));
+    float_reg.push_back({ "st(7)" });
+    float_reg.push_back({ "st(6)" });
+    float_reg.push_back({ "st(5)" });
+    float_reg.push_back({ "st(4)" });
+    float_reg.push_back({ "st(3)" });
+    float_reg.push_back({ "st(2)" });
+    float_reg.push_back({ "st(1)" });
+    float_reg.push_back({ "st(0)" });
 
 	// 段寄存器 // 16bits
-	segReg.push_back(Reg("%ecs"));
-	segReg.push_back(Reg("%eds"));
-	segReg.push_back(Reg("%ees"));
-	segReg.push_back(Reg("%ess"));
+    segReg.push_back({ "%ecs" });
+    segReg.push_back({ "%eds" });
+    segReg.push_back({ "%ees" });
+    segReg.push_back({ "%ess" });
 }
 
 /**
@@ -65,17 +65,17 @@ void Generate::run()
         Node n = gloEnv->at(i);
         if (n.kind == NODE_GLO_VAR && n.params.empty()) {
             if (n.lvarinit.empty()) {
-                gas_dec(n.varName, n.type.size_);
+                gas_dec(n.name(), n.type.size_);
             }
             else {
                 switch (n.type.type) {
                 case ARRAY: gas_def_arr(n, is_fir_var); break;
                 case K_FLOAT:
-                case K_DOUBLE:gas_def_flo(n.varName, n.type.size_, n.lvarinit.at(0).sval, is_fir_var);break;
+                case K_DOUBLE:gas_def_flo(n.name(), n.type.size_, n.lvarinit.at(0).sval, is_fir_var);break;
                 case K_TYPEDEF:
                 case K_STRUCT: gas_custom(n, is_fir_var);break;
                 case K_UNION: error("Unsupport union."); break;
-                default:gas_def_int(n.varName, n.type.size_, n.lvarinit.at(0).int_val, is_fir_var);break;
+                default:gas_def_int(n.name(), n.type.size_, n.lvarinit.at(0).int_val, is_fir_var);break;
                 }
             }
 
@@ -145,15 +145,13 @@ void Generate::func_decl(Node &n)
 	int size = getFuncLocVarSize(n);            // 获取临时变量的 大小
 	size += getFuncCallSize(n);
 
-	if (n.funcName == "main") {
-        gas_func_def("__main");
+	if (n.name() == "main") {
 		is_main = true;
 	}
     gas_tab(".text");
-    gas_glo(n.funcName);
-    gas_func_def(n.funcName);
-    gas_label("_" + n.funcName);
-    if(vm_->use_ ) vm_->setFuncAddr("_" + n.funcName);
+    gas_glo(n.name());
+    gas_label(n.name());
+    if(vm_->use_ ) vm_->setFuncAddr(n.name());
 
     gas_tab(".cfi_startproc");
     gas_ins("pushl", "%ebp");
@@ -166,10 +164,6 @@ void Generate::func_decl(Node &n)
         int stk_size = ((size + 8 > 16) ? size + 8 : 16);
         gas_ins("subl", "$" + std::to_string(stk_size), "%esp");
     }
-		
-	if (is_main) {
-        gas_tab("call\t___main");
-	}
 }
 
 #define _q_0_is(str) (_q.at(0) == str)
@@ -220,18 +214,18 @@ void Generate::generate(std::vector<std::string> &_q)
 
             if (var.kind == NODE_GLO_VAR) {
                 if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
-                    gas_fstp(var.varName);
+                    gas_fstp(var.name());
                     return;
                 }
 
-                if (!var.varName.empty()) {
+                if (!var.name().empty()) {
                     _des_size = var.type.size_;
-                    _des = "_" + var.varName;
+                    _des = var.name();
                 }
             }
             else if (var.kind == NODE_LOC_VAR) {
                 if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
-                    gas_fstp(var.varName);
+                    gas_fstp(var.name());
                     return;
                 }
                 else {
@@ -263,7 +257,7 @@ void Generate::generate(std::vector<std::string> &_q)
 
             if (var.kind == NODE_GLO_VAR) {
                 std::string _reg = getEmptyReg();
-                gas_ins(movXXl(var.type.size_, var.type.isUnsig), "_" + var.varName, _reg);
+                gas_ins(movXXl(var.type.size_, var.type.isUnsig), var.name(), _reg);
                 gas_ins(mov2stk(_des_size), reg2stk(_reg, _des_size), _des);
             }
             else if (var.kind == NODE_LOC_VAR) {
@@ -333,7 +327,7 @@ void Generate::generate(std::vector<std::string> &_q)
                 LocVar var = searchLocvar(params.back());
 
                 if (var.kind == NODE_GLO_VAR) {
-                    gas_ins(movXXl(var.type.size_, var.type.isUnsig), "_" + var.varName, "%eax");
+                    gas_ins(movXXl(var.type.size_, var.type.isUnsig), var.name(), "%eax");
                     _src = reg2stk("%eax", param_size);
                 }
                 else if (var.kind == NODE_LOC_VAR) {
@@ -391,7 +385,7 @@ void Generate::generate(std::vector<std::string> &_q)
 		// 查找变量
 		LocVar ret = searchLocvar(_q.at(1));
 
-		if (ret.varName.empty())
+		if (ret.name().empty())
             _src = "$" + _q.at(1);
 		else
             _src = std::to_string(ret._off) + "(%ebp)";
@@ -410,7 +404,7 @@ void Generate::generate(std::vector<std::string> &_q)
             LocVar var = searchLocvar(_q.at(1));
 
             if (var.kind == NODE_GLO_VAR) {
-                gas_ins(movXXl(var.type.size_, var.type.isUnsig), "_" + var.varName, "%eax");
+                gas_ins(movXXl(var.type.size_, var.type.isUnsig), var.name(), "%eax");
             }
             else if (var.kind == NODE_LOC_VAR) {
                 _src = loc_var_val(var._off);
@@ -628,7 +622,7 @@ bool Generate::isReg(const std::string &_t)
 bool Generate::isLocVar(const std::string &_l)
 {
 	LocVar var = searchLocvar(_l);
-	if (!var.varName.empty())
+	if (!var.name().empty())
 		return true;
     
     return false;
@@ -797,7 +791,7 @@ void Generate::setLocEnv(const std::string &envName)
             return;
         }
     }
-    error("Not find scope : %s", envName.c_str());
+    error("Not find scope : "+ envName);
     locEnv = nullptr;
 }
 

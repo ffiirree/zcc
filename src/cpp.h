@@ -45,7 +45,7 @@ public:
 public:
     Macro() :name_(), params_(), replist_() { }
     Macro(const std::string &n, MacroType ty) :name_(n), type_(ty), params_(), replist_() {}
-    Macro(const std::string &n, Token v, MacroType ty) :name_(n), type_(ty), params_() { replist_.push_back(v); }
+    Macro(const std::string &n, const Token &v, MacroType ty) :name_(n), type_(ty), params_() { replist_.push_back(v); }
 
     Macro(const Macro&m) :type_(m.type_), name_(m.name_), params_(m.params_), replist_(m.replist_) {  }
     Macro &operator=(const Macro &m) { type_ = m.type_; name_ = m.name_; params_ = m.params_; replist_ = m.replist_; return *this; }
@@ -71,15 +71,15 @@ public:
      * @berif macro expansion
      */
     void expand(TokenSequence is, TokenSequence &os);
-    void subst(TokenSequence &is, std::vector<std::string> fp, TokenSequence &ap, HideSet* hs, TokenSequence& os);
+    void subst(TokenSequence &is, const std::vector<std::string> &fp, const TokenSequence &ap, HideSet* hs, TokenSequence& os);
     void glue(TokenSequence &ls, TokenSequence &rs);
     void hasadd(HideSet *hs, TokenSequence &ts);
     TokenSequence ts(const std::string &_macro_name);
     TokenSequence fp(const std::string &_macro_name);
-    TokenSequence select(int i, TokenSequence &ts);
-    TokenSequence stringize(TokenSequence ts);
+    TokenSequence select(int i, const TokenSequence &ts);
+    TokenSequence stringize(const TokenSequence &ts);
     TokenSequence getAP(TokenSequence &is);
-    int isInFP(Token t, std::vector<std::string> fp);
+    int isInFP(const Token &t, const std::vector<std::string> &fp);
 
     Macro *searchMacro(const std::string &_n);
     int isMacro(const std::string &_n);
@@ -110,7 +110,7 @@ public:
     void Line(TokenSequence &is);
     void Pragma(TokenSequence &is);
 
-    bool invalid() { return invalid_; }
+    inline bool invalid() const { return invalid_; }
 
 private:
     void init();

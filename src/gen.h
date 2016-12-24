@@ -12,9 +12,9 @@
 #define _text_ "\t.text"
 
 #define gas_tab(str)          gas("\t" + std::string(str))
-#define gas_glo(str)          gas("\t.globl\t_" + str);
+#define gas_glo(str)          gas("\t.globl\t" + str);
 #define gas_label(label)      gas(label+":")
-#define gas_func_def(fn)      gas("\t.def\t_" + std::string(fn) + ";\t.scl\t2;\t.type\t32;\t.endef")
+#define gas_func_def(fn)      gas("\t.def\t" + std::string(fn) + ";\t.scl\t2;\t.type\t32;\t.endef")
 
 #define gas_jmp(des)          gas_tab("jmp\t" + des)
 
