@@ -667,7 +667,7 @@ void getEnvCallSize(Env * _begin, int *size)
 {
     if (_begin == nullptr)
         return;
-    *size += _begin->_call_size;
+    *size += _begin->call_size_;
     std::vector<Env *> node = _begin->getNext();
     for (size_t i = 0; i < node.size(); ++i) {
         getEnvCallSize(node.at(i), size);

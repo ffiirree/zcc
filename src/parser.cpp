@@ -34,7 +34,7 @@ void Env::push_back(Node &n) {
         }
     }
 
-    nodes.push_back(n);
+    nodes_.push_back(n);
 }
 
 void Label::push_back(const std::string &_l) {
@@ -127,7 +127,7 @@ Node Parser::funcDef()
 #endif
 
 #ifdef WIN32
-    out << "_" + funcName << ":" << std::endl;
+    _GENQL_("_" + funcName);
 #elif defined(__linux__)
     out << funcName << ":" << std::endl;
 #endif
@@ -137,7 +137,7 @@ Node Parser::funcDef()
     Node r = func_body(functype, funcName, params);
 
     __OUT_SCOPE__(localenv);
-    out << ".end" << std::endl;
+    _GENQ1_(".end");
     return r;
 }
 
@@ -201,9 +201,9 @@ Node &Env::search(const std::string &key)
     Env *ptr = this;
 
     while (ptr) {
-        for (size_t i = 0; i < ptr->nodes.size(); ++i) {
-            if (key == ptr->nodes.at(i).name() || key == ptr->nodes.at(i).name())
-                return ptr->nodes.at(i);
+        for (size_t i = 0; i < ptr->nodes_.size(); ++i) {
+            if (key == ptr->nodes_.at(i).name() || key == ptr->nodes_.at(i).name())
+                return ptr->nodes_.at(i);
         }
         ptr = ptr->pre();
     }
@@ -218,16 +218,16 @@ void Env::setFuncDef(Node &_def)
     Env *ptr = this;
 
     while (ptr) {
-        for (size_t i = 0; i < ptr->nodes.size(); ++i) {
-            if (_def.name() == ptr->nodes.at(i).name()) {
-                ptr->nodes.at(i) = _def;
+        for (size_t i = 0; i < ptr->nodes_.size(); ++i) {
+            if (_def.name() == ptr->nodes_.at(i).name()) {
+                ptr->nodes_.at(i) = _def;
             }
         }
         ptr = ptr->pre();
     }
 }
 
-Type Parser::get_type(std::string key)
+Type Parser::get_type(const std::string &key)
 {
     Type type;
 
@@ -236,7 +236,7 @@ Type Parser::get_type(std::string key)
     }
     return type;
 }
-int Parser::get_compound_assign_op(Token &t)
+int Parser::get_compound_assign_op(const Token &t)
 {
     if (t.getType() != T_KEYWORD)
         return 0;
@@ -255,7 +255,7 @@ int Parser::get_compound_assign_op(Token &t)
     }
 }
 
-std::string Parser::get_compound_assign_op_signal(Token &t)
+std::string Parser::get_compound_assign_op_signal(const Token &t)
 {
     if (t.getType() != T_KEYWORD)
         return 0;
@@ -389,7 +389,7 @@ Node Parser::createDeclNode(Node &var, std::vector<Node> init)
     return node;
 }
 
-Node Parser::createGLoVarNode(const Type &ty, const std::string name)
+Node Parser::createGLoVarNode(const Type &ty, const std::string &name)
 {
     Node r(NODE_GLO_VAR, ty);
     r.setVarName(name);
@@ -401,7 +401,7 @@ Node Parser::createGLoVarNode(const Type &ty, const std::string name)
 
     return r;
 }
-Node Parser::createLocVarNode(const Type &ty, const std::string name)
+Node Parser::createLocVarNode(const Type &ty, const std::string &name)
 {
     Node r(NODE_LOC_VAR, ty);
     r.setVarName(name);
@@ -477,7 +477,7 @@ bool Parser::is_type(const Token &t)
     }
 }
 
-bool Parser::is_keyword(Token t, int id)
+bool Parser::is_keyword(const Token &t, int id)
 {
     return (t.getType() == T_KEYWORD && t.getId() == id);
 }
@@ -506,7 +506,7 @@ void Parser::expect(int id)
         errorp(ts_.getPos(), std::string("expect '") + (char)id + "', but not is '" + (char)t.getId() + "'");
 }
 
-bool Parser::is_inttype(Type ty)
+bool Parser::is_inttype(const Type &ty)
 {
     switch (ty.getType())
     {
@@ -518,7 +518,7 @@ bool Parser::is_inttype(Type ty)
     }
 }
 
-bool Parser::is_floattype(Type &ty)
+bool Parser::is_floattype(const Type &ty)
 {
     switch (ty.getType())
     {
@@ -529,7 +529,7 @@ bool Parser::is_floattype(Type &ty)
 }
 
 
-bool Parser::is_arithtype(Type &ty)
+bool Parser::is_arithtype(const Type &ty)
 {
     return is_inttype(ty) || is_floattype(ty);
 }
@@ -586,11 +586,11 @@ void Parser::gotoLabel(const std::string &op)
 {
     BoolLabel _b = boolLabel.back(); boolLabel.pop_back();
     if (op == "||")
-        out << _b._false << ":" << std::endl;  // label(b1.false)
+        _GENQL_(_b.false_);   // label(b1.false)
     else if (op == "&&")
-        out << _b._true << ":" << std::endl;  // label(b1.false)
+        _GENQL_(_b.true_);   // label(b1.false)
     else if (op == "if")
-        out << _b._true << ":" << std::endl;  // label(b1.false)
+        _GENQL_(_b.true_);   // label(b1.false)
 }
 
 void Parser::generateIfGoto()
@@ -599,9 +599,8 @@ void Parser::generateIfGoto()
 
     if (_stk_if_goto.size() == 1 && _stk_if_goto_op.size() == 0) {
         b = boolLabel.back();boolLabel.pop_back();
-
-        out << _stk_if_goto.back() + b._true << std::endl;
-        out << "goto " + b._false << std::endl;
+        _GENQ2_(_stk_if_goto.back(), b.true_);
+        _GENQ2_("goto", b.false_);
         _stk_if_goto.clear();
         return;
     }
@@ -621,31 +620,31 @@ void Parser::generateIfGoto()
         b2 = boolLabel.back();boolLabel.pop_back();
         b1 = boolLabel.back();boolLabel.pop_back();
         if (op == "||") {
-            b1._true = b._true;
-            b1._false = newLabel("orf");
-            b2._true = b._true;
-            b2._false = b._false;
+            b1.true_ = b.true_;
+            b1.false_ = newLabel("orf");
+            b2.true_ = b.true_;
+            b2.false_ = b.false_;
         }
         else if (op == "&&") {
-            b1._true = newLabel("andt");
-            b1._false = b._false;
-            b2._true = b._true;
-            b2._false = b._false;
+            b1.true_ = newLabel("andt");
+            b1.false_ = b.false_;
+            b2.true_ = b.true_;
+            b2.false_ = b.false_;
         }
 
         bl.push_back(b);
-        if (b2._leaf) {
+        if (b2.leaf_) {
             bl.push_back(b2);
         }
 
-        if (b1._leaf) {
+        if (b1.leaf_) {
             bl.push_back(b1);
         }
 
-        if (!b2._leaf)
+        if (!b2.leaf_)
             boolLabel.push_back(b2);
 
-        if (!b1._leaf)
+        if (!b1.leaf_)
             boolLabel.push_back(b1);
     }
 
@@ -654,30 +653,28 @@ void Parser::generateIfGoto()
         b2 = bl.back(); bl.pop_back();
 
         if (op_.at(i - 1) == "||") {
-            if (b1._leaf == true) {
-                out << temp_.back() + b1._true << std::endl;
-                out << "goto\t" + b1._false << std::endl;
+            if (b1.leaf_ == true) {
+                _GENQ2_(temp_.back(), b1.true_);
+                _GENQ2_("goto", b1.false_);
             }
+            _GENQL_(b1.false_);
 
-            out << b1._false << ":" << std::endl;
-
-            if (b2._leaf == true) {
-                out << temp_.back() + b2._true << std::endl;
-                out << "goto\t" + b2._false << std::endl;
+            if (b2.leaf_ == true) {
+                _GENQ2_(temp_.back(), b2.true_);
+                _GENQ2_("goto", b2.false_);
             }
 
         }
         else if (op_.at(i - 1) == "&&") {
-            if (b1._leaf == true) {
-                out << temp_.back() + b1._true << std::endl;
-                out << "goto\t" + b1._false << std::endl;
+            if (b1.leaf_ == true) {
+                _GENQ2_(temp_.back(), b1.true_);
+                _GENQ2_("goto", b1.false_);
             }
+            _GENQL_(b1.true_);
 
-            out << b1._true << ":" << std::endl;
-
-            if (b2._leaf == true) {
-                out << temp_.back() + b2._true << std::endl;
-                out << "goto\t" + b2._false << std::endl;
+            if (b2.leaf_ == true) {
+                _GENQ2_(temp_.back(), b2.true_);
+                _GENQ2_("goto", b2.false_);
             }
         }
     }
@@ -723,7 +720,7 @@ void Parser::createBoolGenQuadruple(const std::string &op)
 
 
     BoolLabel _b;
-    _b._leaf = true;
+    _b.leaf_ = true;
     boolLabel.push_back(_b);
 
     str = "if\t" + var2 + " " + op + " " + var1 + "\tgoto ";
@@ -768,7 +765,7 @@ std::string getReulst(std::string &v1, std::string &v2, const std::string &op)
 void Parser::createUnaryQuadruple(const std::string &op)
 {
     if (op == "++" || op == "--") {
-        out << op + "\t" + _stk_quad.back() << std::endl;
+        _GENQ2_(op, _stk_quad.back());
         return;
     }
 
@@ -796,15 +793,11 @@ void Parser::createUnaryQuadruple(const std::string &op)
         return;
     }
 
-    std::string _out_str;
-    _out_str = op + "\t" + _stk_quad.back(); _stk_quad.pop_back();
-
     std::string tempName = newLabel("uy");
-    _out_str += "\t" + tempName;
+    _GENQ3_(op, _stk_quad.back(), tempName);
 
+    _stk_quad.pop_back();
     _stk_quad.push_back(tempName);
-
-    out << _out_str << std::endl;
 }
 
 // + - * / % & | ^ 
@@ -814,13 +807,10 @@ void Parser::createQuadruple(const std::string &op)
     std::string _out_str = op;
 
     if (op == "=") {
-        _out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
-        _out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+        std::string v1 = _stk_quad.back(); _stk_quad.pop_back();
+        std::string v2 = _stk_quad.back(); _stk_quad.pop_back();
+        _GENQ3_(op, v1, v2);
     }
-    //else if (op == "[]") {
-    //	_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
-    //	_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
-    //}
     else if (op == "+f" || op == "-f" || op == "*f" || op == "/f") {
         std::string v1, v2;
 
@@ -839,20 +829,17 @@ void Parser::createQuadruple(const std::string &op)
             float_const.push_back("4f");
         }
 
-        _out_str += "\t" + v1;
-        _out_str += "\t" + v2;
-
         std::string tempName = newLabel("var");
-        _out_str += "\t" + tempName;
-
         _stk_quad.push_back(tempName);
+
+        _GENQ4_(op, v1, v2, tempName);
     }
     else if (op == ".=" || op == "[]=") {
-        std::string v1, v2;
+        std::string v1 = _stk_quad.back(); _stk_quad.pop_back();
+        std::string v2 = _stk_quad.back(); _stk_quad.pop_back();
+        std::string v3 = _stk_quad.back(); _stk_quad.pop_back();
 
-        _out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
-        _out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
-        _out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+        _GENQ4_(op, v1, v2, v3);
     }
     else {
         std::string v1, v2;
@@ -865,24 +852,17 @@ void Parser::createQuadruple(const std::string &op)
             return;
         }
 
-        _out_str += "\t" + v1;
-        _out_str += "\t" + v2;
-
         std::string tempName = newLabel("var");
-        _out_str += "\t" + tempName;
-
         _stk_quad.push_back(tempName);
+        _GENQ4_(op, v1, v2, tempName);
     }
-
-    out << _out_str << std::endl;
 }
 
 
 void Parser::createFuncQuad(std::vector<Node> &params)
 {
-    out << std::endl;
     for (size_t i = 0; i < params.size(); ++i) {
-        out << "param " << _stk_quad.back() << std::endl; _stk_quad.pop_back();
+        _GENQ2_("param", _stk_quad.back()); _stk_quad.pop_back();
     }
 
     std::string func_name;
@@ -904,18 +884,18 @@ void Parser::createFuncQuad(std::vector<Node> &params)
 
 _skip_cheak_params_num:
     for (size_t i = 0; i < fn.params.size(); ++i) {
-        localenv->_call_size += fn.params.at(i).type.size_;
+        localenv->call_size_ += fn.params.at(i).type.size_;
     }
-
-    out << "call" << "\t" << fn.name() << "\t" << fn.params.size();
 
     std::string ret_;
     if (fn.type.type != K_VOID || fn.type.retType != nullptr) {
         ret_ = newLabel("ret");
         _stk_quad.push_back(ret_);
-        out << "\t" + ret_;
+        _GENQ4_("call", fn.name(), std::to_string(fn.params.size()), ret_);
     }
-    out << std::endl;
+    else {
+        _GENQ3_("call", fn.name(), std::to_string(fn.params.size()));
+    }
 }
 
 void Parser::createIncDec()
@@ -927,21 +907,18 @@ void Parser::createIncDec()
         std::string op = _stk_incdec.back(); _stk_incdec.pop_back();
         std::string var = _stk_incdec.back(); _stk_incdec.pop_back();
         std::string label;
+        std::string quad_op;
         if (op == "++") {
             label = newLabel("inc");
-            out << std::left << std::setw(15) << "+";
+            quad_op = "+";
         }
         else {
             label = newLabel("dec");
-            out << std::left << std::setw(15) << "-";
+            quad_op = "-";
         }
 
-        out << std::left << std::setw(15) << "1";
-        out << std::left << std::setw(15) << var;
-        out << std::left << std::setw(15) << label << std::endl;
-        out << std::left << std::setw(15) << "=";
-        out << std::left << std::setw(15) << label;
-        out << std::left << std::setw(15) << var << std::endl;
+        _GENQ4_(quad_op, "1", var, label);
+        _GENQ3_("=", label, var);
     }
 }
 

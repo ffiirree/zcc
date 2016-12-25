@@ -11,14 +11,17 @@ Node Parser::expr_opt()
 }
 Node Parser::bool_expr()
 {
+    isBoolExpr = true;
     Node r = comma_expr();
+    isBoolExpr = false;
+
     if (isCondition && _stk_if_goto.empty()) {
         _stk_quad.push_back("0");
         createBoolGenQuadruple("!=");
 
-        BoolLabel b_;
-        b_._leaf = true;
-        boolLabel.push_back(b_);
+        BoolLabel bl;
+        bl.leaf_ = true;
+        boolLabel.push_back(bl);
     }
     return r;
 }
@@ -116,24 +119,24 @@ Node Parser::assignment_expr()
  */
 Node Parser::conditional_expr(Node *node)
 {
-    BoolLabel _to;
+    BoolLabel to;
     std::string snext = newLabel("sn");
 
-    _to._true = newLabel("tot");
-    _to._false = newLabel("tof");
-    boolLabel.back()._true = _to._true;
-    boolLabel.back()._false = _to._false;
+    to.true_ = newLabel("tot");
+    to.false_ = newLabel("tof");
+    boolLabel.back().true_ = to.true_;
+    boolLabel.back().false_ = to.false_;
     generateIfGoto();
-    out << _to._true << ":" << std::endl;
+    _GENQL_(to.true_);
 
     Node *then = new Node(expr());
-    out << "goto\t" << snext << std::endl;
-    out << _to._false << ":" << std::endl;
+    _GENQ2_("goto", snext);
+    _GENQL_(to.false_);
 
     expect(':');
     Node *els = new Node(com_conditional_expr());
 
-    out << snext << ":" << std::endl;
+    _GENQL_(snext);
 
     return createIfStmtNode(node, then, els);
 }
@@ -146,21 +149,21 @@ Node Parser::com_conditional_expr()
 	Node *node = new Node(logical_or_expr());
 	if (next_is('?')) {
 
-        _to._true = newLabel("tot");
-        _to._false = newLabel("tof");
-        boolLabel.back()._true = _to._true;
-        boolLabel.back()._false = _to._false;
+        _to.true_ = newLabel("tot");
+        _to.false_ = newLabel("tof");
+        boolLabel.back().true_ = _to.true_;
+        boolLabel.back().false_ = _to.false_;
         generateIfGoto();
-        out << _to._true << ":" << std::endl;
+        _GENQL_(_to.true_);
 
 		Node *then = new Node(expr());
-        out << "goto\t" << snext << std::endl;
-        out << _to._false << ":" << std::endl;
+        _GENQ2_("goto", snext);
+        _GENQL_(_to.false_);
 
 		expect(':');
 		Node *els = new Node(com_conditional_expr());
 
-        out << snext << ":" << std::endl;
+        _GENQL_(snext);
 
 		return createIfStmtNode(node, then, els);
 	}

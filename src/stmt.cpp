@@ -26,7 +26,7 @@ Node Parser::statement()
     if (t.getType() == T_IDENTIFIER && next_is(':')) {
         // label
         labels.push_back(t.getSval());
-        out << t.getSval() << ":" << std::endl;
+        _GENQL_(t.getSval());
         return Node();
     }
     ts_.back();
@@ -63,7 +63,7 @@ void Parser::decl_or_stmt(std::vector<Node> &list)
     else {
         list.push_back(statement());
     }
-    out << "clr" << std::endl;
+    _GENQ1_("clr");
 }
 
 Node Parser::if_stmt()
@@ -77,25 +77,26 @@ Node Parser::if_stmt()
     _DIS_CONDITION_();
     expect(')');
 
-    _if._true = newLabel("ift");
-    _if._false = newLabel("iff");
-    boolLabel.back()._true = _if._true;
-    boolLabel.back()._false = _if._false;
+    _if.true_ = newLabel("ift");
+    _if.false_ = newLabel("iff");
+    boolLabel.back().true_ = _if.true_;
+    boolLabel.back().false_ = _if.false_;
     generateIfGoto();
-    out << _if._true << ":" << std::endl;
 
-    out << "clr" << std::endl;
+    _GENQL_(_if.true_);
+    _GENQ1_("clr");
     Node *then = new Node(statement());     // S1.code
 
     if (next_is(K_ELSE)) {
-        out << "goto\t" << snext << std::endl;
-        out << _if._false << ":" << std::endl;
+        _GENQ2_("goto", snext);
+        _GENQL_(_if.false_);
+
         Node *els = new Node(statement());
-        out << snext << ":" << std::endl;
+        _GENQL_(snext);
         return createIfStmtNode(cond, then, els);
     }
     else {
-        out << _if._false << ":" << std::endl;          // S1.next
+        _GENQL_(_if.false_);
     }
     return createIfStmtNode(cond, then, nullptr);
 }
@@ -110,12 +111,12 @@ Node Parser::while_stmt()
     _stk_ctl_bg_l.push_back(_begin);
     _stk_ctl_end_l.push_back(_snext);
 
-    _while._true = newLabel("wt");         // B.true = newLabel
-    _while._false = _snext;                // B.false = S.next
+    _while.true_ = newLabel("wt");         // B.true = newLabel
+    _while.true_ = _snext;                // B.false = S.next
 
     std::string _s1next = _begin;          // S1.next = begin
 
-    out << _begin << ":" << std::endl;     // Label(begin)
+    _GENQL_(_begin);     // Label(begin)
 
     expect('(');
     _EN_CONDITION_();
@@ -123,17 +124,16 @@ Node Parser::while_stmt()
     _DIS_CONDITION_();
     expect(')');
 
-    boolLabel.back()._true = _while._true;
-    boolLabel.back()._false = _while._false;
+    boolLabel.back().true_ = _while.true_;
+    boolLabel.back().false_ = _while.false_;
     generateIfGoto();                      // B.code
-    out << _while._true << ":" << std::endl;           // Label(B.true)
+    _GENQL_(_while.true_);            // Label(B.true)
 
-    out << "clr" << std::endl;
+    _GENQ1_("clr");
 
     Node body = statement();               // S1.code
-    out << "goto " << _begin << std::endl; // gen(goto begin)
-
-    out << _snext << ":" << std::endl;
+    _GENQ2_("goto", _begin);  // gen(goto begin)
+    _GENQL_(_snext);
 
     _stk_ctl_bg_l.pop_back();
     _stk_ctl_end_l.pop_back();
@@ -152,10 +152,10 @@ Node Parser::do_stmt()
     _stk_ctl_bg_l.push_back(begin);
     _stk_ctl_end_l.push_back(snext);
 
-    doLabel._true = begin;
-    doLabel._false = snext;
+    doLabel.true_ = begin;
+    doLabel.false_ = snext;
 
-    out << begin << ":" << std::endl;
+    _GENQL_(begin);
     Node *r = new Node(statement());
     expect(K_WHILE);
     expect('(');
@@ -165,16 +165,15 @@ Node Parser::do_stmt()
     expect(')');
     expect(';');
 
-    boolLabel.back()._true = doLabel._true;
-    boolLabel.back()._false = doLabel._false;
+    boolLabel.back().true_ = doLabel.true_;
+    boolLabel.back().false_ = doLabel.false_;
     generateIfGoto();                      // B.code
-
-    out << snext << ":" << std::endl;
+    _GENQL_(snext);
 
     _stk_ctl_bg_l.pop_back();
     _stk_ctl_end_l.pop_back();
 
-    return *r; ////////////////////����Ҫ�޸�
+    return *r;
 }
 
 Node Parser::switch_stmt()
@@ -200,7 +199,7 @@ Node Parser::switch_stmt()
     expect('{');
     compound_stmt();
 
-    out << _next << ":" << std::endl;
+    _GENQL_(_next);
     _stk_ctl_end_l.pop_back();
     return Node();
 }
@@ -217,8 +216,8 @@ Node Parser::for_stmt()
     _stk_ctl_bg_l.push_back(_begin);
     _stk_ctl_end_l.push_back(_next);
 
-    _for._false = _next;
-    _for._true = newLabel("fort");
+    _for.false_ = _next;
+    _for.true_ = newLabel("fort");
 
     expect('(');
     __IN_SCOPE__(localenv, localenv, newLabel("for"));
@@ -234,7 +233,7 @@ Node Parser::for_stmt()
         expect(';');
     }
 
-    out << _begin << ":" << std::endl;
+    _GENQL_(_begin);
 
     if (is_keyword(ts_.peek(), ';')) {
         expect(';');
@@ -248,9 +247,8 @@ Node Parser::for_stmt()
 
     boolLabel.push_back(_for);
     generateIfGoto();
-    out << "clr" << std::endl;
-
-    out << _exp3 << ":" << std::endl;
+    _GENQ1_("clr");
+    _GENQL_(_exp3);
     if (is_keyword(ts_.peek(), ')')) {
         expect(')');
     }
@@ -258,15 +256,15 @@ Node Parser::for_stmt()
         expr();
         expect(')');
     }
-    out << "clr" << std::endl;
-
-    out << "goto " << _begin << std::endl;
-    out << _for._true << ":" << std::endl;
+    _GENQ1_("clr"); 
+    _GENQ2_("goto", _begin); 
+    _GENQL_(_for.true_);
 
     statement();
     __OUT_SCOPE__(localenv);
-    out << "goto " << _exp3 << std::endl;
-    out << _next << ":" << std::endl;
+
+    _GENQ2_("goto", _exp3);
+    _GENQL_(_next);
 
     _stk_ctl_bg_l.pop_back();
     _stk_ctl_end_l.pop_back();
@@ -281,14 +279,14 @@ Node Parser::goto_stmt()
     labels.push_back_un(t.getSval());
     expect(';');
 
-    out << std::left << std::setw(10) << "goto " << t.getSval() << std::endl;
+    _GENQ2_("goto", t.getSval());
 
     return Node();
 }
 
 Node Parser::continue_stmt()
 {
-    out << "goto " << _stk_ctl_bg_l.back() << std::endl;
+    _GENQ2_("goto", _stk_ctl_bg_l.back());
     return  Node();
 }
 
@@ -297,7 +295,7 @@ Node Parser::return_stmt()
     Node *retval = new Node(expr_opt());
     expect(';');
 
-    out << "ret\t" + _stk_quad.back() << std::endl;
+    _GENQ2_("ret", _stk_quad.back());
 
     return createRetStmtNode(retval);
 }
@@ -308,10 +306,10 @@ Node Parser::case_stmt()
     int val = com_conditional_expr().int_val;
     expect(':');
 
-    out << "if " << switch_expr << " != " << val << " goto " << switch_case_label << std::endl;
+    _GENQIF_(switch_expr + " != " + std::to_string(val), switch_case_label);
     statement();
 
-    out << switch_case_label << ":" << std::endl;
+    _GENQL_(switch_case_label);
     switch_case_label = newLabel("case");
 
     return Node();
@@ -325,7 +323,7 @@ Node Parser::default_stmt()
 
 Node Parser::break_stmt()
 {
-    out << "goto " << _stk_ctl_end_l.back() << std::endl;
+    _GENQ2_("goto", _stk_ctl_end_l.back());
     expect(';');
     return createJumpNode(label_break);
 }

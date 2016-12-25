@@ -1,6 +1,7 @@
 #ifndef _ZCC_PARSER_H
 #define _ZCC_PARSER_H
 
+#include <iomanip>
 #include <map>
 #include "lex.h"
 
@@ -12,12 +13,19 @@
                                                    old->setNext(localEnv); \
                                                    std::string _name_ = _name; \
                                                    localEnv->setName(_name_); \
-                                                   out << ".inscope\t" << _name_ << std::endl; \
+                                                   gen_quad(".inscope", _name_);\
                                              }while(0)
-#define __OUT_SCOPE__(localEnv) do{ localEnv = localEnv->pre(); out << ".outscope" << std::endl; }while(0)
+#define __OUT_SCOPE__(localEnv) do{ localEnv = localEnv->pre(); gen_quad(".outscope"); }while(0)
 
 #define _EN_CONDITION_()                isCondition = true
 #define _DIS_CONDITION_()               isCondition = false
+ 
+#define _GENQL_(q1)                     gen_quad_label(q1)
+#define _GENQ1_(q1)                     gen_quad(q1)
+#define _GENQ2_(q1, q2)                 gen_quad(q1, q2)
+#define _GENQ3_(q1, q2, q3)             gen_quad(q1, q2, q3)
+#define _GENQ4_(q1, q2, q3, q4)         gen_quad(q1, q2, q3, q4)
+#define _GENQIF_(CONDSTR, LABEL)        gen_quad_if(CONDSTR, LABEL)
 
 /**
  * @berif scope/env
@@ -25,32 +33,32 @@
 class Env {
 public:
 	Env():Env(nullptr) {}
-	Env(Env *p) :_pre(p), nodes() { }
+	Env(Env *p) :pre_(p), nodes_() { }
     Env(const Env&) = delete;
     Env &operator=(const Env&) = delete;
     ~Env() = default;
 
 	void push_back(Node &n);
-	void pop_back() { nodes.pop_back(); }
-	Node &back() { return nodes.back(); }
+	void pop_back() { nodes_.pop_back(); }
+	Node &back() { return nodes_.back(); }
 	Node &search(const std::string &key);
    
     void setFuncDef(Node &_def);
 
-	inline Env *pre() { return _pre; }
-	inline std::vector<Env *> getNext() { return _next; }
-	inline void setNext(Env *_n) { _next.push_back(_n); }
-	inline void setName(const std::string &_n) { _name = _n; }
-	inline std::string getName() { return _name; }
-	size_t size() { return nodes.size(); }
-	Node &at(size_t i) { return nodes.at(i); }
-	int _call_size = 0;
+	inline Env *pre() { return pre_; }
+	inline std::vector<Env *> getNext() { return next_; }
+	inline void setNext(Env *_n) { next_.push_back(_n); }
+	inline void setName(const std::string &_n) { name_ = _n; }
+	inline std::string getName() { return name_; }
+	size_t size() { return nodes_.size(); }
+	Node &at(size_t i) { return nodes_.at(i); }
+	int call_size_ = 0;
+
 private:
-	std::string _name;
-	Env *_pre;
-	std::vector<Env *> _next;
-	
-	std::vector<Node> nodes;
+	std::string name_;
+	Env *pre_;
+	std::vector<Env *> next_;
+	std::vector<Node> nodes_;
 };
 
 /**
@@ -91,16 +99,14 @@ private:
  */
 class BoolLabel{
 public:
-	BoolLabel() :_begin(), _true(), _false(), _next(){}
-	BoolLabel(const BoolLabel &bl):_begin(bl._begin), _true(bl._true), _false(bl._false), _next(bl._next), _leaf(bl._leaf){}
-	BoolLabel &operator=(const BoolLabel &bl) { _begin = bl._begin; _true = bl._true, _false = bl._false; _next = bl._next;_leaf = bl._leaf; return *this; }
+	BoolLabel() :true_(), false_() {}
+	BoolLabel(const BoolLabel &bl): true_(bl.true_), false_(bl.false_), leaf_(bl.leaf_){}
+	BoolLabel &operator=(const BoolLabel &bl) { true_ = bl.true_, false_ = bl.false_; leaf_ = bl.leaf_; return *this; }
     ~BoolLabel() = default;
 
-	std::string _begin;
-	std::string _true;
-	std::string _false;
-	std::string _next;
-	bool _leaf = false;
+	std::string true_;
+	std::string false_;
+	bool leaf_ = false;
 };
 
 class StrCard {
@@ -162,14 +168,14 @@ private:
 
 	bool next_is(int id);
 	void expect(int id);
-	bool is_keyword(Token t, int id);
+	bool is_keyword(const Token &t, int id);
 	bool is_type(const Token &t);
-	bool is_inttype(Type ty);
-	bool is_floattype(Type &ty);
-	bool is_arithtype(Type &ty);
-	Type get_type(std::string key);
-	int get_compound_assign_op(Token &t);
-	std::string get_compound_assign_op_signal(Token &t);
+	bool is_inttype(const Type &ty);
+	bool is_floattype(const Type &ty);
+	bool is_arithtype(const Type &ty);
+	Type get_type(const std::string &key);
+	int get_compound_assign_op(const Token &t);
+	std::string get_compound_assign_op_signal(const Token &t);
 
 	//
 	Node createFuncNode(const Type &ty, const std::string & funcName, std::vector<Node> params, Node *body);
@@ -181,8 +187,8 @@ private:
 	Node createCompoundStmtNode(std::vector<Node> &stmts);
 	Node createDeclNode(Node &var);
 	Node createDeclNode(Node &var, std::vector<Node> init);
-	Node createGLoVarNode(const Type &ty, const std::string name);
-	Node createLocVarNode(const Type &ty, const std::string name);
+	Node createGLoVarNode(const Type &ty, const std::string &name);
+	Node createLocVarNode(const Type &ty, const std::string &name);
 	Node createFuncDeclParams(const Type &ty);
 	Node createFuncDecl(const Type &ty, const std::string & funcName, const std::vector<Node> &params);
 	Node createBinOpNode(const Type &ty, int kind, Node *left, Node *right);
@@ -290,6 +296,29 @@ private:
     bool cheak_is_int_type(const Node &n);
     bool cheak_is_custom_type(const Node &n);
 
+    // gen_quad
+    void gen_quad_label(const std::string &q1) { out << q1 << ":" << std::endl; }
+    void gen_quad_if(const std::string &constr, const std::string &l) { out << "\t" << "if\t" << constr << "\tgoto\t" << l << std::endl; }
+    void gen_quad(const std::string &q1) { out << "\t" << q1 << std::endl; }
+    void gen_quad(const std::string &q1, const std::string &q2) { 
+        out << "\t" << std::left << std::setw(7) << q1 << " "
+            << q2
+            << std::endl; 
+    }
+    void gen_quad(const std::string &q1, const std::string &q2, const std::string &q3) { 
+        out << "\t" << std::left << std::setw(7) << q1 << " "
+            << std::left << std::setw(10) << q2 << " "
+            << q3 
+            << std::endl; 
+    }
+    void gen_quad(const std::string &q1, const std::string &q2, const std::string &q3, const std::string &q4) { 
+        out << "\t" << std::left << std::setw(7) << q1 << " "
+            << std::left << std::setw(10) << q2 << " "
+            << std::left << std::setw(10) << q3 << " "
+            << q4 
+            << std::endl; 
+    }
+
     TokenSequence ts_;
 	Env *globalenv = nullptr;
 	Env *localenv = nullptr;
@@ -318,7 +347,7 @@ private:
 
     bool isCondition = false;
     bool isComputeBool = false;
-    bool boolExprRes = false;
+    bool isBoolExpr = false;
 };
 
 /**
