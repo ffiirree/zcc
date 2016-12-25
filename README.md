@@ -40,7 +40,6 @@ Output:
         include 
         define
         undef
-        宏展开
         if
         ifndef
         ifdef
