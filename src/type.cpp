@@ -18,23 +18,23 @@ void Token::copying(const Token &t)
 
 void Token::copyUnion(const Token &t)
 {
-	switch (t.getType()) {
-	case T_KEYWORD:
-	case T_EOF:
-		id_ = t.id_;
-		break;
+    switch (t.getType()) {
+    case T_KEYWORD:
+    case T_EOF:
+        id_ = t.id_;
+        break;
 
-	case T_CHAR:
-		ch_ = t.ch_;
-		break;
+    case T_CHAR:
+        ch_ = t.ch_;
+        break;
 
-	case T_IDENTIFIER:
-	case T_STRING:
-	case T_INTEGER:
-	case T_FLOAT:
-		new(&sval_) std::string(t.sval_);
-		break;
-	}
+    case T_IDENTIFIER:
+    case T_STRING:
+    case T_INTEGER:
+    case T_FLOAT:
+        new(&sval_) std::string(t.sval_);
+        break;
+    }
 }
 
 bool Token::needExpand()
@@ -75,41 +75,41 @@ void Type::coping(const Type &t)
 
 inline void Node::copying(const Node &n)
 {
-	kind = n.kind;
-	type = n.type;
+    kind = n.kind;
+    type = n.type;
 
-	int_val = n.int_val;
+    int_val = n.int_val;
 
-	float_val = n.float_val;
+    float_val = n.float_val;
 
-	sval = n.sval;
+    sval = n.sval;
 
-	varName = n.varName;
-	_off = n._off;
-	lvarinit = n.lvarinit;
+    varName = n.varName;
+    _off = n._off;
+    lvarinit = n.lvarinit;
 
 
-	left = n.left;
-	right = n.right;
-	operand = n.operand;
+    left = n.left;
+    right = n.right;
+    operand = n.operand;
 
-	funcName = n.funcName;
-	params = n.params;
-	body = n.body;
+    funcName = n.funcName;
+    params = n.params;
+    body = n.body;
 
-	decl_var = n.decl_var;
-	decl_init = n.decl_init;
+    decl_var = n.decl_var;
+    decl_init = n.decl_init;
 
-	init_val = n.init_val;
-	init_off = n.init_off;
-	cond = n.cond;
-	then = n.then;
-	els = n.els;
-	label = n.label;
-	newLabel = n.newLabel;
+    init_val = n.init_val;
+    init_off = n.init_off;
+    cond = n.cond;
+    then = n.then;
+    els = n.els;
+    label = n.label;
+    newLabel = n.newLabel;
 
-	retval = n.retval;
-	stmts = n.stmts;
+    retval = n.retval;
+    stmts = n.stmts;
 }
 
 
@@ -157,7 +157,7 @@ std::string Token::toString() const
 
     case T_IDENTIFIER:
     case T_INTEGER:
-    
+
     case T_FLOAT:  _r = sval_; break;
     case T_STRING: _r = "\"" + sval_ + "\""; break;
 

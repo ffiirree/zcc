@@ -130,19 +130,19 @@ enum TokenKind {
 #define op(ty, _) ty,
     OP_MAP
 #undef op
-    OP_SHR,                // �߼�����
-    OP_SHL,                // �߼����ƣ�ͬ��������
+    OP_SHR,
+    OP_SHL,
     OP_A_SHR,
     OP_A_SHL,
     OP_PRE_INC,
     OP_PRE_DEC,
     OP_POST_INC,
     OP_POST_DEC,
-    CONV,                 // ����ת��
+    CONV,
     CAST,
 
     // preprocessor,
-    OP_BACKLASH,          // ��б��
+    OP_BACKLASH, 
     OP_DS,                // '##'
 };
 
@@ -162,14 +162,14 @@ using HideSet = std::set<std::string>;
 
 class Pos {
 public:
-	Pos() :line(1), cols(1) {  }
-	Pos(int _line, int _cols) :line(_line), cols(_cols) {  }
-	Pos(const Pos &p) : line(p.line), cols(p.cols) {  }
-	Pos &operator=(const Pos &p) { line = p.line; cols = p.cols; return (*this); }
+    Pos() :line(1), cols(1) {  }
+    Pos(int _line, int _cols) :line(_line), cols(_cols) {  }
+    Pos(const Pos &p) : line(p.line), cols(p.cols) {  }
+    Pos &operator=(const Pos &p) { line = p.line; cols = p.cols; return (*this); }
     ~Pos() = default;
 
-	int line;
-	int cols;
+    int line;
+    int cols;
 };
 
 /**
@@ -177,27 +177,27 @@ public:
  */
 class Token {
 public:
-	Token() :kind_(T_EOF), pos_(),  id_(0) { }
+    Token() :kind_(T_EOF), pos_(), id_(0) { }
     Token(int id) :kind_(T_KEYWORD), id_(id) { }
-	Token(int kind, const std::string &sval) : kind_(kind), sval_(sval) { }
-	Token(int kind, char ch) : kind_(kind), pos_(), ch_(ch) { }
+    Token(int kind, const std::string &sval) : kind_(kind), sval_(sval) { }
+    Token(int kind, char ch) : kind_(kind), pos_(), ch_(ch) { }
     Token(const Token &t) { copying(t); }
     Token &operator=(const Token &t) { copying(t); return (*this); }
-	~Token() { if (kind_ == T_IDENTIFIER || kind_ == T_STRING || kind_ == T_INTEGER || kind_ == T_FLOAT)sval_.~basic_string(); }
+    ~Token() { if (kind_ == T_IDENTIFIER || kind_ == T_STRING || kind_ == T_INTEGER || kind_ == T_FLOAT)sval_.~basic_string(); }
 
-	inline int getType() const { return kind_; }
-	inline Pos getPos() const { return pos_; }
-	inline void setPos(const Pos &_p) { pos_ = _p; }
-	inline int getId() const { return id_; }
-	inline std::string getSval() const { return sval_; }
-	inline int getCh() const { return ch_; }
+    inline int getType() const { return kind_; }
+    inline Pos getPos() const { return pos_; }
+    inline void setPos(const Pos &_p) { pos_ = _p; }
+    inline int getId() const { return id_; }
+    inline std::string getSval() const { return sval_; }
+    inline int getCh() const { return ch_; }
 
     std::string toString() const;
     void setBOL() { isbol_ = true; }
     bool isBOL() { return isbol_; }
 
     bool needExpand();
-    
+
     int kind_ = 0;
     Pos pos_;
     bool isbol_ = false;
@@ -212,7 +212,7 @@ public:
 
 
 private:
-	void copyUnion(const Token &t);
+    void copyUnion(const Token &t);
     void copying(const Token &t);
 };
 std::ostream &operator<<(std::ostream & os, const Token & t);
@@ -224,7 +224,7 @@ class Field {
 public:
     Field() {}
     Field(const std::string &name) :_name(name) {}
-    Field(const std::string &name, Type *_t, int _o) : _name(name), _type(_t), _off(_o){}
+    Field(const std::string &name, Type *_t, int _o) : _name(name), _type(_t), _off(_o) {}
     Field(const Field &f) : _name(f._name), _type(f._type), _off(f._off) {}
     Field &operator=(const Field &f) { _name = f._name;  _type = f._type; _off = f._off; return *this; }
     ~Field() = default;
@@ -239,82 +239,82 @@ public:
  */
 class Type {
 public:
-	Type() {}
+    Type() {}
     Type(int ty) :type(ty) {}
-	Type(int ty, int _s, std::vector<int> _l) :type(ty), _all_len(_s), len(_l) {}
-	Type(int ty, int s, bool isunsig) :type(ty), size_(s), isUnsig(isunsig), len(0), fields(), params(){ }
-	Type(int ty, Type *ret, std::vector<Node> _params) : type(ty), retType(ret), params(_params) { }
+    Type(int ty, int _s, std::vector<int> _l) :type(ty), _all_len(_s), len(_l) {}
+    Type(int ty, int s, bool isunsig) :type(ty), size_(s), isUnsig(isunsig), len(0), fields(), params() { }
+    Type(int ty, Type *ret, std::vector<Node> _params) : type(ty), retType(ret), params(_params) { }
 
     Type(const Type &t) { coping(t); }
     Type &operator=(const Type &t) { coping(t); return *this; }
     ~Type() = default;
 
-	inline Type create(int ty, int s, bool isuns) { type = ty, size_ = s, isUnsig = isuns; return *this; }
+    inline Type create(int ty, int s, bool isuns) { type = ty, size_ = s, isUnsig = isuns; return *this; }
 
-	inline int getType() const { return type; }
-	inline bool isUnsigned() { return isUnsig; }
-	inline bool isStatic() { return isSta; }
-	inline void setStatic(bool is) { isSta = is; }
-	inline int getSize() const { return size_; }
-	inline void setUnsig(bool isunsig) { isUnsig = isunsig; }
+    inline int getType() const { return type; }
+    inline bool isUnsigned() { return isUnsig; }
+    inline bool isStatic() { return isSta; }
+    inline void setStatic(bool is) { isSta = is; }
+    inline int getSize() const { return size_; }
+    inline void setUnsig(bool isunsig) { isUnsig = isunsig; }
 
-	int type = 0;
-	int size_ = 0;
+    int type = 0;
+    int size_ = 0;
 
-	bool isUnsig = false;
-	bool isSta = false;
+    bool isUnsig = false;
+    bool isSta = false;
 
     // 
-	Type *ptr = nullptr;
+    Type *ptr = nullptr;
 
-	// array length
-	int _all_len = 0;
-	std::vector<int> len;
+    // array length
+    int _all_len = 0;
+    std::vector<int> len;
 
     // struct or union
     std::vector<Field> fields;
     bool is_struct = true;
 
-	//function
-	Type *retType= nullptr;
-	std::vector<Node> params;
+    //function
+    Type *retType = nullptr;
+    std::vector<Node> params;
 
 private:
     void coping(const Type &t);
 };
 
-enum NodeKind{
-	NODE_NULL,
-	NODE_CHAR,
-	NODE_INT,
-	NODE_LONG,
-	NODE_SHORT,
+enum NodeKind {
+    NODE_NULL,
+    NODE_CHAR,
+    NODE_INT,
+    NODE_LONG,
+    NODE_SHORT,
 
-	NODE_FLOAT,
-	NODE_DOUBLE,
-	NODE_STRING,
+    NODE_FLOAT,
+    NODE_DOUBLE,
+    NODE_STRING,
 
-	NODE_GLO_VAR,
-	NODE_LOC_VAR,
+    NODE_GLO_VAR,
+    NODE_LOC_VAR,
 
-	NODE_BINOP,
-	NODE_UOP,
-	NODE_FUNC,
-	NODE_DECL,
-	NODE_INIT,
-	NODE_IF_STMT,
-	NODE_OR_TOP,
-	NODE_GOTO,
-	NODE_LABEL,
-	NODE_RETURN,
-	NODE_COMP_STMT,
-	NODE_STRUCT_REF,
+    NODE_BINOP,
+    NODE_UOP,
+    NODE_FUNC,
+    NODE_DECL,
+    NODE_INIT,
+    NODE_IF_STMT,
+    NODE_OR_TOP,
+    NODE_GOTO,
+    NODE_LABEL,
+    NODE_RETURN,
+    NODE_COMP_STMT,
+    NODE_STRUCT_REF,
 
-	NODE_PARAMS,
-	NODE_FUNC_DECL,
-	NODE_DECL_PARAM,
-	NODE_ADDR,
-	NODE_DEREF
+    NODE_PARAMS,
+    NODE_FUNC_DECL,
+    NODE_DECL_PARAM,
+    NODE_ADDR,
+    NODE_DEREF
 };
 
 
@@ -344,7 +344,7 @@ public:
 
         return std::string();
     }
-    inline void setFuncName(const std::string &name) { 
+    inline void setFuncName(const std::string &name) {
 #if defined(WIN32)
         funcName = "_" + name;
 #elif defined(__linux__)
@@ -360,23 +360,23 @@ public:
     }
 
 public:
-	int kind = NODE_NULL;
-	Type type;
+    int kind = NODE_NULL;
+    Type type;
 
 	/**
      * \ Char short int long
      */
-	long int_val = 0;
+    long int_val = 0;
 
 	/**
      * \ float or double
      */
-	double float_val = 0.0;
+    double float_val = 0.0;
 
 	/**
      * \ string
      */
-	std::string sval;
+    std::string sval;
 
 	/**
      * \ Local/global variable
@@ -388,20 +388,20 @@ public:
 	/**
      * \ 
      */
-	Node *left = nullptr;
+    Node *left = nullptr;
     Node *right = nullptr;
 
 	/**
      * \ unary op
      */
-	Node *operand = nullptr;
+    Node *operand = nullptr;
 
 	/**
      * \function define and function declartion
      */
     // private: std::string funcName;
-	std::vector<Node> params;
-	Node *body = nullptr;
+    std::vector<Node> params;
+    Node *body = nullptr;
 
 
 	// declartion
@@ -417,17 +417,17 @@ public:
     Node *then = nullptr;
     Node *els = nullptr;
 
-	// Goto and label
+    // Goto and label
     std::string label;
     std::string newLabel;
 
-	// return stmt
-	Node *retval = nullptr;
+    // return stmt
+    Node *retval = nullptr;
 
-	// Compound statement
-	std::vector<Node> stmts;
+    // Compound statement
+    std::vector<Node> stmts;
 private:
-	void copying(const Node &n);
+    void copying(const Node &n);
     std::string funcName;
     std::string varName;
 };

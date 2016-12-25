@@ -92,7 +92,7 @@ void VirtualMachine::decode(AsmIns &ai)
         return;
 
     ai.loperand_ = getOperandAddr(ai.lstr_);
-    if(!ai.rstr_.empty())
+    if (!ai.rstr_.empty())
         ai.roperand_ = getOperandAddr(ai.rstr_);
 }
 
@@ -128,9 +128,9 @@ void VirtualMachine::run()
         case sall:  _32sR = _32sR << _32sL; break;
         case shrl:  _32sR = _32sR >> _32sL; break;
         case notl:  _32sR = ~_32REG; break;
-        case leal:  
+        case leal:
         case exitvm:  std::cout << eax << std::endl; return;
-        case cmpl:  r = _32sR - _32sL; 
+        case cmpl:  r = _32sR - _32sL;
             if (r > 0) { sf = true; zf = false; }
             else if (r == 0) { zf = true; sf = false; }
             else { sf = false; zf = false; }
@@ -146,7 +146,7 @@ void VirtualMachine::run()
         }
 
         if (debug_) {
-_begin_debug_:
+        _begin_debug_:
             std::cout << "#> ";
             std::string c1, c2;
             std::cin >> c1;
@@ -173,7 +173,7 @@ _begin_debug_:
                 std::cout << "Error : do not have ths order." << std::endl;
                 goto _begin_debug_;
             }
-            
+
         }
     }
 }
@@ -209,9 +209,7 @@ int VirtualMachine::getRegValByName(const std::string &name)
 
     return 0;
 }
-/**
- * @attention 浮点数不会出现在指令里面
- */
+
 bool VirtualMachine::isImmediate(const std::string &name)
 {
     for (size_t i = 0; i < name.size(); ++i) {

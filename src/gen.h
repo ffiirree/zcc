@@ -30,15 +30,15 @@
  */
 class Reg {
 public:
-	Reg(const std::string &_r):_reg(_r), _var(){}
-	Reg(const std::string &_r, const std::string &_v) :_reg(_r), _var(_v) {  }
-	Reg(const Reg& r) :_reg(r._reg), _var(r._var), is_const(r.is_const) {}
-	Reg &operator= (const Reg &r) { _reg = r._reg; _var = r._var; is_const = r.is_const; return *this; }
+    Reg(const std::string &_r) :_reg(_r), _var() {}
+    Reg(const std::string &_r, const std::string &_v) :_reg(_r), _var(_v) {  }
+    Reg(const Reg& r) :_reg(r._reg), _var(r._var), is_const(r.is_const) {}
+    Reg &operator= (const Reg &r) { _reg = r._reg; _var = r._var; is_const = r.is_const; return *this; }
     ~Reg() = default;
 
-	std::string _reg;
-	std::string _var;
-	bool is_const = false;
+    std::string _reg;
+    std::string _var;
+    bool is_const = false;
 };
 
 /**
@@ -46,34 +46,34 @@ public:
  */
 class TempVar {
 public:
-	TempVar() :_name() {  }
-	TempVar(const std::string &_r) :_name(_r) {}
+    TempVar() :_name() {  }
+    TempVar(const std::string &_r) :_name(_r) {}
     TempVar(const std::string &_n, const std::string &_r) :_name(_n), _reg(_r) {  }
-	TempVar(const std::string &_r, int _v) :_name(_r), _size(_v) {  }
-	TempVar(const TempVar& r) :_name(r._name), _size(r._size),  _reg(r._reg), type(r.type){ }
+    TempVar(const std::string &_r, int _v) :_name(_r), _size(_v) {  }
+    TempVar(const TempVar& r) :_name(r._name), _size(r._size), _reg(r._reg), type(r.type) { }
     TempVar &operator= (const TempVar &r) { _name = r._name; _size = r._size;  _reg = r._reg;type = r.type; return *this; }
     ~TempVar() = default;
 
     int type;
-	std::string _name;             // 变量名
-	int _size = 0;                 // 变量大小
+    std::string _name;             // 变量名
+    int _size = 0;                 // 变量大小
     bool _isUnsig = false;
-	std::string _reg;              // 是否放在了寄存器中
+    std::string _reg;              // 是否放在了寄存器中
 };
 
 /**
  * 产生汇编代码
  */
 using LocVar = Node;
-class Generate{
+class Generate {
 public:
-	Generate(Parser *parser, VirtualMachine *vm);
-	Generate(const Generate &) = delete;
-	Generate &operator= (const Generate &) = delete;
-	~Generate() { out.close(); }
+    Generate(Parser *parser, VirtualMachine *vm);
+    Generate(const Generate &) = delete;
+    Generate &operator= (const Generate &) = delete;
+    ~Generate() { out.close(); }
 
-	void run();
-	std::vector<std::string> getQuad();
+    void run();
+    std::vector<std::string> getQuad();
 
 private:
     void reg_init();
@@ -119,12 +119,12 @@ private:
     void unlimited_binary_op(std::vector<std::string> &_q, const std::string &op);
     void add_sub_with_ptr(std::vector<std::string> &_q, const std::string &op);
     void shift_op(std::vector<std::string> &_q, const std::string &op);
-	void genMulOrModAsm(std::vector<std::string> &_q);
+    void genMulOrModAsm(std::vector<std::string> &_q);
     void genIncDec(const std::string &_obj, const std::string &op);
 
     void temp_save(const std::string &_n, int type, bool is_unsig = false, const std::string &_reg = "%st");
     void temp_save(const std::string &_n, Type &_t, const std::string &_reg);
-    
+
     std::string getEmptyReg();
     void setReg(const std::string &_reg, const std::string &_var);
     std::string getReg(const std::string &_reg);
@@ -135,37 +135,37 @@ private:
     std::string searchFLoat(const std::string &fl);
     LocVar &searchLocvar(const std::string &name);
     TempVar &searchTempvar(const std::string &name);
-	TempVar &searchFloatTempvar(const std::string &name);
+    TempVar &searchFloatTempvar(const std::string &name);
 
     bool isTempVar(const std::string &_t);
-	bool isFloatTemVar(const std::string &_t);
+    bool isFloatTemVar(const std::string &_t);
     bool isLocVar(const std::string &_l);
     bool isEnumConst(const std::string &_l);
 
     void push_back_temp_stk(TempVar & tv, const std::string &reg);
     void pop_back_temp_stk(const std::string &var);
 
-	Parser *parser;
-	Env *gloEnv = nullptr;
-	Env *locEnv = nullptr;
+    Parser *parser;
+    Env *gloEnv = nullptr;
+    Env *locEnv = nullptr;
 
-	std::vector<Reg> universReg;
+    std::vector<Reg> universReg;
     std::vector<Reg> float_reg;
 
-	std::vector<Reg> segReg;
-	File inf;
-	std::ofstream out;
-	std::string _infilename;
-	bool is_main = false;
-	std::vector<std::string> params;
-	Node currentFunc;
+    std::vector<Reg> segReg;
+    File inf;
+    std::ofstream out;
+    std::string _infilename;
+    bool is_main = false;
+    std::vector<std::string> params;
+    Node currentFunc;
 
-	// 使用表达式栈来分配寄存器
-	std::vector<TempVar> _stk_temp_var;
-	std::vector<TempVar> _stk_float_temp_var;
+    // 使用表达式栈来分配寄存器
+    std::vector<TempVar> _stk_temp_var;
+    std::vector<TempVar> _stk_float_temp_var;
     std::vector<TempVar> _stk_ret_;
 
-	bool finit = true;                   // FPU是否初始化过
+    bool finit = true;                   // FPU是否初始化过
 
 
     VirtualMachine *vm_;

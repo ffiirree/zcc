@@ -4,73 +4,73 @@
 using namespace std;
 void File::create(const std::string &_filename)
 {
-	std::fstream in;
+    std::fstream in;
 
-	in.open(_filename, ios::in | ios::binary | ios::ate);
-	if (!in.is_open())
-		error("internal error: file open failed!");
+    in.open(_filename, ios::in | ios::binary | ios::ate);
+    if (!in.is_open())
+        error("internal error: file open failed!");
 
-	int size = static_cast<int>(in.tellg());
-	buffer = std::shared_ptr<char>(new char[size + 1]);
-	buffer.get()[size] = 0;
-	in.seekg(0, ios::beg);
-	in.read(buffer.get(), size);
+    int size = static_cast<int>(in.tellg());
+    buffer = std::shared_ptr<char>(new char[size + 1]);
+    buffer.get()[size] = 0;
+    in.seekg(0, ios::beg);
+    in.read(buffer.get(), size);
 
-	ptr = buffer.get();
+    ptr = buffer.get();
 
-	in.close();
+    in.close();
 }
 
 
-File::File(const std::string &_filename):
-	filename(_filename), pos(1, 1)
+File::File(const std::string &_filename) :
+    filename(_filename), pos(1, 1)
 {
-	create(_filename);
+    create(_filename);
 }
 
 File File::open(const std::string &_file)
 {
-	filename = _file;
-	pos = Pos(1, 1);
+    filename = _file;
+    pos = Pos(1, 1);
 
-	create(_file);
+    create(_file);
 
-	return *this;
+    return *this;
 }
 
 char File::next()
 {
-	char c = *ptr;
-	++ptr;
+    char c = *ptr;
+    ++ptr;
 
-	if (c == '\n') {
-		pos.line++;
-		pos.cols = 1;
-	}
-	else if(c != 0) {
-		pos.cols++;
-	}
+    if (c == '\n') {
+        pos.line++;
+        pos.cols = 1;
+    }
+    else if (c != 0) {
+        pos.cols++;
+    }
 
-	return c;
+    return c;
 }
 
 void File::back(char c)
 {
-	if (c == '\n') {
-		pos.line--;
-		pos.cols = 1;
-	}
-	else if (c != 0l) {
-		pos.cols--;
-	}
-	--ptr;
+    if (c == '\n') {
+        pos.line--;
+        pos.cols = 1;
+    }
+    else if (c != 0l) {
+        pos.cols--;
+    }
+    --ptr;
 }
 
 char File::peek()
 {
-	char c = next();
-	back(c);
-	return c;
+    char c = next();
+    back(c);
+    return c;
 }
 
 char File::peek2()

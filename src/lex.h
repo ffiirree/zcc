@@ -24,7 +24,7 @@ public:
     void back();
     inline Token peek() const { if (index_ >= tokens_.size()) return{}; return tokens_.at(index_); }
     inline Token peek2() const { if (index_ + 1 >= tokens_.size()) return{}; return tokens_.at(index_ + 1); }
-    inline bool test(int id) const { return (peek().getType() == T_KEYWORD && peek().getId() == id);  }
+    inline bool test(int id) const { return (peek().getType() == T_KEYWORD && peek().getId() == id); }
     inline bool test2(int id) const { return (peek2().getType() == T_KEYWORD && peek2().getId() == id); }
 
     /**
@@ -82,23 +82,23 @@ public:
     void scan(const std::string &filename, TokenSequence &ts);
 
 private:
-	Token next();
+    Token next();
     void skipComments();
-	Token read_string();
-	Token read_char();
-	Token read_id(char c);
-	Token read_num(char c);
+    Token read_string();
+    Token read_char();
+    Token read_id(char c);
+    Token read_num(char c);
 
-	int read_escaped_char();
-	int read_octal_char(int c);
-	int read_hex_char();
+    int read_escaped_char();
+    int read_octal_char(int c);
+    int read_hex_char();
 
     /**
      * @berif Cheak whether the string is a keyword.
      */
-	int isKeyword(const std::string &str);
+    int isKeyword(const std::string &str);
 
-	File f_;
+    File f_;
     Token last_;
 
     static std::vector<std::string> keywords_;

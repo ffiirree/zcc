@@ -3,30 +3,27 @@
 #include "error.h"
 
 
-Generate::Generate(Parser *p, VirtualMachine *vm):vm_(vm)
+Generate::Generate(Parser *p, VirtualMachine *vm) :vm_(vm)
 {
-	parser = p;
-	_infilename = p->getQuadrupleFileName();
+    parser = p;
+    _infilename = p->getQuadrupleFileName();
 
-	inf.open(_infilename);
-	
-	out.open(getOutName());
-	if (!out.is_open())
-		error("Open file failed.");
+    inf.open(_infilename);
+
+    out.open(getOutName());
+    if (!out.is_open())
+        error("Open file failed.");
 
     // 寄存器初始化
-	reg_init();
+    reg_init();
 
     //
     run();
 }
 
-/**
- * @berif 寄存器初始化
- */
 void Generate::reg_init()
 {
-	// 通用寄存器 //32bits
+    // 通用寄存器 //32bits
     universReg.push_back({ "%eax" });
     universReg.push_back({ "%ebx" });
     universReg.push_back({ "%ecx" });
@@ -41,16 +38,13 @@ void Generate::reg_init()
     float_reg.push_back({ "st(1)" });
     float_reg.push_back({ "st(0)" });
 
-	// 段寄存器 // 16bits
+    // 段寄存器 // 16bits
     segReg.push_back({ "%ecs" });
     segReg.push_back({ "%eds" });
     segReg.push_back({ "%ees" });
     segReg.push_back({ "%ess" });
 }
 
-/**
- * @berif 生成汇编代码
- */
 void Generate::run()
 {
     gas("\t.file\t\"" + _infilename + "\"");
@@ -84,13 +78,13 @@ void Generate::run()
     }
 
     // 函数
-	for (;;) {
-		std::vector<std::string> quad = getQuad();
+    for (;;) {
+        std::vector<std::string> quad = getQuad();
 
-		if (quad.empty())
-			break;
-		generate(quad);
-	}
+        if (quad.empty())
+            break;
+        generate(quad);
+    }
 
     gas(parser->newLabel("FE") + ":");
 
@@ -99,7 +93,7 @@ void Generate::run()
     if (!floatConst.empty())
         gas_tab(".section .rodata");
 
-    for (size_t i = floatConst.size()/3; i > 0; --i) {
+    for (size_t i = floatConst.size() / 3; i > 0; --i) {
         std::string size = floatConst.back(); floatConst.pop_back();
         gas_label(floatConst.back()); floatConst.pop_back();
 
@@ -115,43 +109,38 @@ void Generate::run()
     }
 
     // 标志
-    
+
     gas("\t.ident \"zcc 0.0.1\"");
 }
 
-/**
- * @berif 处理字符串常量
- */
 void Generate::const_str()
 {
-	if (parser->getStrTbl().empty())
-		return;
+    if (parser->getStrTbl().empty())
+        return;
 
     gas("\t.section  .rodata");
-	std::vector<StrCard> strTbl = parser->getStrTbl();
-	for (size_t i = strTbl.size(); i > 0; --i) {
+    std::vector<StrCard> strTbl = parser->getStrTbl();
+    for (size_t i = strTbl.size(); i > 0; --i) {
 
         gas_label(strTbl.back()._label);
 
-		out << "\t.ascii \"" << strTbl.back()._str << "\\0\"" << std::endl;
-		strTbl.pop_back();
-	}
+        out << "\t.ascii \"" << strTbl.back()._str << "\\0\"" << std::endl;
+        strTbl.pop_back();
+    }
 }
-
-
 
 void Generate::func_decl(Node &n)
 {
-	int size = getFuncLocVarSize(n);            // 获取临时变量的 大小
-	size += getFuncCallSize(n);
+    int size = getFuncLocVarSize(n);            // 获取临时变量的 大小
+    size += getFuncCallSize(n);
 
-	if (n.name() == "main") {
-		is_main = true;
-	}
+    if (n.name() == "main") {
+        is_main = true;
+    }
     gas_tab(".text");
     gas_glo(n.name());
     gas_label(n.name());
-    if(vm_->use_ ) vm_->setFuncAddr(n.name());
+    if (vm_->use_) vm_->setFuncAddr(n.name());
 
     gas_tab(".cfi_startproc");
     gas_ins("pushl", "%ebp");
@@ -169,24 +158,24 @@ void Generate::func_decl(Node &n)
 #define _q_0_is(str) (_q.at(0) == str)
 void Generate::generate(std::vector<std::string> &_q)
 {
-	if (_q.size() == 2 && _q.at(1) == ":") {
-		Node r = parser->getGloEnv()->search(_q.at(0));
+    if (_q.size() == 2 && _q.at(1) == ":") {
+        Node r = parser->getGloEnv()->search(_q.at(0));
 
-		if (r.kind == NODE_FUNC) {
+        if (r.kind == NODE_FUNC) {
             //setLocEnv(r.funcName);                    // 作用域为当前函数
 
-			currentFunc = r;
-			func_decl(r);
-			return;
-		}
+            currentFunc = r;
+            func_decl(r);
+            return;
+        }
 
         gas_jxx_label(_q.at(0));                          // 如果是其他标签，输出
-	}
+    }
     else if (_q_0_is(".inscope")) {
         setLocEnv(_q.at(1));
     }
     else if (_q_0_is(".outscope")) {
-        if(locEnv->pre() != nullptr)
+        if (locEnv->pre() != nullptr)
             locEnv = locEnv->pre();
     }
     // 每个表达式后都要清空栈
@@ -197,14 +186,14 @@ void Generate::generate(std::vector<std::string> &_q)
         for (size_t i = _stk_temp_var.size(); i > 0; --i)
             _stk_temp_var.pop_back();
 
-		// FPU
-		if (!finit) {
-			gas_tab("finit");
-			_stk_float_temp_var.clear();
-			finit = true;
-		}
+        // FPU
+        if (!finit) {
+            gas_tab("finit");
+            _stk_float_temp_var.clear();
+            finit = true;
+        }
     }
-	else if (_q_0_is("=")) {
+    else if (_q_0_is("=")) {
         std::string _src, _des;
         int _des_size = 0;
 
@@ -245,10 +234,10 @@ void Generate::generate(std::vector<std::string> &_q)
         if (!_temp._name.empty()) {
             gas_ins(mov2stk(_des_size), reg2stk(_temp._reg, _des_size), _des);
         }
-		// 第一个参数为数字
-		else if (isNumber(_q.at(1))) {
+        // 第一个参数为数字
+        else if (isNumber(_q.at(1))) {
             gas_ins(mov2stk(_des_size), "$" + _q.at(1), _des);
-		}
+        }
         else if (isEnumConst(_q.at(1))) {
             gas_ins(mov2stk(_des_size), "$" + parser->searchEnum(_q.at(1)), _des);
         }
@@ -266,51 +255,51 @@ void Generate::generate(std::vector<std::string> &_q)
                 gas_ins(mov2stk(_des_size), reg2stk(_reg, _des_size), _des);
             }
         }
-	}
-	else if (_q_0_is("if")) {
-		Type _t1, _t2;
-		// 注意出栈和入栈的顺序
-		std::string _q1 = _q.at(3);
-		std::string _q2 = _q.at(1);
+    }
+    else if (_q_0_is("if")) {
+        Type _t1, _t2;
+        // 注意出栈和入栈的顺序
+        std::string _q1 = _q.at(3);
+        std::string _q2 = _q.at(1);
 
-		std::string _q1_reg;
-		std::string _q2_reg;
+        std::string _q1_reg;
+        std::string _q2_reg;
 
-		_q1_reg = getEmptyReg();
-		_t1 = gas_load(_q1, _q1_reg);
-		_q2_reg = getEmptyReg();
-		_t2 = gas_load(_q2, _q2_reg); _t1.type < _t2.type ? _t1 = _t2 : true;
+        _q1_reg = getEmptyReg();
+        _t1 = gas_load(_q1, _q1_reg);
+        _q2_reg = getEmptyReg();
+        _t2 = gas_load(_q2, _q2_reg); _t1.type < _t2.type ? _t1 = _t2 : true;
 
-		if (_t1.type == K_FLOAT || _t1.type == K_DOUBLE) {
-			if (isFloatTemVar(_q2))
-				gas_tab("fxch	%st(1)");
-			gas_tab("fucompp");
-			getReg("%eax");
-			gas_tab("fnstsw	%ax");
-			gas_tab("sahf");
-			gas_jxx(_q.at(2), _q.at(5), _t1);
-		}
-		else {
-			gas_ins("cmpl", _q1_reg, _q2_reg);
-			gas_jxx(_q.at(2), _q.at(5), _t1);
-		}
-		temp_clear(_q1, _q2);
-	}
-	else if (_q_0_is("goto")) {
+        if (_t1.type == K_FLOAT || _t1.type == K_DOUBLE) {
+            if (isFloatTemVar(_q2))
+                gas_tab("fxch	%st(1)");
+            gas_tab("fucompp");
+            getReg("%eax");
+            gas_tab("fnstsw	%ax");
+            gas_tab("sahf");
+            gas_jxx(_q.at(2), _q.at(5), _t1);
+        }
+        else {
+            gas_ins("cmpl", _q1_reg, _q2_reg);
+            gas_jxx(_q.at(2), _q.at(5), _t1);
+        }
+        temp_clear(_q1, _q2);
+    }
+    else if (_q_0_is("goto")) {
         gas_ins("jmp", _q.at(1));
-	}
-	else if (_q_0_is("param")) {
-		params.push_back(_q.at(1));
-	}
-	else if (_q_0_is("call")) {
-		std::string funcName = _q.at(1);
-		Node func = parser->getGloEnv()->search(funcName);
+    }
+    else if (_q_0_is("param")) {
+        params.push_back(_q.at(1));
+    }
+    else if (_q_0_is("call")) {
+        std::string funcName = _q.at(1);
+        Node func = parser->getGloEnv()->search(funcName);
 
         std::string _src, _des;
 
-		int pos = 0;
-		for (size_t i = 0; i < func.params.size(); ++i) {
-			size_t param_size = func.params.at(i).type.size_;
+        int pos = 0;
+        for (size_t i = 0; i < func.params.size(); ++i) {
+            size_t param_size = func.params.at(i).type.size_;
 
             // 目的地址
             _des = std::to_string(pos) + "(%esp)"; pos += param_size;
@@ -321,9 +310,9 @@ void Generate::generate(std::vector<std::string> &_q)
                 continue;
             }
 
-			std::string _out_str;
-			
-			if (isLocVar(params.back())) {
+            std::string _out_str;
+
+            if (isLocVar(params.back())) {
                 LocVar var = searchLocvar(params.back());
 
                 if (var.kind == NODE_GLO_VAR) {
@@ -341,22 +330,22 @@ void Generate::generate(std::vector<std::string> &_q)
                     gas_ins(movXXl(var.type.size_, var.type.isUnsig), std::to_string(var._off) + "(%ebp)", "%eax");
                     _src = reg2stk("%eax", param_size);
                 }
-                
-			}
-			else if(isNumber(params.back())){
+
+            }
+            else if (isNumber(params.back())) {
                 _src = "$" + params.back();
-			}
+            }
             else if (isEnumConst(params.back())) {
                 _src = "$" + parser->searchEnum(params.back());
             }
-			else if(isTempVar(params.back())){
-				TempVar _te = searchTempvar(params.back());
+            else if (isTempVar(params.back())) {
+                TempVar _te = searchTempvar(params.back());
                 _src = reg2stk(_te._reg, param_size);
-			}
+            }
 
             gas_ins(mov2stk(param_size), _src, _des);
-			params.pop_back();
-		}
+            params.pop_back();
+        }
         gas_call(_q.at(1));
 
         if (_q.size() == 4) {
@@ -374,20 +363,20 @@ void Generate::generate(std::vector<std::string> &_q)
             }
             _stk_temp_var.push_back(var);
         }
-	}
-	else if (_q_0_is("ret")) {
-		if (is_main) is_main = false;         // 退出主函数
+    }
+    else if (_q_0_is("ret")) {
+        if (is_main) is_main = false;         // 退出主函数
 
-		std::string _src;
-		// 获取函数返回类型
-		int size = currentFunc.type.retType->getSize();
+        std::string _src;
+        // 获取函数返回类型
+        int size = currentFunc.type.retType->getSize();
 
-		// 查找变量
-		LocVar ret = searchLocvar(_q.at(1));
+        // 查找变量
+        LocVar ret = searchLocvar(_q.at(1));
 
-		if (ret.name().empty())
+        if (ret.name().empty())
             _src = "$" + _q.at(1);
-		else
+        else
             _src = std::to_string(ret._off) + "(%ebp)";
 
         if (isNumber(_q.at(1))) {
@@ -410,30 +399,27 @@ void Generate::generate(std::vector<std::string> &_q)
                 _src = loc_var_val(var._off);
                 gas_ins(movXXl(var.type.size_, var.type.isUnsig), _src, "%eax");
             }
-           
+
         }
 
         gas_tab("leave");
-        if(vm_->use_ ) vm_->push_back({ vm_->getInsByOp("leave"), "leave" });
+        if (vm_->use_) vm_->push_back({ vm_->getInsByOp("leave"), "leave" });
         gas_tab(".cfi_restore 5");
         gas_tab(".cfi_def_cfa 4, 4");
         gas_tab("ret");
-        if(vm_->use_ ) vm_->push_back({ vm_->getInsByOp("ret"), "ret" });
-	}
-	else if (_q_0_is(".end")) {
+        if (vm_->use_) vm_->push_back({ vm_->getInsByOp("ret"), "ret" });
+    }
+    else if (_q_0_is(".end")) {
         gas_tab(".cfi_endproc");
-	}
-	// op
-	else{
-		getReg(_q);
-	}
+    }
+    // op
+    else {
+        getReg(_q);
+    }
 }
 #undef _q_0_is
 //void genAsm()
 
-/**
- * 向栈中存储
- */
 std::string Generate::mov2stk(int size)
 {
     switch (size) {
@@ -446,9 +432,6 @@ std::string Generate::mov2stk(int size)
     }
 }
 
-/**
- * 向寄存器中存放，全部扩充为4字节
- */
 std::string Generate::movXXl(int size, bool isz)
 {
     switch (size) {
@@ -491,29 +474,22 @@ std::string Generate::mul(int size, bool isunsig)
     }
 }
 
-/**
- * var删除
- */
 void Generate::clearRegTemp(const std::string &var)
 {
-	for (size_t i = 0; i < universReg.size(); ++i) {
-		if (universReg.at(i)._var == var) {
-			universReg.at(i)._var.clear();
-		}
-	}
+    for (size_t i = 0; i < universReg.size(); ++i) {
+        if (universReg.at(i)._var == var) {
+            universReg.at(i)._var.clear();
+        }
+    }
 }
 
-
-/**
- * 将寄存器_reg设置为_var
- */
 void Generate::setReg(const std::string &_reg, const std::string &_var)
 {
-	for (size_t i = 0; i < universReg.size(); ++i) {
-		if (universReg.at(i)._reg == _reg) {
-			universReg.at(i)._var = _var;
-		}
-	}
+    for (size_t i = 0; i < universReg.size(); ++i) {
+        if (universReg.at(i)._reg == _reg) {
+            universReg.at(i)._var = _var;
+        }
+    }
 }
 
 std::string Generate::getEmptyReg()
@@ -527,88 +503,78 @@ std::string Generate::getEmptyReg()
     return std::string();
 }
 
-/**
- * 获取指定_reg寄存器，此时寄存器为空
- */
 std::string Generate::getReg(const std::string &_reg)
 {
-	std::string _var;
-	for (size_t i = 0; i < universReg.size(); ++i) {
-		if (_reg == universReg.at(i)._reg) {
-			if (universReg.at(i)._var.empty())
-				return _reg;
-			else {
-				_var = universReg.at(i)._var;
-				universReg.at(i)._var.clear();
-				break;
-			}
-		}
-	}
+    std::string _var;
+    for (size_t i = 0; i < universReg.size(); ++i) {
+        if (_reg == universReg.at(i)._reg) {
+            if (universReg.at(i)._var.empty())
+                return _reg;
+            else {
+                _var = universReg.at(i)._var;
+                universReg.at(i)._var.clear();
+                break;
+            }
+        }
+    }
 
-	// 如果指定寄存器不为空, 调整寄存器
-	TempVar &_tem = searchTempvar(_var);
-	for (size_t i = 0; i < universReg.size(); ++i) {
-		if (_reg != universReg.at(i)._reg && universReg.at(i)._var.empty()) {
-			universReg.at(i)._var = _var;
-			_tem._reg = universReg.at(i)._reg;
+    // 如果指定寄存器不为空, 调整寄存器
+    TempVar &_tem = searchTempvar(_var);
+    for (size_t i = 0; i < universReg.size(); ++i) {
+        if (_reg != universReg.at(i)._reg && universReg.at(i)._var.empty()) {
+            universReg.at(i)._var = _var;
+            _tem._reg = universReg.at(i)._reg;
 
-			//TempVar _pus = _tem;
-			//_stk_temp_var.pop_back();
-			//_stk_temp_var.push_back(_pus);
+            //TempVar _pus = _tem;
+            //_stk_temp_var.pop_back();
+            //_stk_temp_var.push_back(_pus);
 
             gas_ins("movl", _reg, _tem._reg);
 
-			return _reg;
-		}
-	}
+            return _reg;
+        }
+    }
 
-	// 调整失败
-	return std::string();
+    // 调整失败
+    return std::string();
 }
 
-
-/**
- * @ 临时变量进栈，并绑定寄存器
- */
-void Generate::push_back_temp_stk(TempVar & tv,const std::string &reg)
+void Generate::push_back_temp_stk(TempVar & tv, const std::string &reg)
 {
-	setReg(reg, tv._name);
-	_stk_temp_var.push_back(tv);
+    setReg(reg, tv._name);
+    _stk_temp_var.push_back(tv);
 }
 
-/**
- * 临时变量出栈，并解绑寄存器
- */
 void Generate::pop_back_temp_stk(const std::string &var)
 {
-	clearRegTemp(var);
+    clearRegTemp(var);
 
-	if (isNumber(var))
-		return;
+    if (isNumber(var))
+        return;
     if (isEnumConst(var))
         return;
-	if (_stk_temp_var.empty())
-		return;
+    if (_stk_temp_var.empty())
+        return;
 
-	if (_stk_temp_var.back()._name == var)
-		_stk_temp_var.pop_back();
+    if (_stk_temp_var.back()._name == var)
+        _stk_temp_var.pop_back();
 }
 
 bool Generate::isTempVar(const std::string &_t)
 {
-	TempVar _var = searchTempvar(_t);
-	if (!_var._name.empty()) {
-		return true;
-	}
-	return false;
+    TempVar _var = searchTempvar(_t);
+    if (!_var._name.empty()) {
+        return true;
+    }
+    return false;
 }
 bool Generate::isFloatTemVar(const std::string &_t)
 {
-	TempVar _var = searchFloatTempvar(_t);
-	if (!_var._name.empty()) {
-		return true;
-	}
-	return false;
+    TempVar _var = searchFloatTempvar(_t);
+    if (!_var._name.empty()) {
+        return true;
+    }
+    return false;
 }
 
 bool Generate::isReg(const std::string &_t)
@@ -621,10 +587,10 @@ bool Generate::isReg(const std::string &_t)
 }
 bool Generate::isLocVar(const std::string &_l)
 {
-	LocVar var = searchLocvar(_l);
-	if (!var.name().empty())
-		return true;
-    
+    LocVar var = searchLocvar(_l);
+    if (!var.name().empty())
+        return true;
+
     return false;
 }
 bool Generate::isEnumConst(const std::string &_l)
@@ -635,10 +601,6 @@ bool Generate::isEnumConst(const std::string &_l)
     return false;
 }
 
-
-/**
- * @获取节点的数据类型
- */
 std::string Generate::getTypeString(Type _t)
 {
     switch (_t.type) {
@@ -658,18 +620,13 @@ std::string Generate::getTypeString(Type _t)
     }
 }
 
-/**
-* @berif 获取函数局部变量的大小，以此来分配栈空间的大小
-*/
 int Generate::getFuncLocVarSize(Node &n)
 {
     int _rsize = -1;
     getEnvSize(locEnv, _rsize);
     return _rsize;
 }
-/**
-* @berif 获取该作用域中的局部变量的大小，并建立局部变量在栈中的位置关系
-*/
+
 void Generate::getEnvSize(Env *_begin, int &_size)
 {
     if (_begin == nullptr)
@@ -760,7 +717,7 @@ std::vector<std::string> Generate::getQuad()
         case '_':
         case '[':
         case ']':
-		case '@':
+        case '@':
         case_op:
             _name.push_back(c);
             _is_push = false;
@@ -782,7 +739,7 @@ std::string Generate::getOutName()
     return _infilename;
 }
 
-void Generate::setLocEnv(const std::string &envName) 
+void Generate::setLocEnv(const std::string &envName)
 {
     std::vector<Env*> ptr = locEnv->getNext();
     for (size_t i = 0; i < ptr.size(); ++i) {
@@ -791,7 +748,7 @@ void Generate::setLocEnv(const std::string &envName)
             return;
         }
     }
-    error("Not find scope : "+ envName);
+    error("Not find scope : " + envName);
     locEnv = nullptr;
 }
 
@@ -808,13 +765,13 @@ TempVar &Generate::searchTempvar(const std::string &name)
 
 TempVar &Generate::searchFloatTempvar(const std::string &name)
 {
-	for (size_t i = 0; i < _stk_float_temp_var.size(); ++i) {
-		if (_stk_float_temp_var.at(i)._name == name) {
-			return _stk_float_temp_var.at(i);
-		}
-	}
-	TempVar *var = new TempVar();
-	return *var;
+    for (size_t i = 0; i < _stk_float_temp_var.size(); ++i) {
+        if (_stk_float_temp_var.at(i)._name == name) {
+            return _stk_float_temp_var.at(i);
+        }
+    }
+    TempVar *var = new TempVar();
+    return *var;
 }
 
 LocVar &Generate::searchLocvar(const std::string &name)

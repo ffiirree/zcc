@@ -4,462 +4,459 @@
 
 std::vector<Node> Parser::trans_unit()
 {
-	std::vector<Node> list;
-	for (;;) {
-		Token t = ts_.peek();
+    std::vector<Node> list;
+    for (;;) {
+        Token t = ts_.peek();
 
-		if (t.getType() == T_EOF) {
-			labels.cheak();
-			out.close();
-			return list;
-		}
+        if (t.getType() == T_EOF) {
+            labels.cheak();
+            out.close();
+            return list;
+        }
 
-		if (isFuncDef())
-			list.push_back(funcDef());
-		else
-			declaration(list, true);
-	}
-	return list;
+        if (isFuncDef())
+            list.push_back(funcDef());
+        else
+            declaration(list, true);
+    }
+    return list;
 }
 
 void Env::push_back(Node &n) {
-	if (n.kind == NODE_FUNC) {
-		Node r = search(n.name());
-		if (r.kind == NODE_FUNC_DECL) {
+    if (n.kind == NODE_FUNC) {
+        Node r = search(n.name());
+        if (r.kind == NODE_FUNC_DECL) {
             setFuncDef(n);
-			return;
-		}
-		else if (r.kind != 0) {
-			error("Function redefined: " + n.name());
-		}
-	}
+            return;
+        }
+        else if (r.kind != 0) {
+            error("Function redefined: " + n.name());
+        }
+    }
 
-	nodes.push_back(n);
+    nodes.push_back(n);
 }
 
 void Label::push_back(const std::string &_l) {
 
-	for (size_t i = 0; i < labels.size(); ++i) {
-		if (_l == labels.at(i)) {
-			if (enLabels.at(i) == false) {
-				enLabels.at(i) = true;
-				return;
-			}
-			else {
-				error(_l + " is existed");
-				return;
-			}
-		}
-	}
+    for (size_t i = 0; i < labels.size(); ++i) {
+        if (_l == labels.at(i)) {
+            if (enLabels.at(i) == false) {
+                enLabels.at(i) = true;
+                return;
+            }
+            else {
+                error(_l + " is existed");
+                return;
+            }
+        }
+    }
 
-	labels.push_back(_l);
-	enLabels.push_back(true);
+    labels.push_back(_l);
+    enLabels.push_back(true);
 }
 
 bool Label::cheak()
 {
-	for (size_t i = 0; i < labels.size(); ++i) {
-		if (!enLabels.at(i))
-			error("Label '" + labels.at(i)+ "' is undefined");
-	}
-	return true;
+    for (size_t i = 0; i < labels.size(); ++i) {
+        if (!enLabels.at(i))
+            error("Label '" + labels.at(i) + "' is undefined");
+    }
+    return true;
 }
 
 bool Parser::isFuncDef()
 {
-	int count = 0;
-	Token t;
+    int count = 0;
+    Token t;
 
-	do {
-		t = ts_.next();
-		count++;
-	} while (is_type(t) || t.getId() == '*');
+    do {
+        t = ts_.next();
+        count++;
+    } while (is_type(t) || t.getId() == '*');
     ts_.back(); count--;
 
-	for (;;) {
-		t = ts_.next();
-		count++;
-		if (is_keyword(t, '(')) {
-			skip_parenthesis(&count);
-			if (next_is('{')) {
-				count++;
-				goto _end;
-			}
-		}
-		else if (t.getType() == T_IDENTIFIER) {
-			if (next_is('(')) {
-				count++;
-				skip_parenthesis(&count);
-				if (next_is('{')) {
-					count++;
-					goto _end;
-				}
-			}
-		}
-		else {
-			for (int i = 0; i < count; ++i)
+    for (;;) {
+        t = ts_.next();
+        count++;
+        if (is_keyword(t, '(')) {
+            skip_parenthesis(&count);
+            if (next_is('{')) {
+                count++;
+                goto _end;
+            }
+        }
+        else if (t.getType() == T_IDENTIFIER) {
+            if (next_is('(')) {
+                count++;
+                skip_parenthesis(&count);
+                if (next_is('{')) {
+                    count++;
+                    goto _end;
+                }
+            }
+        }
+        else {
+            for (int i = 0; i < count; ++i)
                 ts_.back();
-			return false;
-		}
-	}
+            return false;
+        }
+    }
 
 _end:
-	for (int i = 0; i < count; ++i)
+    for (int i = 0; i < count; ++i)
         ts_.back();
-	return true;
+    return true;
 }
 
 Node Parser::funcDef()
 {
-	int current_class = 0;                                                  // static ...
-	std::string funcName;                                                   // ��������
-	std::vector<Node> params;
+    int current_class = 0;                                                  // static ...
+    std::string funcName;                                                   // ��������
+    std::vector<Node> params;
     __IN_SCOPE__(localenv, globalenv, newLabel("fun"));
 
-	Type *retty = new Type(decl_spec_opt(&current_class));                  
-	Type functype = declarator(retty, funcName, params, FUNC_BODY);
-	if (functype.type == PTR) {
-		errorp(ts_.getPos(), "Ptr not can be function.");
-	}
+    Type *retty = new Type(decl_spec_opt(&current_class));
+    Type functype = declarator(retty, funcName, params, FUNC_BODY);
+    if (functype.type == PTR) {
+        errorp(ts_.getPos(), "Ptr not can be function.");
+    }
 
 #if defined(_OVERLOAD_)
-	funcName = getOverLoadName(funcName, params);
+    funcName = getOverLoadName(funcName, params);
 #endif
 
 #ifdef WIN32
-	out << "_" + funcName << ":" << std::endl;
+    out << "_" + funcName << ":" << std::endl;
 #elif defined(__linux__)
     out << funcName << ":" << std::endl;
 #endif
 
-	functype.setStatic(current_class == K_STATIC);
-	expect('{');
-	Node r = func_body(functype, funcName, params);
+    functype.setStatic(current_class == K_STATIC);
+    expect('{');
+    Node r = func_body(functype, funcName, params);
 
-	__OUT_SCOPE__(localenv);
-	out << ".end" << std::endl;
-	return r;
+    __OUT_SCOPE__(localenv);
+    out << ".end" << std::endl;
+    return r;
 }
 
 
 
 Type Parser::func_param_list(Type *retty, std::vector<Node> &params, int deal_type)
 {
-	// foo()
-	if (next_is(')')) {
-		return Type(NODE_FUNC, retty, params);
-	}
-	// foo(void)
-	else if (is_keyword(ts_.peek(), K_VOID)) {
+    // foo()
+    if (next_is(')')) {
+        return Type(NODE_FUNC, retty, params);
+    }
+    // foo(void)
+    else if (is_keyword(ts_.peek(), K_VOID)) {
         ts_.next();
-		expect(')');
-		return Type(NODE_FUNC, retty, params);
-	} 
-	// foo(int x, int y)
-	else {
-		params = param_list(deal_type);
-		expect(')');
-		return Type(NODE_FUNC, retty, params);
-	}
+        expect(')');
+        return Type(NODE_FUNC, retty, params);
+    }
+    // foo(int x, int y)
+    else {
+        params = param_list(deal_type);
+        expect(')');
+        return Type(NODE_FUNC, retty, params);
+    }
 }
 
 std::vector<Node> Parser::param_list(int decl_type)
 {
-	std::vector<Node> list;
-	list.push_back(param_decl(decl_type));
+    std::vector<Node> list;
+    list.push_back(param_decl(decl_type));
 
-	while (next_is(','))
-		list.push_back(param_decl(decl_type));
-	return list;
+    while (next_is(','))
+        list.push_back(param_decl(decl_type));
+    return list;
 }
 
 Node Parser::param_decl(int decl_type)
 {
-	int sclass = 0;
-	Type basety = decl_specifiers(&sclass);
-	std::string paramname;
-	std::vector<Node> list;
-	Type type = declarator(&basety, paramname, list, NODE_PARAMS);
+    int sclass = 0;
+    Type basety = decl_specifiers(&sclass);
+    std::string paramname;
+    std::vector<Node> list;
+    Type type = declarator(&basety, paramname, list, NODE_PARAMS);
 
-	if (decl_type == NODE_FUNC_DECL)
-		return createFuncDeclParams(type);
+    if (decl_type == NODE_FUNC_DECL)
+        return createFuncDeclParams(type);
 
-	return createLocVarNode(type, paramname);
+    return createLocVarNode(type, paramname);
 }
 
 
 Node Parser::func_body(Type &functype, std::string name, std::vector<Node> &params)
 {
-	Node body = compound_stmt();
-	return  createFuncNode(functype, name, params, &body);
+    Node body = compound_stmt();
+    return  createFuncNode(functype, name, params, &body);
 }
 
 
 
 Node &Env::search(const std::string &key)
 {
-	Env *ptr = this;
+    Env *ptr = this;
 
-	while (ptr) {
-		for (size_t i = 0; i < ptr->nodes.size(); ++i) {
-			if (key == ptr->nodes.at(i).name() || key == ptr->nodes.at(i).name())
-				return ptr->nodes.at(i);
-		}
-		ptr = ptr->pre();
-	}
+    while (ptr) {
+        for (size_t i = 0; i < ptr->nodes.size(); ++i) {
+            if (key == ptr->nodes.at(i).name() || key == ptr->nodes.at(i).name())
+                return ptr->nodes.at(i);
+        }
+        ptr = ptr->pre();
+    }
 
-	Node *r = new Node(NODE_NULL);
+    Node *r = new Node(NODE_NULL);
 
-	return *r;
+    return *r;
 }
 
 void Env::setFuncDef(Node &_def)
 {
-	Env *ptr = this;
+    Env *ptr = this;
 
-	while (ptr) {
-		for (size_t i = 0; i < ptr->nodes.size(); ++i) {
-			if (_def.name() == ptr->nodes.at(i).name()) {
+    while (ptr) {
+        for (size_t i = 0; i < ptr->nodes.size(); ++i) {
+            if (_def.name() == ptr->nodes.at(i).name()) {
                 ptr->nodes.at(i) = _def;
-			}
-		}
-		ptr = ptr->pre();
-	}
+            }
+        }
+        ptr = ptr->pre();
+    }
 }
 
-/**
-* �ӵ�ǰ��������ʼ���ұ�ʶ��
-*/
 Type Parser::get_type(std::string key)
 {
-	Type type;
+    Type type;
 
-	while (!localenv) {
-		type = localenv->search(key).getType();
-	}
-	return type;
+    while (!localenv) {
+        type = localenv->search(key).getType();
+    }
+    return type;
 }
 int Parser::get_compound_assign_op(Token &t)
 {
-	if (t.getType() != T_KEYWORD)
-		return 0;
-	switch (t.getId()) {
-	case OP_A_ADD: return '+';
-	case OP_A_SUB: return '-';
-	case OP_A_MUL: return '*';
-	case OP_A_DIV: return '/';
-	case OP_A_MOD: return '%';
-	case OP_A_AND: return '&';
-	case OP_A_OR:  return '|';
-	case OP_A_XOR: return '^';
-	case OP_A_SAL: return OP_SAL;
-	case OP_A_SAR: return OP_SAR;
-	default: return 0;
-	}
+    if (t.getType() != T_KEYWORD)
+        return 0;
+    switch (t.getId()) {
+    case OP_A_ADD: return '+';
+    case OP_A_SUB: return '-';
+    case OP_A_MUL: return '*';
+    case OP_A_DIV: return '/';
+    case OP_A_MOD: return '%';
+    case OP_A_AND: return '&';
+    case OP_A_OR:  return '|';
+    case OP_A_XOR: return '^';
+    case OP_A_SAL: return OP_SAL;
+    case OP_A_SAR: return OP_SAR;
+    default: return 0;
+    }
 }
 
 std::string Parser::get_compound_assign_op_signal(Token &t)
 {
-	if (t.getType() != T_KEYWORD)
-		return 0;
-	switch (t.getId()) {
-	case OP_A_ADD: return "+";
-	case OP_A_SUB: return "-";
-	case OP_A_MUL: return "*";
-	case OP_A_DIV: return "/";
-	case OP_A_MOD: return "%";
-	case OP_A_AND: return "&";
-	case OP_A_OR:  return "|";
-	case OP_A_XOR: return "^";
-	case OP_A_SAL: return "<<";
-	case OP_A_SAR: return ">>";
-	default: return 0;
-	}
+    if (t.getType() != T_KEYWORD)
+        return 0;
+    switch (t.getId()) {
+    case OP_A_ADD: return "+";
+    case OP_A_SUB: return "-";
+    case OP_A_MUL: return "*";
+    case OP_A_DIV: return "/";
+    case OP_A_MOD: return "%";
+    case OP_A_AND: return "&";
+    case OP_A_OR:  return "|";
+    case OP_A_XOR: return "^";
+    case OP_A_SAL: return "<<";
+    case OP_A_SAR: return ">>";
+    default: return 0;
+    }
 }
 
 bool Parser::next_is(int id)
 {
-	if (ts_.next().getId() == id)
-		return true;
+    if (ts_.next().getId() == id)
+        return true;
     ts_.back();
-	return false;
+    return false;
 }
 
 Node Parser::createIntNode(const Token &t, int size, bool isch)
 {
-	if (isch) {
-		Node node(NODE_CHAR);
+    if (isch) {
+        Node node(NODE_CHAR);
 
-		node.int_val = t.getCh();
-		node.type = Type(K_CHAR, size, false);
-		return node;
-	}
-	else {
-		Node node(NODE_INT);
+        node.int_val = t.getCh();
+        node.type = Type(K_CHAR, size, false);
+        return node;
+    }
+    else {
+        Node node(NODE_INT);
 
-		node.int_val = atoi(t.getSval().c_str());
-		node.type = Type(K_INT, size, false);
-		return node;
-	}
+        node.int_val = atoi(t.getSval().c_str());
+        node.type = Type(K_INT, size, false);
+        return node;
+    }
 }
 
 
 Node Parser::createIntNode(const Type &ty, int val)
 {
-	Node node(NODE_INT);
-	node.int_val = val;
-	node.type = ty;
-	return node;
+    Node node(NODE_INT);
+    node.int_val = val;
+    node.type = ty;
+    return node;
 }
 
 Node Parser::createFloatNode(const Type &ty, double val)
 {
-	Node node(NODE_DOUBLE);
+    Node node(NODE_DOUBLE);
 
-	node.type = ty;
-	node.float_val = val;
-	return node;
+    node.type = ty;
+    node.float_val = val;
+    return node;
 }
 
 
 Node Parser::createFloatNode(const Token &t)
 {
-	Node node(NODE_DOUBLE);
+    Node node(NODE_DOUBLE);
 
-	node.sval = t.getSval();
-	node.type = Type(K_FLOAT, 4, false);
-	return node;
+    node.sval = t.getSval();
+    node.type = Type(K_FLOAT, 4, false);
+    return node;
 }
 
 Node Parser::createStrNode(const Token &t)
 {
-	Node node(NODE_STRING);
+    Node node(NODE_STRING);
 
-	node.sval = t.getSval();
-	return node;
+    node.sval = t.getSval();
+    return node;
 }
 
 Node Parser::createFuncNode(const Type &ty, const std::string & funcName, std::vector<Node> params, Node *body)
 {
-	Node node(NODE_FUNC, ty);
-	node.setFuncName(funcName);
-	node.params = params;
-	node.body = body;
+    Node node(NODE_FUNC, ty);
+    node.setFuncName(funcName);
+    node.params = params;
+    node.body = body;
 
-	globalenv->push_back(node);
+    globalenv->push_back(node);
 
-	return node;
+    return node;
 }
 
 Node Parser::createFuncDecl(const Type &ty, const std::string & funcName, const std::vector<Node> &params)
 {
-	Node node(NODE_FUNC_DECL, ty);
-	node.setFuncName(funcName);
-	node.params = params;
+    Node node(NODE_FUNC_DECL, ty);
+    node.setFuncName(funcName);
+    node.params = params;
 
-	globalenv->push_back(node);
+    globalenv->push_back(node);
 
-	return node;
+    return node;
 }
 
 
 
 Node Parser::createCompoundStmtNode(std::vector<Node> &stmts)
 {
-	Node node(NODE_COMP_STMT);
-	node.stmts = stmts;
-	return node;
+    Node node(NODE_COMP_STMT);
+    node.stmts = stmts;
+    return node;
 }
 Node Parser::createDeclNode(Node &var)
 {
-	Node node(NODE_DECL);
-	node.decl_var = &var;
-	return node;
+    Node node(NODE_DECL);
+    node.decl_var = &var;
+    return node;
 }
 Node Parser::createDeclNode(Node &var, std::vector<Node> init)
 {
-	Node node(NODE_DECL);
-	node.decl_var = &var;
-	node.decl_init = init;
+    Node node(NODE_DECL);
+    node.decl_var = &var;
+    node.decl_init = init;
 
-	if (var.kind == NODE_GLO_VAR) {
-		globalenv->back().lvarinit = init;
-	}
-	else if (var.kind == NODE_LOC_VAR) {
-		localenv->back().lvarinit = init;
-	}
+    if (var.kind == NODE_GLO_VAR) {
+        globalenv->back().lvarinit = init;
+    }
+    else if (var.kind == NODE_LOC_VAR) {
+        localenv->back().lvarinit = init;
+    }
 
-	return node;
+    return node;
 }
 
 Node Parser::createGLoVarNode(const Type &ty, const std::string name)
 {
-	Node r(NODE_GLO_VAR, ty);
-	r.setVarName(name);
+    Node r(NODE_GLO_VAR, ty);
+    r.setVarName(name);
 
-    if(cheak_redefined(globalenv, r.name()))
+    if (cheak_redefined(globalenv, r.name()))
         errorp(ts_.getPos(), "redefined global variable : " + r.name());
 
-	globalenv->push_back(r);
+    globalenv->push_back(r);
 
-	return r;
+    return r;
 }
 Node Parser::createLocVarNode(const Type &ty, const std::string name)
 {
-	Node r(NODE_LOC_VAR, ty);
+    Node r(NODE_LOC_VAR, ty);
     r.setVarName(name);
 
     if (cheak_redefined(localenv, r.name()))
         errorp(ts_.getPos(), "redefined local variable : " + r.name());
 
-	localenv->push_back(r);
-	return r;
+    localenv->push_back(r);
+    return r;
 }
 
 Node Parser::createFuncDeclParams(const Type &ty)
 {
-	Node r(NODE_DECL_PARAM, ty);
-	return r;
+    Node r(NODE_DECL_PARAM, ty);
+    return r;
 }
 
 Node Parser::createBinOpNode(const Type &ty, int kind, Node *left, Node *right)
 {
-	Node r(kind, ty);
-	r.left = left;
-	r.right = right;
-	return r;
+    Node r(kind, ty);
+    r.left = left;
+    r.right = right;
+    return r;
 }
 
 Node Parser::createUnaryNode(int kind, const Type &ty, Node &node)
 {
-	Node r(kind);
-	r.type = ty;
-	r.operand = &node;
-	return r;
+    Node r(kind);
+    r.type = ty;
+    r.operand = &node;
+    return r;
 }
 
 Node Parser::createRetStmtNode(Node *n)
 {
-	Node r(NODE_RETURN);
-	r.retval = n;
-	return r;
+    Node r(NODE_RETURN);
+    r.retval = n;
+    return r;
 }
 
 Node Parser::createJumpNode(const std::string &label)
 {
-	Node r(NODE_GOTO);
-	r.label = label;
-	r.newLabel = label;
-	return r;
+    Node r(NODE_GOTO);
+    r.label = label;
+    r.newLabel = label;
+    return r;
 }
 
 Node Parser::createIfStmtNode(Node *cond, Node *then, Node *els)
 {
-	Node r(NODE_IF_STMT);
-	r.cond = cond;
-	r.then = then;
-	r.els = els;
-	return r;
+    Node r(NODE_IF_STMT);
+    r.cond = cond;
+    r.then = then;
+    r.els = els;
+    return r;
 }
 
 
@@ -468,198 +465,195 @@ bool Parser::is_type(const Token &t)
     if (t.getType() == T_IDENTIFIER)
         return getCustomType(t.getSval()).type != 0;
 
-	if (t.getType() != T_KEYWORD)
-		return false;
+    if (t.getType() != T_KEYWORD)
+        return false;
 
-	switch (t.getId())
-	{
+    switch (t.getId())
+    {
 #define keyword(id, _, is) case id: return is;
-		KEYWORD_MAP
+        KEYWORD_MAP
 #undef keyword
-	default: return false;
-	}
+    default: return false;
+    }
 }
 
-/**
-* �����Ƿ��ǹؼ���id
-*/
 bool Parser::is_keyword(Token t, int id)
 {
-	return (t.getType() == T_KEYWORD && t.getId() == id);
+    return (t.getType() == T_KEYWORD && t.getId() == id);
 }
 
 void Parser::skip_parenthesis(int *count)
 {
-	for (;;)
-	{
-		Token t = ts_.next();
-		(*count)++;
+    for (;;)
+    {
+        Token t = ts_.next();
+        (*count)++;
 
-		if (t.getType() == T_EOF)
-			errorp(ts_.getPos(), "error eof");
+        if (t.getType() == T_EOF)
+            errorp(ts_.getPos(), "error eof");
 
-		if (is_keyword(t, '('))
-			skip_parenthesis(count);
+        if (is_keyword(t, '('))
+            skip_parenthesis(count);
 
-		if (is_keyword(t, ')'))
-			break;
-	}
+        if (is_keyword(t, ')'))
+            break;
+    }
 }
 void Parser::expect(int id)
 {
-	Token t = ts_.next();
-	if (t.getId() != id)
-		errorp(ts_.getPos(), std::string("expect '") + (char)id+ "', but not is '" + (char)t.getId() + "'");
+    Token t = ts_.next();
+    if (t.getId() != id)
+        errorp(ts_.getPos(), std::string("expect '") + (char)id + "', but not is '" + (char)t.getId() + "'");
 }
 
 bool Parser::is_inttype(Type ty)
 {
-	switch (ty.getType())
-	{
-	case K_BOOL: case K_SHORT:case K_CHAR: case K_INT:
-	case K_LONG:
-		return true;
-	default:
-		return false;
-	}
+    switch (ty.getType())
+    {
+    case K_BOOL: case K_SHORT:case K_CHAR: case K_INT:
+    case K_LONG:
+        return true;
+    default:
+        return false;
+    }
 }
 
 bool Parser::is_floattype(Type &ty)
 {
-	switch (ty.getType())
-	{
-	case K_FLOAT: case K_DOUBLE:
-		return true;
-	default: return false;
-	}
+    switch (ty.getType())
+    {
+    case K_FLOAT: case K_DOUBLE:
+        return true;
+    default: return false;
+    }
 }
 
 
 bool Parser::is_arithtype(Type &ty)
 {
-	return is_inttype(ty) || is_floattype(ty);
+    return is_inttype(ty) || is_floattype(ty);
 }
 
 void Parser::createQuadFile()
 {
-	out.open(_of_name, std::ios::out | std::ios::binary);
-	if (!out.is_open())
-		error("Create file filed!");
+    out.open(_of_name, std::ios::out | std::ios::binary);
+    if (!out.is_open())
+        error("Create file filed!");
 }
 
 std::string Parser::num2str(size_t num)
 {
-	std::string _mstr, _rstr;
-	for (;num > 0;) {
-		size_t m = num - 10 * (num / 10);
-		num /= 10;
-		_mstr.push_back(static_cast<char>(m + 48));
-	}
-	for (int i = _mstr.length() - 1; i >= 0; --i)
-		_rstr.push_back(_mstr.at(i));
+    std::string _mstr, _rstr;
+    for (;num > 0;) {
+        size_t m = num - 10 * (num / 10);
+        num /= 10;
+        _mstr.push_back(static_cast<char>(m + 48));
+    }
+    for (int i = _mstr.length() - 1; i >= 0; --i)
+        _rstr.push_back(_mstr.at(i));
 
-	return _rstr;
+    return _rstr;
 }
 
 int Parser::str2int(std::string &str)
 {
-	int r = 0;
-	for (size_t i = 0; i < str.size(); ++i) {
-		r = r * 10 + str.at(i) - 48;
-	}
-	return r;
+    int r = 0;
+    for (size_t i = 0; i < str.size(); ++i) {
+        r = r * 10 + str.at(i) - 48;
+    }
+    return r;
 }
 
 std::string Parser::newLabel(const std::string &_l)
 {
-	static size_t counter = 1;
-	std::string _rstr = ".L" + _l + num2str(counter++);
-	return _rstr;
+    static size_t counter = 1;
+    std::string _rstr = ".L" + _l + num2str(counter++);
+    return _rstr;
 }
 
 
 void Parser::pushQuadruple(const std::string &name)
 {
-	_stk_quad.push_back(name);
+    _stk_quad.push_back(name);
 }
 
 void Parser::pushIncDec(const std::string &name)
 {
-	_stk_incdec.push_back(name);
+    _stk_incdec.push_back(name);
 }
 
 void Parser::gotoLabel(const std::string &op)
 {
-	BoolLabel _b = boolLabel.back(); boolLabel.pop_back();
-	if(op == "||")
-		out << _b._false << ":" << std::endl;  // label(b1.false)
-	else if(op == "&&")
-		out << _b._true << ":" << std::endl;  // label(b1.false)
-	else if(op == "if")
-		out << _b._true << ":" << std::endl;  // label(b1.false)
+    BoolLabel _b = boolLabel.back(); boolLabel.pop_back();
+    if (op == "||")
+        out << _b._false << ":" << std::endl;  // label(b1.false)
+    else if (op == "&&")
+        out << _b._true << ":" << std::endl;  // label(b1.false)
+    else if (op == "if")
+        out << _b._true << ":" << std::endl;  // label(b1.false)
 }
 
 void Parser::generateIfGoto()
 {
-	BoolLabel b, b1, b2;
-    
-	if (_stk_if_goto.size() == 1 && _stk_if_goto_op.size() == 0) {
-		b = boolLabel.back();boolLabel.pop_back();
+    BoolLabel b, b1, b2;
+
+    if (_stk_if_goto.size() == 1 && _stk_if_goto_op.size() == 0) {
+        b = boolLabel.back();boolLabel.pop_back();
 
         out << _stk_if_goto.back() + b._true << std::endl;
         out << "goto " + b._false << std::endl;
         _stk_if_goto.clear();
         return;
-	}
+    }
 
     ///////////////////////////////////////////////////////////////////////
     std::vector<std::string>  op_;
     std::vector<std::string>  temp_;
     std::vector<BoolLabel>  bl;
-	for (int i = _stk_if_goto.size(); i > 0; --i) {
+    for (int i = _stk_if_goto.size(); i > 0; --i) {
         temp_.push_back(_stk_if_goto.back());_stk_if_goto.pop_back();
-	}
+    }
 
-	for (int i = _stk_if_goto_op.size(); i > 0; --i) {
-		std::string op = _stk_if_goto_op.back(); _stk_if_goto_op.pop_back();
+    for (int i = _stk_if_goto_op.size(); i > 0; --i) {
+        std::string op = _stk_if_goto_op.back(); _stk_if_goto_op.pop_back();
         op_.push_back(op);
-		b = boolLabel.back();boolLabel.pop_back();
-		b2 = boolLabel.back();boolLabel.pop_back();
-		b1 = boolLabel.back();boolLabel.pop_back();
-		if (op == "||") {
-			b1._true = b._true;
-			b1._false = newLabel("orf");
-			b2._true = b._true;
-			b2._false = b._false;
-		}
-		else if (op == "&&") {
-			b1._true = newLabel("andt");
-			b1._false = b._false;
-			b2._true = b._true;
-			b2._false = b._false;
-		}
+        b = boolLabel.back();boolLabel.pop_back();
+        b2 = boolLabel.back();boolLabel.pop_back();
+        b1 = boolLabel.back();boolLabel.pop_back();
+        if (op == "||") {
+            b1._true = b._true;
+            b1._false = newLabel("orf");
+            b2._true = b._true;
+            b2._false = b._false;
+        }
+        else if (op == "&&") {
+            b1._true = newLabel("andt");
+            b1._false = b._false;
+            b2._true = b._true;
+            b2._false = b._false;
+        }
 
         bl.push_back(b);
         if (b2._leaf) {
             bl.push_back(b2);
         }
 
-		if (b1._leaf) {
+        if (b1._leaf) {
             bl.push_back(b1);
-		}
+        }
 
-		if(!b2._leaf)
-			boolLabel.push_back(b2);
+        if (!b2._leaf)
+            boolLabel.push_back(b2);
 
-		if (!b1._leaf)
-			boolLabel.push_back(b1);
-	}
+        if (!b1._leaf)
+            boolLabel.push_back(b1);
+    }
 
     for (size_t i = op_.size(); i > 0; --i) {
         b1 = bl.back(); bl.pop_back();
         b2 = bl.back(); bl.pop_back();
 
-        if (op_.at(i-1) == "||") {
+        if (op_.at(i - 1) == "||") {
             if (b1._leaf == true) {
                 out << temp_.back() + b1._true << std::endl;
                 out << "goto\t" + b1._false << std::endl;
@@ -671,9 +665,9 @@ void Parser::generateIfGoto()
                 out << temp_.back() + b2._true << std::endl;
                 out << "goto\t" + b2._false << std::endl;
             }
-            
+
         }
-        else if (op_.at(i-1) == "&&") {
+        else if (op_.at(i - 1) == "&&") {
             if (b1._leaf == true) {
                 out << temp_.back() + b1._true << std::endl;
                 out << "goto\t" + b1._false << std::endl;
@@ -728,122 +722,122 @@ void Parser::createBoolGenQuadruple(const std::string &op)
     }
 
 
-	BoolLabel _b;
-	_b._leaf = true;
-	boolLabel.push_back(_b);
+    BoolLabel _b;
+    _b._leaf = true;
+    boolLabel.push_back(_b);
 
-	str = "if\t" + var2 + " " + op + " " + var1 + "\tgoto ";
-	_stk_if_goto.push_back(str);
+    str = "if\t" + var2 + " " + op + " " + var1 + "\tgoto ";
+    _stk_if_goto.push_back(str);
 }
 
 std::string getReulst(std::string &v1, std::string &v2, const std::string &op)
 {
-	int _var1 = atoi(v2.c_str());
-	int _var2 = atoi(v1.c_str());
+    int _var1 = atoi(v2.c_str());
+    int _var2 = atoi(v1.c_str());
 
-	int r = 0;
+    int r = 0;
 
-	if (op == "+") {
-		r = _var1 + _var2;
-	}
-	else if (op == "-") {
-		r = _var1 - _var2;
-	}
-	else if (op == "*") {
-		r = _var1 * _var2;
-	}
-	else if (op == "/") {
-		r = _var1 / _var2;
-	}
-	else if (op == "%") {
-		r = _var1 % _var2;
-	}
-	else if (op == "&") {
-		r = _var1 & _var2;
-	}
-	else if (op == "|") {
-		r = _var1 | _var2;
-	}
-	else if (op == "^") {
-		r = _var1 ^ _var2;
-	}
+    if (op == "+") {
+        r = _var1 + _var2;
+    }
+    else if (op == "-") {
+        r = _var1 - _var2;
+    }
+    else if (op == "*") {
+        r = _var1 * _var2;
+    }
+    else if (op == "/") {
+        r = _var1 / _var2;
+    }
+    else if (op == "%") {
+        r = _var1 % _var2;
+    }
+    else if (op == "&") {
+        r = _var1 & _var2;
+    }
+    else if (op == "|") {
+        r = _var1 | _var2;
+    }
+    else if (op == "^") {
+        r = _var1 ^ _var2;
+    }
 
-	return std::to_string(r);
+    return std::to_string(r);
 }
 
 void Parser::createUnaryQuadruple(const std::string &op)
 {
-	if (op == "++" || op == "--") {
-		out << op + "\t" + _stk_quad.back() << std::endl;
-		return;
-	}
+    if (op == "++" || op == "--") {
+        out << op + "\t" + _stk_quad.back() << std::endl;
+        return;
+    }
 
-	if ((op == "-U" || op == "+U")) {
-		
-		std::string num = _stk_quad.back(); 
-		for (size_t i = 0;i < float_const.size(); ++i) {
-			if (num == float_const.at(i)) {
-				float_const.at(i-1) = op.at(0) + float_const.at(i-1);
-				return;
-			}
-		}
-		if (isNumber(_stk_quad.back())) {
-			_stk_quad.pop_back();
-			num = "-" + num;
-			_stk_quad.push_back(num);
-			return;
-		}
-	}
+    if ((op == "-U" || op == "+U")) {
 
-	if (op == "~" && isNumber(_stk_quad.back())) {
-		int _n = atoi(_stk_quad.back().c_str()); _stk_quad.pop_back();
-		_n = ~_n;
-		_stk_quad.push_back(std::to_string(_n));
-		return;
-	}
+        std::string num = _stk_quad.back();
+        for (size_t i = 0;i < float_const.size(); ++i) {
+            if (num == float_const.at(i)) {
+                float_const.at(i - 1) = op.at(0) + float_const.at(i - 1);
+                return;
+            }
+        }
+        if (isNumber(_stk_quad.back())) {
+            _stk_quad.pop_back();
+            num = "-" + num;
+            _stk_quad.push_back(num);
+            return;
+        }
+    }
 
-	std::string _out_str;
-	_out_str = op + "\t" + _stk_quad.back(); _stk_quad.pop_back();
+    if (op == "~" && isNumber(_stk_quad.back())) {
+        int _n = atoi(_stk_quad.back().c_str()); _stk_quad.pop_back();
+        _n = ~_n;
+        _stk_quad.push_back(std::to_string(_n));
+        return;
+    }
 
-	std::string tempName = newLabel("uy");
-	_out_str += "\t" + tempName;
+    std::string _out_str;
+    _out_str = op + "\t" + _stk_quad.back(); _stk_quad.pop_back();
 
-	_stk_quad.push_back(tempName);
+    std::string tempName = newLabel("uy");
+    _out_str += "\t" + tempName;
 
-	out << _out_str << std::endl;
+    _stk_quad.push_back(tempName);
+
+    out << _out_str << std::endl;
 }
 
 // + - * / % & | ^ 
 // +f -f *f /f
 void Parser::createQuadruple(const std::string &op)
 {
-	std::string _out_str = op;
-	
-	if (op == "=") {
-		_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
-		_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
-	}
-	//else if (op == "[]") {
-	//	_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
-	//	_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
-	//}
+    std::string _out_str = op;
+
+    if (op == "=") {
+        _out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+        _out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+    }
+    //else if (op == "[]") {
+    //	_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+    //	_out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
+    //}
     else if (op == "+f" || op == "-f" || op == "*f" || op == "/f") {
         std::string v1, v2;
 
         v1 = _stk_quad.back(); _stk_quad.pop_back();
-		if (isNumber(v1)) {
-			float_const.push_back(v1);
-			v1 = newLabel("f");
-			float_const.push_back(v1);
-			float_const.push_back("4f");
-		}
+        if (isNumber(v1)) {
+            float_const.push_back(v1);
+            v1 = newLabel("f");
+            float_const.push_back(v1);
+            float_const.push_back("4f");
+        }
         v2 = _stk_quad.back(); _stk_quad.pop_back();
-		if (isNumber(v2)) {
-			float_const.push_back(v2);
-			v2 = newLabel("f");
-			float_const.push_back(v2);
-			float_const.push_back("4f");
-		}
+        if (isNumber(v2)) {
+            float_const.push_back(v2);
+            v2 = newLabel("f");
+            float_const.push_back(v2);
+            float_const.push_back("4f");
+        }
 
         _out_str += "\t" + v1;
         _out_str += "\t" + v2;
@@ -860,58 +854,58 @@ void Parser::createQuadruple(const std::string &op)
         _out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
         _out_str += "\t" + _stk_quad.back(); _stk_quad.pop_back();
     }
-	else {
-		std::string v1, v2;
-		
-		v1 = _stk_quad.back(); _stk_quad.pop_back();
-		v2 = _stk_quad.back(); _stk_quad.pop_back();
+    else {
+        std::string v1, v2;
 
-		if (isNumber(v1) && isNumber(v2)) {
-			_stk_quad.push_back(getReulst(v1, v2, op));
-			return;
-		}
+        v1 = _stk_quad.back(); _stk_quad.pop_back();
+        v2 = _stk_quad.back(); _stk_quad.pop_back();
 
-		_out_str += "\t" + v1;
-		_out_str += "\t" + v2;
+        if (isNumber(v1) && isNumber(v2)) {
+            _stk_quad.push_back(getReulst(v1, v2, op));
+            return;
+        }
 
-		std::string tempName = newLabel("var");
-		_out_str += "\t" + tempName;
+        _out_str += "\t" + v1;
+        _out_str += "\t" + v2;
 
-		_stk_quad.push_back(tempName);
-	}
+        std::string tempName = newLabel("var");
+        _out_str += "\t" + tempName;
 
-	out << _out_str << std::endl;
+        _stk_quad.push_back(tempName);
+    }
+
+    out << _out_str << std::endl;
 }
 
 
 void Parser::createFuncQuad(std::vector<Node> &params)
 {
-	out << std::endl;
-	for (size_t i = 0; i < params.size(); ++i) {
-		out << "param " << _stk_quad.back() << std::endl; _stk_quad.pop_back();
-	}
+    out << std::endl;
+    for (size_t i = 0; i < params.size(); ++i) {
+        out << "param " << _stk_quad.back() << std::endl; _stk_quad.pop_back();
+    }
 
-	std::string func_name;
-	func_name = _stk_quad.back();
+    std::string func_name;
+    func_name = _stk_quad.back();
 #ifdef _OVERLOAD_
-	func_name = getOverLoadName(func_name, params);
+    func_name = getOverLoadName(func_name, params);
 #endif // _OVERLOAD_
 
-	Node fn = localenv->search(func_name);
-	_stk_quad.pop_back();
+    Node fn = localenv->search(func_name);
+    _stk_quad.pop_back();
 
-	for (size_t i = 0;i < fn.params.size(); ++i) {
-		if (fn.params.at(i).type.getType() == ELLIPSIS) {
-			goto _skip_cheak_params_num;
-		}
-	}
-	if ((fn.kind != NODE_FUNC && fn.kind != NODE_FUNC_DECL) || (fn.params.size() != params.size()))
-		errorp(ts_.getPos(), "func call parms size error.");
+    for (size_t i = 0;i < fn.params.size(); ++i) {
+        if (fn.params.at(i).type.getType() == ELLIPSIS) {
+            goto _skip_cheak_params_num;
+        }
+    }
+    if ((fn.kind != NODE_FUNC && fn.kind != NODE_FUNC_DECL) || (fn.params.size() != params.size()))
+        errorp(ts_.getPos(), "func call parms size error.");
 
 _skip_cheak_params_num:
-	for (size_t i = 0; i < fn.params.size(); ++i) {
-		localenv->_call_size += fn.params.at(i).type.size_;
-	}
+    for (size_t i = 0; i < fn.params.size(); ++i) {
+        localenv->_call_size += fn.params.at(i).type.size_;
+    }
 
     out << "call" << "\t" << fn.name() << "\t" << fn.params.size();
 
@@ -926,29 +920,29 @@ _skip_cheak_params_num:
 
 void Parser::createIncDec()
 {
-	for (;;) {
-		if (_stk_incdec.empty())
-			return;
+    for (;;) {
+        if (_stk_incdec.empty())
+            return;
 
-		std::string op = _stk_incdec.back(); _stk_incdec.pop_back();
-		std::string var = _stk_incdec.back(); _stk_incdec.pop_back();
-		std::string label;
-		if (op == "++") {
-			label = newLabel("inc");
-			out << std::left << std::setw(15) << "+";
-		}
-		else {
-			label = newLabel("dec");
-			out << std::left << std::setw(15) << "-";
-		}
+        std::string op = _stk_incdec.back(); _stk_incdec.pop_back();
+        std::string var = _stk_incdec.back(); _stk_incdec.pop_back();
+        std::string label;
+        if (op == "++") {
+            label = newLabel("inc");
+            out << std::left << std::setw(15) << "+";
+        }
+        else {
+            label = newLabel("dec");
+            out << std::left << std::setw(15) << "-";
+        }
 
         out << std::left << std::setw(15) << "1";
-		out << std::left << std::setw(15) << var;
-		out << std::left << std::setw(15) << label << std::endl;
-		out << std::left << std::setw(15) << "=";
-		out << std::left << std::setw(15) << label;
-		out << std::left << std::setw(15) << var << std::endl;
-	}
+        out << std::left << std::setw(15) << var;
+        out << std::left << std::setw(15) << label << std::endl;
+        out << std::left << std::setw(15) << "=";
+        out << std::left << std::setw(15) << label;
+        out << std::left << std::setw(15) << var << std::endl;
+    }
 }
 
 Type Parser::getCustomType(const std::string &_n)
@@ -963,36 +957,36 @@ Type Parser::getCustomType(const std::string &_n)
 #ifdef _OVERLOAD_
 std::string Parser::getOverLoadName(const std::string &name, std::vector<Node> &_p)
 {
-	if (name == "main")
-		return name;
-	else if (name == "printf")
-		return name;
+    if (name == "main")
+        return name;
+    else if (name == "printf")
+        return name;
     else if (name == "puts")
-		return name;
+        return name;
     else if (name == "putchar")
         return name;
 
-	std::string _name_r;
-	_name_r += name + "@";
+    std::string _name_r;
+    _name_r += name + "@";
 
-	for (size_t i = 0; i < _p.size(); ++i) {
-		switch (_p.at(i).type.type)
-		{
-		case K_INT: _name_r += "i";break;
-		case K_CHAR: _name_r += "c";break;
-		case K_SHORT:_name_r += "s";break;
-		case K_LONG: _name_r += "l";break;
-		case K_FLOAT: _name_r += "f";break;
-		case K_DOUBLE: _name_r += "d";break;
-		case K_STRUCT: 
-		case K_TYPEDEF:
-			errorp(lex.getPos(), "Unspport struct and typedef overload.");
-			break;
-		default:
+    for (size_t i = 0; i < _p.size(); ++i) {
+        switch (_p.at(i).type.type)
+        {
+        case K_INT: _name_r += "i";break;
+        case K_CHAR: _name_r += "c";break;
+        case K_SHORT:_name_r += "s";break;
+        case K_LONG: _name_r += "l";break;
+        case K_FLOAT: _name_r += "f";break;
+        case K_DOUBLE: _name_r += "d";break;
+        case K_STRUCT:
+        case K_TYPEDEF:
+            errorp(lex.getPos(), "Unspport struct and typedef overload.");
+            break;
+        default:
             errorp(lex.getPos(), "Unspport type overload.");
-			break;
-		}
-	}
-	return _name_r;
+            break;
+        }
+    }
+    return _name_r;
 }
 #endif

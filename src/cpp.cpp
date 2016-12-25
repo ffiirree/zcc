@@ -15,7 +15,6 @@ void Preprocessor::init()
     paths_.push_back("/usr/include/zcc/");
 #endif
 
-    // 锟斤拷锟斤拷默锟较宏定锟斤拷
     macros_.push_back({ "__ZCC__", {T_INTEGER, "1"}, Macro::M_PRE });
     macros_.push_back({ "__ZCC_VERSION__", { T_STRING, "Version 0.02" }, Macro::M_PRE });
     macros_.push_back({ "__FILE__", Macro::M_PRE });
@@ -382,10 +381,8 @@ void Preprocessor::Include(TokenSequence &is, TokenSequence &os)
     if (is.next().getType() != T_NEWLINE)
         error("need new_line.");
 
-    for (const std::string path: paths_) {
-        
+    for (const std::string path: paths_) {    
         std::string _file = path + _fn;
-        std::cout << _file <<std::endl;
         std::ifstream in(_file, std::ios::in);
         if (in.is_open()) {
             TokenSequence ts;

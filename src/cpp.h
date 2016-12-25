@@ -63,8 +63,8 @@ public:
 class Preprocessor {
 public:
     Preprocessor(bool _only) : isOnlyPP(_only) { init(); }
-	Preprocessor(const Preprocessor &) = delete;
-	Preprocessor &operator= (const Preprocessor &) = delete;
+    Preprocessor(const Preprocessor &) = delete;
+    Preprocessor &operator= (const Preprocessor &) = delete;
     ~Preprocessor() = default;
 
     /**

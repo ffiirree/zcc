@@ -2,12 +2,9 @@
 
 bool Parser::ensure_lvalue(const Node &node)
 {
-	return false;
+    return false;
 }
 
-/**
- * @berif 检查重定义
- */
 bool Parser::cheak_redefined(Env *_env, const std::string &_name)
 {
     for (size_t i = 0; i < _env->size(); ++i) {
@@ -15,21 +12,18 @@ bool Parser::cheak_redefined(Env *_env, const std::string &_name)
             return true;
     }
 
-	if (!searchEnum(_name).empty())
-		return true;
+    if (!searchEnum(_name).empty())
+        return true;
 
-	if (_env != globalenv) {
-		for (size_t i = 0; i < globalenv->size(); ++i) {
-			if ((globalenv->at(i).kind == NODE_FUNC || globalenv->at(i).kind == NODE_FUNC_DECL) && globalenv->at(i).name() == _name)
-				return true;
-		}
-	}
+    if (_env != globalenv) {
+        for (size_t i = 0; i < globalenv->size(); ++i) {
+            if ((globalenv->at(i).kind == NODE_FUNC || globalenv->at(i).kind == NODE_FUNC_DECL) && globalenv->at(i).name() == _name)
+                return true;
+        }
+    }
     return false;
 }
 
-/**
- * @berif 检查是否是整数
- */
 bool Parser::cheak_is_int_type(const Node &n)
 {
     switch (n.type.type)
@@ -44,9 +38,6 @@ bool Parser::cheak_is_int_type(const Node &n)
     }
 }
 
-/**
- * 检查是否是浮点数
- */
 bool Parser::cheak_is_float(const Node &n)
 {
     if (n.type.type == K_FLOAT || n.type.type == K_DOUBLE)
