@@ -1,17 +1,38 @@
-#include <stdio.h>
-int main(){
-    float pi = 1.0;
-    float n = 1.0;
+//#include<stdio.h>
+int printf(char *ch, int a, long b);
+int factorial_recursion(int n);
+int factorial_iteration(int n);
 
-    for(int j = 1; j <= 100; j++,n += 1.0){
-        if(j%2 == 0){
-            pi *= n / (n + 1.0);
-        }
-        else{
-            pi *= (n + 1.0) / n;
-        }
-    }
-    pi = 2.0 * pi;
-    printf("pi = %.7f\n",pi);
+int main() 
+{
+    int N = 10;
+    long recursion_result = factorial_recursion(N);
+    long iteration_result = factorial_iteration(N);
+
+    // %ld 输出长整型，即 int int
+    printf("The factorial(recursion) of %ld is %ld!\n", N, recursion_result);
+    printf("The factorial(iteration) of %ld is %ld!\n", N, iteration_result);
+
     return 0;
+}
+
+// 递归计算阶乘
+int factorial_recursion(int n) 
+{
+    if (n <= 0)
+        return 1;
+    else
+        return n * factorial_recursion(n - 1);
+}
+
+// 迭代计算阶乘
+int factorial_iteration(int n) 
+{
+    int r = 1;
+    while (n > 1)
+    {
+        r *= n;
+        n--;
+    }
+    return r;
 }

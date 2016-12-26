@@ -68,8 +68,7 @@ void Parser::decl_or_stmt(std::vector<Node> &list)
 
 Node Parser::if_stmt()
 {
-    BoolLabel _if;
-    std::string snext = newLabel("sn");
+    std::string nextLabel = newLabel("n");
 
     expect('(');
     _EN_CONDITION_();
@@ -77,66 +76,50 @@ Node Parser::if_stmt()
     _DIS_CONDITION_();
     expect(')');
 
-    _if.true_ = newLabel("ift");
-    _if.false_ = newLabel("iff");
-    boolLabel.back().true_ = _if.true_;
-    boolLabel.back().false_ = _if.false_;
-    generateIfGoto();
-
-    _GENQL_(_if.true_);
+    BoolLabel *B = boolLabels_.back(); boolLabels_.pop_back();
+    _GENQL_(newLabel("t"));
+    backpatch(B->trueList_, quadStk_.size());
     _GENQ1_("clr");
     Node *then = new Node(statement());     // S1.code
 
     if (next_is(K_ELSE)) {
-        _GENQ2_("goto", snext);
-        _GENQL_(_if.false_);
+        _GENQ2_("goto", nextLabel);
+        _GENQL_(newLabel("f"));
+        backpatch(B->falseList_, quadStk_.size());
 
         Node *els = new Node(statement());
-        _GENQL_(snext);
+        _GENQL_(nextLabel);
+
         return createIfStmtNode(cond, then, els);
     }
-    else {
-        _GENQL_(_if.false_);
-    }
+
+    _GENQL_(nextLabel);
+    backpatch(B->falseList_, quadStk_.size());
+
     return createIfStmtNode(cond, then, nullptr);
 }
 
 Node Parser::while_stmt()
 {
-    BoolLabel _while;
-    std::string _begin = newLabel("wb");   // begin = newLabel
-    std::string _snext = newLabel("sn");
+    std::string beginLabel = newLabel("wb");
 
-    // break �� continue
-    _stk_ctl_bg_l.push_back(_begin);
-    _stk_ctl_end_l.push_back(_snext);
-
-    _while.true_ = newLabel("wt");         // B.true = newLabel
-    _while.true_ = _snext;                // B.false = S.next
-
-    std::string _s1next = _begin;          // S1.next = begin
-
-    _GENQL_(_begin);     // Label(begin)
-
+    _GENQL_(beginLabel);                       // Label(begin)
     expect('(');
     _EN_CONDITION_();
     Node node = bool_expr();
     _DIS_CONDITION_();
     expect(')');
-
-    boolLabel.back().true_ = _while.true_;
-    boolLabel.back().false_ = _while.false_;
-    generateIfGoto();                      // B.code
-    _GENQL_(_while.true_);            // Label(B.true)
-
     _GENQ1_("clr");
 
-    Node body = statement();               // S1.code
-    _GENQ2_("goto", _begin);  // gen(goto begin)
-    _GENQL_(_snext);
+    BoolLabel *B = boolLabels_.back(); boolLabels_.pop_back();
+    _GENQL_(newLabel("wt"));                 // Label(B.true)
+    backpatch(B->trueList_, quadStk_.size());
 
-    _stk_ctl_bg_l.pop_back();
-    _stk_ctl_end_l.pop_back();
+    Node body = statement();                 // S1.code
+
+    _GENQ2_("goto", beginLabel);
+    _GENQL_(newLabel("n"));
+    backpatch(B->falseList_, quadStk_.size());
 
     std::vector<Node> list;
     return createCompoundStmtNode(list);
@@ -145,17 +128,10 @@ Node Parser::while_stmt()
 
 Node Parser::do_stmt()
 {
-    BoolLabel doLabel;
-    std::string begin = newLabel("db");   // begin = newLabel
-    std::string snext = newLabel("sn");
+    int M = 0;
 
-    _stk_ctl_bg_l.push_back(begin);
-    _stk_ctl_end_l.push_back(snext);
-
-    doLabel.true_ = begin;
-    doLabel.false_ = snext;
-
-    _GENQL_(begin);
+    _GENQL_(newLabel("db"));
+    M = quadStk_.size();
     Node *r = new Node(statement());
     expect(K_WHILE);
     expect('(');
@@ -164,14 +140,12 @@ Node Parser::do_stmt()
     _DIS_CONDITION_();
     expect(')');
     expect(';');
+    BoolLabel *B = boolLabels_.back(); boolLabels_.pop_back();
 
-    boolLabel.back().true_ = doLabel.true_;
-    boolLabel.back().false_ = doLabel.false_;
-    generateIfGoto();                      // B.code
-    _GENQL_(snext);
+    backpatch(B->trueList_, M);
 
-    _stk_ctl_bg_l.pop_back();
-    _stk_ctl_end_l.pop_back();
+    _GENQL_(newLabel("sn"));
+    backpatch(B->falseList_, quadStk_.size());
 
     return *r;
 }
@@ -206,18 +180,13 @@ Node Parser::switch_stmt()
 
 Node Parser::for_stmt()
 {
+    BoolLabel *B = nullptr;
+    int M = 0;
+
     std::string _next = newLabel("forn");
     std::string _begin = newLabel("forb");
     std::string _exp3 = newLabel("fe3");
 
-
-    BoolLabel _for;
-
-    _stk_ctl_bg_l.push_back(_begin);
-    _stk_ctl_end_l.push_back(_next);
-
-    _for.false_ = _next;
-    _for.true_ = newLabel("fort");
 
     expect('(');
     __IN_SCOPE__(localenv, localenv, newLabel("for"));
@@ -234,6 +203,7 @@ Node Parser::for_stmt()
     }
 
     _GENQL_(_begin);
+    M = quadStk_.size();
 
     if (is_keyword(ts_.peek(), ';')) {
         expect(';');
@@ -243,10 +213,9 @@ Node Parser::for_stmt()
         bool_expr();
         _DIS_CONDITION_();
         expect(';');
+        B = boolLabels_.back(); boolLabels_.pop_back();
     }
-
-    boolLabel.push_back(_for);
-    generateIfGoto();
+    
     _GENQ1_("clr");
     _GENQL_(_exp3);
     if (is_keyword(ts_.peek(), ')')) {
@@ -258,16 +227,16 @@ Node Parser::for_stmt()
     }
     _GENQ1_("clr"); 
     _GENQ2_("goto", _begin); 
-    _GENQL_(_for.true_);
+
+    _GENQL_(newLabel("ft"));
+    backpatch(B->trueList_, quadStk_.size());
 
     statement();
     __OUT_SCOPE__(localenv);
 
     _GENQ2_("goto", _exp3);
     _GENQL_(_next);
-
-    _stk_ctl_bg_l.pop_back();
-    _stk_ctl_end_l.pop_back();
+    backpatch(B->falseList_, quadStk_.size());
 
     return Node();
 }
@@ -306,7 +275,7 @@ Node Parser::case_stmt()
     int val = com_conditional_expr().int_val;
     expect(':');
 
-    _GENQIF_(switch_expr + " != " + std::to_string(val), switch_case_label);
+    _GENQ4_("if", switch_expr + " != " + std::to_string(val), "goto", switch_case_label);
     statement();
 
     _GENQL_(switch_case_label);

@@ -10,6 +10,7 @@ std::vector<Node> Parser::trans_unit()
 
         if (t.getType() == T_EOF) {
             labels.cheak();
+            out_quad();
             out.close();
             return list;
         }
@@ -582,151 +583,6 @@ void Parser::pushIncDec(const std::string &name)
     _stk_incdec.push_back(name);
 }
 
-void Parser::gotoLabel(const std::string &op)
-{
-    BoolLabel _b = boolLabel.back(); boolLabel.pop_back();
-    if (op == "||")
-        _GENQL_(_b.false_);   // label(b1.false)
-    else if (op == "&&")
-        _GENQL_(_b.true_);   // label(b1.false)
-    else if (op == "if")
-        _GENQL_(_b.true_);   // label(b1.false)
-}
-
-void Parser::generateIfGoto()
-{
-    BoolLabel b, b1, b2;
-
-    if (_stk_if_goto.size() == 1 && _stk_if_goto_op.size() == 0) {
-        b = boolLabel.back();boolLabel.pop_back();
-        _GENQ2_(_stk_if_goto.back(), b.true_);
-        _GENQ2_("goto", b.false_);
-        _stk_if_goto.clear();
-        return;
-    }
-
-    ///////////////////////////////////////////////////////////////////////
-    std::vector<std::string>  op_;
-    std::vector<std::string>  temp_;
-    std::vector<BoolLabel>  bl;
-    for (int i = _stk_if_goto.size(); i > 0; --i) {
-        temp_.push_back(_stk_if_goto.back());_stk_if_goto.pop_back();
-    }
-
-    for (int i = _stk_if_goto_op.size(); i > 0; --i) {
-        std::string op = _stk_if_goto_op.back(); _stk_if_goto_op.pop_back();
-        op_.push_back(op);
-        b = boolLabel.back();boolLabel.pop_back();
-        b2 = boolLabel.back();boolLabel.pop_back();
-        b1 = boolLabel.back();boolLabel.pop_back();
-        if (op == "||") {
-            b1.true_ = b.true_;
-            b1.false_ = newLabel("orf");
-            b2.true_ = b.true_;
-            b2.false_ = b.false_;
-        }
-        else if (op == "&&") {
-            b1.true_ = newLabel("andt");
-            b1.false_ = b.false_;
-            b2.true_ = b.true_;
-            b2.false_ = b.false_;
-        }
-
-        bl.push_back(b);
-        if (b2.leaf_) {
-            bl.push_back(b2);
-        }
-
-        if (b1.leaf_) {
-            bl.push_back(b1);
-        }
-
-        if (!b2.leaf_)
-            boolLabel.push_back(b2);
-
-        if (!b1.leaf_)
-            boolLabel.push_back(b1);
-    }
-
-    for (size_t i = op_.size(); i > 0; --i) {
-        b1 = bl.back(); bl.pop_back();
-        b2 = bl.back(); bl.pop_back();
-
-        if (op_.at(i - 1) == "||") {
-            if (b1.leaf_ == true) {
-                _GENQ2_(temp_.back(), b1.true_);
-                _GENQ2_("goto", b1.false_);
-            }
-            _GENQL_(b1.false_);
-
-            if (b2.leaf_ == true) {
-                _GENQ2_(temp_.back(), b2.true_);
-                _GENQ2_("goto", b2.false_);
-            }
-
-        }
-        else if (op_.at(i - 1) == "&&") {
-            if (b1.leaf_ == true) {
-                _GENQ2_(temp_.back(), b1.true_);
-                _GENQ2_("goto", b1.false_);
-            }
-            _GENQL_(b1.true_);
-
-            if (b2.leaf_ == true) {
-                _GENQ2_(temp_.back(), b2.true_);
-                _GENQ2_("goto", b2.false_);
-            }
-        }
-    }
-}
-
-void Parser::createBoolGenQuadruple(const std::string &op)
-{
-    std::string str;
-    std::string var1 = _stk_quad.back(); _stk_quad.pop_back();
-    std::string var2 = _stk_quad.back(); _stk_quad.pop_back();
-
-    if (isComputeBool) {
-        bool res = false;
-        int op1 = atoi(var2.c_str());
-        int op2 = atoi(var1.c_str());
-
-        if (op == ">") {
-            res = op1 > op2;
-        }
-        else if (op == "<") {
-            res = op1 < op2;
-        }
-        else if (op == ">=") {
-            res = op1 >= op2;
-        }
-        else if (op == "<=") {
-            res = op1 <= op2;
-        }
-        else if (op == "==") {
-            res = op1 == op2;
-        }
-        else if (op == "!=") {
-            res = op1 != op2;
-        }
-
-        if (res)
-            _stk_quad.push_back("1");
-        else
-            _stk_quad.push_back("0");
-
-        return;
-    }
-
-
-    BoolLabel _b;
-    _b.leaf_ = true;
-    boolLabel.push_back(_b);
-
-    str = "if\t" + var2 + " " + op + " " + var1 + "\tgoto ";
-    _stk_if_goto.push_back(str);
-}
-
 std::string getReulst(std::string &v1, std::string &v2, const std::string &op)
 {
     int _var1 = atoi(v2.c_str());
@@ -967,3 +823,47 @@ std::string Parser::getOverLoadName(const std::string &name, std::vector<Node> &
     return _name_r;
 }
 #endif
+std::vector<int> *Parser::makelist(int index)
+{
+    std::vector<int> *list = new std::vector<int>();
+    list->push_back({ index });
+    return list;
+}
+
+std::vector<int> *Parser::merge(
+    std::vector<int> *p1, 
+    std::vector<int> *p2)
+{
+    std::vector<int> *list = new std::vector<int>();
+    
+    list->insert(list->end(), p1->begin(), p1->end());
+    list->insert(list->end(), p2->begin(), p2->end());
+    return list;
+}
+
+void Parser::backpatch(std::vector<int> *p, int index)
+{
+    for (const auto &i : *p) {
+        Quadruple &quad = quadStk_.at(i);
+        if (std::get<0>(quad) == "if") {
+            std::get<3>(quad) = std::get<0>(quadStk_.at(index-1));
+        }
+        else if (std::get<0>(quad) == "goto") {
+            std::get<1>(quad) = std::get<0>(quadStk_.at(index- 1));
+        }
+    }
+}
+
+void Parser::out_quad() {
+    for (const auto &q : quadStk_) {
+        if (std::get<1>(q) == ":") {
+            out << std::get<0>(q) << ":" << std::endl;
+            continue;
+        }
+        out << "\t" << std::left << std::setw(7) << std::get<0>(q) << " "
+            << std::left << std::setw(10) << std::get<1>(q) << " "
+            << std::left << std::setw(10) << std::get<2>(q) << " "
+            << std::get<3>(q)
+            << std::endl;
+    }
+}
