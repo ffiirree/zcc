@@ -94,7 +94,7 @@ private:
 };
 
 /**
- * @berif BoolLabel
+ * @class BoolLabel
  */
 class BoolLabel {
 public:
@@ -144,7 +144,7 @@ public:
 };
 
 /**
- * @ Parser
+ * @class Parser
  */
 class Parser {
 public:
@@ -185,6 +185,7 @@ private:
     void computeBoolExpr(const std::string &op);
     void createFuncQuad(std::vector<Node> &params);
     void createIncDec();
+    void createRelOpQuad(const std::string &op);
     std::string num2str(size_t num);
     int str2int(std::string &str);
 

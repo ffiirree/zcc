@@ -539,7 +539,7 @@ void Preprocessor::Elif(TokenSequence &is)
 
     is.expect('#');
     if (is.next().toString() != "elif")
-        error("not if macro.");
+        errorp(is.getPos(), "not #if macro.");
 
     TokenSequence is_ = is, ts;
     isExpandExpr = true;
@@ -561,10 +561,10 @@ void Preprocessor::Else(TokenSequence &is)
 {
     is.expect('#');
     if (is.next().toString() != "else")
-        error("not else .");
+        errorp(is.getPos(), "not #else.");
 
     if (is.next().getType() != T_NEWLINE)
-        error("else need a new line.");
+        errorp(is.getPos(), "#else need a new line.");
 
     invalid_ = cheak_else() || preInvalid_;
 

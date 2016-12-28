@@ -172,7 +172,7 @@ Node Parser::designator_list()
 * declarator = ['*'] ID direct_declarator_tail
 *            | ['*'] '(' declarator ')' direct_declarator_tail
 *
-* \\ ֻ֧�ֶ�������,[]��[10]��ʽ
+* \\
 * direct_declarator_tail = '[' ']' direct_declarator_tail
 |'[' conditional_expr ']' direct_declarator_tail
 
@@ -193,7 +193,6 @@ Type Parser::conv2ptr(Type ty)
 
 Type Parser::declarator(Type *ty, std::string &name, std::vector<Node> &params, int deal_type)
 {
-    // ָ������
     if (next_is('*')) {
         return declarator(new Type(conv2ptr(*ty)), name, params, deal_type);
     }
@@ -227,7 +226,6 @@ Type Parser::decl_spec_opt(int *sclass)
 
 Type Parser::direct_decl_tail(Type *retty, std::vector<Node> &params, int decl_type)
 {
-    // ֻ֧�ֶ�������
     if (next_is('[')) {
         decl_array(retty);
         Type r(ARRAY, retty->_all_len, retty->len);
@@ -235,7 +233,6 @@ Type Parser::direct_decl_tail(Type *retty, std::vector<Node> &params, int decl_t
         return r;
     }
 
-    // ���������ţ���Ϊ����
     if (next_is('(')) {
         if (decl_type == DECL_BODY)
             decl_type = NODE_FUNC_DECL;
@@ -302,7 +299,6 @@ Type Parser::decl_specifiers(int *rsclass)
         {
             // Type specifiers
 #define type_spec_cheak(cheak, val, _t) do{if(cheak) errorp(ts_.getPos(), "error " + std::string(_t) +" specifier"); else cheak = val;}while(0)
-            // ֻ�ܳ���һ��
         case K_VOID:     type_spec_cheak(kind, k_void, "void");break;
         case K_CHAR:     type_spec_cheak(kind, k_char, "char");break;
         case K_SHORT:    type_spec_cheak(kind, k_short, "short"); break;
@@ -311,7 +307,6 @@ Type Parser::decl_specifiers(int *rsclass)
         case K_FLOAT:    type_spec_cheak(kind, k_float, "float");break;
         case K_DOUBLE:   type_spec_cheak(kind, k_double, "double");break;
         case K_BOOL:     type_spec_cheak(kind, k_bool, "bool"); break;
-
 
         case K_SIGNED:   type_spec_cheak(is_unsig, false, "signed");break;
         case K_UNSIGNED: type_spec_cheak(is_unsig, true, "unsigned"); break;
@@ -330,11 +325,8 @@ Type Parser::decl_specifiers(int *rsclass)
         case K_ENUM: custom_type = enum_def(); break;
         case K_STRUCT: if (custom_type.type != 0) errorp(ts_.getPos(), "error struct specifier."); custom_type = struct_def(); break;
         case K_UNION: errorp(ts_.getPos(), "no union."); break;
-
 #undef type_spec_cheak
-            // Storage-class specifiers
-            // ֻ�ܳ�������������λ����ֻ��һ��
-            // Type qualifiers
+
         case K_CONST: errorp(ts_.getPos(), "no const."); break;
         case K_RESTRICT: errorp(ts_.getPos(), "no restrict."); break;
         case K_VOLATILE: errorp(ts_.getPos(), "no volatile."); break;
@@ -482,6 +474,5 @@ Type Parser::struct_def()
     expect('}');
 
     custom_type_tbl.insert(std::pair<std::string, Type>(_new_type_name, r));
-
     return r;
 }

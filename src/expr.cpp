@@ -246,35 +246,18 @@ Node Parser::equal_expr()
     if (next_is(OP_EQ)) {
         r = binop(OP_EQ, *node, *(new Node(equal_expr())));
 
-        if(!isComputeBool){
-            BoolLabel *B = new BoolLabel();
-            boolLabels_.push_back(B);
-            B->trueList_ = makelist(quadStk_.size());
-            B->falseList_ = makelist(quadStk_.size() + 1);
-            std::string E1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
-            std::string E2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
-            _GENQ3_("if", E2 + " == " + E1, "goto");
-            _GENQ1_("goto");
-        }
-        else {
+        if (!isComputeBool)
+            createRelOpQuad("==");
+        else
             computeBoolExpr("==");
-        }
     }
     else if (next_is(OP_NE)) {
         r = binop(OP_NE, *node, *(new Node(equal_expr())));
-        if (!isComputeBool) {
-            BoolLabel *B = new BoolLabel();
-            boolLabels_.push_back(B);
-            B->trueList_ = makelist(quadStk_.size());
-            B->falseList_ = makelist(quadStk_.size() + 1);
-            std::string E1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
-            std::string E2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
-            _GENQ3_("if", E2 + " != " + E1, "goto");
-            _GENQ1_("goto");
-        }
-        else {
+
+        if (!isComputeBool)
+            createRelOpQuad("!=");
+        else 
             computeBoolExpr("!=");
-        }
     }
     else {
         return *node;
@@ -289,69 +272,32 @@ Node Parser::relational_expr()
     for (;;) {
         if (next_is('<')) {
             node = new Node(binop('<', *node, *(new Node(shift_expr()))));
-            if (!isComputeBool) {
-                BoolLabel *B = new BoolLabel();
-                boolLabels_.push_back(B);
-                B->trueList_ = makelist(quadStk_.size());
-                B->falseList_ = makelist(quadStk_.size() + 1);
-                std::string E1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
-                std::string E2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
-                _GENQ3_("if", E2 + " < " + E1, "goto");
-                _GENQ1_("goto");
-            }
-            else {
-                computeBoolExpr("<");
-            }
-        }
 
+            if (!isComputeBool)
+                createRelOpQuad("<");
+            else 
+                computeBoolExpr("<");
+        }
         else if (next_is('>')) {
             node = new Node(binop('>', *node, *(new Node(shift_expr()))));
-            if (!isComputeBool) {
-                BoolLabel *B = new BoolLabel();
-                boolLabels_.push_back(B);
-                B->trueList_ = makelist(quadStk_.size());
-                B->falseList_ = makelist(quadStk_.size() + 1);
-                std::string E1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
-                std::string E2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
-                _GENQ3_("if", E2 + " > " + E1, "goto");
-                _GENQ1_("goto");
-            }
-            else {
+            if (!isComputeBool)
+                createRelOpQuad(">");
+            else 
                 computeBoolExpr(">");
-            }
         }
         else if (next_is(OP_LE)) {
             node = new Node(binop(OP_LE, *node, *(new Node(shift_expr()))));
-            if (!isComputeBool) {
-                BoolLabel *B = new BoolLabel();
-                boolLabels_.push_back(B);
-                B->trueList_ = makelist(quadStk_.size());
-                B->falseList_ = makelist(quadStk_.size() + 1);
-                std::string E1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
-                std::string E2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
-                _GENQ3_("if", E2 + " <= " + E1, "goto");
-                _GENQ1_("goto");
-            }
-            else {
+            if (!isComputeBool) 
+                createRelOpQuad("<=");
+            else 
                 computeBoolExpr("<=");
-            }
         }
-
         else if (next_is(OP_GE)) {
             node = new Node(binop(OP_GE, *node, *(new Node(shift_expr()))));
-            if (!isComputeBool) {
-                BoolLabel *B = new BoolLabel();
-                boolLabels_.push_back(B);
-                B->trueList_ = makelist(quadStk_.size());
-                B->falseList_ = makelist(quadStk_.size() + 1);
-                std::string E1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
-                std::string E2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
-                _GENQ3_("if", E2 + " >= " + E1, "goto");
-                _GENQ1_("goto");
-            }
-            else {
+            if (!isComputeBool)
+                createRelOpQuad(">=");
+            else 
                 computeBoolExpr(">=");
-            }
         }
         else
             return *node;

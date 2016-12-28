@@ -113,7 +113,7 @@ _end:
 Node Parser::funcDef()
 {
     int current_class = 0;                                                  // static ...
-    std::string funcName;                                                   // ��������
+    std::string funcName;
     std::vector<Node> params;
     __IN_SCOPE__(localenv, globalenv, newLabel("fun"));
 
@@ -590,30 +590,14 @@ std::string getReulst(std::string &v1, std::string &v2, const std::string &op)
 
     int r = 0;
 
-    if (op == "+") {
-        r = _var1 + _var2;
-    }
-    else if (op == "-") {
-        r = _var1 - _var2;
-    }
-    else if (op == "*") {
-        r = _var1 * _var2;
-    }
-    else if (op == "/") {
-        r = _var1 / _var2;
-    }
-    else if (op == "%") {
-        r = _var1 % _var2;
-    }
-    else if (op == "&") {
-        r = _var1 & _var2;
-    }
-    else if (op == "|") {
-        r = _var1 | _var2;
-    }
-    else if (op == "^") {
-        r = _var1 ^ _var2;
-    }
+    if (op == "+") r = _var1 + _var2;
+    else if (op == "-") r = _var1 - _var2;
+    else if (op == "*") r = _var1 * _var2;
+    else if (op == "/") r = _var1 / _var2;
+    else if (op == "%") r = _var1 % _var2;
+    else if (op == "&") r = _var1 & _var2;
+    else if (op == "|") r = _var1 | _var2;
+    else if (op == "^") r = _var1 ^ _var2;
 
     return std::to_string(r);
 }
@@ -681,6 +665,18 @@ void Parser::computeBoolExpr(const std::string &op)
         quad_arg_stk_.push_back("1");
     else
         quad_arg_stk_.push_back("0");
+}
+
+void Parser::createRelOpQuad(const std::string &op)
+{
+    BoolLabel *B = new BoolLabel();
+    boolLabels_.push_back(B);
+    B->trueList_ = makelist(quadStk_.size());
+    B->falseList_ = makelist(quadStk_.size() + 1);
+    std::string E1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+    std::string E2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+    _GENQ3_("if", E2 + " " + op + " " + E1, "goto");
+    _GENQ1_("goto");
 }
 
 // + - * / % & | ^ 

@@ -1,19 +1,13 @@
-#include <stdio.h>
+#include<stdio.h>
 
-#define MACRO_A 1
-#define MACRO_B 2
-
-#if MACRO_A && MACRO_B
-#define Hi "Hello~"
-#else 
-#define Hi "Hi~"
-#endif
-
-#undef MACRO_A
-#undef MACRO_B
-
-int main(void)
+int main() 
 {
-    char *s hi = Hi;
-    return 0;
+    for (float y = 1.5; y > -1.5; y -= 0.1) {
+        for (float x = -1.5; x < 1.5; x += 0.05) {
+            float a = x * x + y * y - 1;
+            a * a * a - x * x * y * y * y <= 0.0 ? putchar('*') : putchar(' ');
+        }
+        putchar('\n');
+	}
+	return 0;
 }

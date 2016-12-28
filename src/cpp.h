@@ -4,8 +4,8 @@
 #include <ctime>
 #include "zcc.h"
 
+
 class Date {
-#define __s(x) std::to_string(x)
 public:
     Date() { reset(); }
     Date(const Date &) = delete;
@@ -14,7 +14,9 @@ public:
 
     static std::string getDate() {
         Date date;
+#define __s(x) std::to_string(x)
         return __s(date.getYear()) + "-" + __s(date.getMouth()) + "-" + __s(date.getHour()) + "-" + __s(date.getMin()) + "-" + __s(date.getSec());
+#undef __s
     }
 
     inline int getYear() { reset(); return t->tm_year + 1900; }
@@ -29,6 +31,7 @@ private:
 
     inline void reset() { tt = time(NULL);t = localtime(&tt); }
 };
+
 
 /**
  * @class Macro
@@ -71,12 +74,50 @@ public:
      * @berif macro expansion
      */
     void expand(TokenSequence is, TokenSequence &os);
+
+    /**
+     * \ A quick overview of subst is that it walks through the input sequence, IS, building up an output sequence,
+     * \ OS, by handling each token from left to right. (The order that this operation takes is left to the
+     * \ implementation also, walking from left to right is more natural since the rest of the algorithm is constrained
+     * \ to this ordering.) Stringizing is easy, pasting requires trickier handling because the operation has a bunch
+     * \ of combinations. After the entire input sequence is finished, the updated hide set is applied to the output
+     * \ sequence, and that is the result of subst
+     */
     void subst(TokenSequence &is, const std::vector<std::string> &fp, const TokenSequence &ap, HideSet* hs, TokenSequence& os);
+    
+    /**
+     * @berif Paste last of left side with first of right side.
+     */
     void glue(TokenSequence &ls, TokenSequence &rs);
+
+    /**
+     * @berif Add to token sequence's hide sets.
+     */
     void hasadd(HideSet *hs, TokenSequence &ts);
+
+    /**
+     * @berif Given a macro-name token, ts returns the replacement token 
+     *        sequence from the macro's definiton.
+     */
     TokenSequence ts(const std::string &_macro_name);
+
+    /**
+     * @berif Given a macro-name token, fp returns the (ordered) list of formal
+     *        parameters from the macro's defintion.
+     */
     TokenSequence fp(const std::string &_macro_name);
+
+    /**
+     * @berif Given a token sequence and an index i, 'select' returns the i-th
+     *        token sequence using the comma tokens in the original token sequence
+     *        as delimiters.
+     */
     TokenSequence select(int i, const TokenSequence &ts);
+
+    /**
+     * @berif Given a token sequence, stringize returns a single string token
+     *        containing the concatenated spellings of tokens.
+     */
     TokenSequence stringize(const TokenSequence &ts);
     TokenSequence getAP(TokenSequence &is);
     int isInFP(const Token &t, const std::vector<std::string> &fp);

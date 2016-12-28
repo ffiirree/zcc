@@ -162,8 +162,6 @@ void Generate::generate(std::vector<std::string> &_q)
         Node r = parser->getGloEnv()->search(_q.at(0));
 
         if (r.kind == NODE_FUNC) {
-            //setLocEnv(r.funcName);                    // 作用域为当前函数
-
             currentFunc = r;
             func_decl(r);
             return;
@@ -525,17 +523,13 @@ std::string Generate::getReg(const std::string &_reg)
             universReg.at(i)._var = _var;
             _tem._reg = universReg.at(i)._reg;
 
-            //TempVar _pus = _tem;
-            //_stk_temp_var.pop_back();
-            //_stk_temp_var.push_back(_pus);
-
             gas_ins("movl", _reg, _tem._reg);
 
             return _reg;
         }
     }
 
-    // 调整失败
+    // failed
     return std::string();
 }
 
@@ -778,7 +772,4 @@ LocVar &Generate::searchLocvar(const std::string &name)
 {
     return locEnv->search(name);
 }
-
-
-
 
