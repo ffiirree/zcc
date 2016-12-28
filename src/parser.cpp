@@ -575,7 +575,7 @@ std::string Parser::newLabel(const std::string &_l)
 
 void Parser::pushQuadruple(const std::string &name)
 {
-    _stk_quad.push_back(name);
+    quad_arg_stk_.push_back(name);
 }
 
 void Parser::pushIncDec(const std::string &name)
@@ -621,39 +621,66 @@ std::string getReulst(std::string &v1, std::string &v2, const std::string &op)
 void Parser::createUnaryQuadruple(const std::string &op)
 {
     if (op == "++" || op == "--") {
-        _GENQ2_(op, _stk_quad.back());
+        _GENQ2_(op, quad_arg_stk_.back());
         return;
     }
 
     if ((op == "-U" || op == "+U")) {
 
-        std::string num = _stk_quad.back();
+        std::string num = quad_arg_stk_.back();
         for (size_t i = 0;i < float_const.size(); ++i) {
             if (num == float_const.at(i)) {
                 float_const.at(i - 1) = op.at(0) + float_const.at(i - 1);
                 return;
             }
         }
-        if (isNumber(_stk_quad.back())) {
-            _stk_quad.pop_back();
+        if (isNumber(quad_arg_stk_.back())) {
+            quad_arg_stk_.pop_back();
             num = "-" + num;
-            _stk_quad.push_back(num);
+            quad_arg_stk_.push_back(num);
             return;
         }
     }
 
-    if (op == "~" && isNumber(_stk_quad.back())) {
-        int _n = atoi(_stk_quad.back().c_str()); _stk_quad.pop_back();
+    if (op == "~" && isNumber(quad_arg_stk_.back())) {
+        int _n = atoi(quad_arg_stk_.back().c_str()); quad_arg_stk_.pop_back();
         _n = ~_n;
-        _stk_quad.push_back(std::to_string(_n));
+        quad_arg_stk_.push_back(std::to_string(_n));
         return;
     }
 
     std::string tempName = newLabel("uy");
-    _GENQ3_(op, _stk_quad.back(), tempName);
+    _GENQ3_(op, quad_arg_stk_.back(), tempName);
 
-    _stk_quad.pop_back();
-    _stk_quad.push_back(tempName);
+    quad_arg_stk_.pop_back();
+    quad_arg_stk_.push_back(tempName);
+}
+
+void Parser::computeBoolExpr(const std::string &op)
+{
+    if (quad_arg_stk_.size() < 2)
+        error("Compute " + op + " operand < 2.");
+
+    std::string var1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+    std::string var2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+
+    bool res = false;
+    int op1 = atoi(var2.c_str());
+    int op2 = atoi(var1.c_str());
+
+    if (op == ">") res = op1 > op2;
+    else if (op == "<")  res = op1 < op2;
+    else if (op == ">=") res = op1 >= op2;
+    else if (op == "<=") res = op1 <= op2;
+    else if (op == "==") res = op1 == op2;
+    else if (op == "!=") res = op1 != op2;
+    else if (op == "&&") res = op1 && op2;
+    else if (op == "||") res = op1 || op2;
+
+    if (res)
+        quad_arg_stk_.push_back("1");
+    else
+        quad_arg_stk_.push_back("0");
 }
 
 // + - * / % & | ^ 
@@ -663,21 +690,21 @@ void Parser::createQuadruple(const std::string &op)
     std::string _out_str = op;
 
     if (op == "=") {
-        std::string v1 = _stk_quad.back(); _stk_quad.pop_back();
-        std::string v2 = _stk_quad.back(); _stk_quad.pop_back();
+        std::string v1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+        std::string v2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
         _GENQ3_(op, v1, v2);
     }
     else if (op == "+f" || op == "-f" || op == "*f" || op == "/f") {
         std::string v1, v2;
 
-        v1 = _stk_quad.back(); _stk_quad.pop_back();
+        v1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
         if (isNumber(v1)) {
             float_const.push_back(v1);
             v1 = newLabel("f");
             float_const.push_back(v1);
             float_const.push_back("4f");
         }
-        v2 = _stk_quad.back(); _stk_quad.pop_back();
+        v2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
         if (isNumber(v2)) {
             float_const.push_back(v2);
             v2 = newLabel("f");
@@ -686,30 +713,30 @@ void Parser::createQuadruple(const std::string &op)
         }
 
         std::string tempName = newLabel("var");
-        _stk_quad.push_back(tempName);
+        quad_arg_stk_.push_back(tempName);
 
         _GENQ4_(op, v1, v2, tempName);
     }
     else if (op == ".=" || op == "[]=") {
-        std::string v1 = _stk_quad.back(); _stk_quad.pop_back();
-        std::string v2 = _stk_quad.back(); _stk_quad.pop_back();
-        std::string v3 = _stk_quad.back(); _stk_quad.pop_back();
+        std::string v1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+        std::string v2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+        std::string v3 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
 
         _GENQ4_(op, v1, v2, v3);
     }
     else {
         std::string v1, v2;
 
-        v1 = _stk_quad.back(); _stk_quad.pop_back();
-        v2 = _stk_quad.back(); _stk_quad.pop_back();
+        v1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+        v2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
 
         if (isNumber(v1) && isNumber(v2)) {
-            _stk_quad.push_back(getReulst(v1, v2, op));
+            quad_arg_stk_.push_back(getReulst(v1, v2, op));
             return;
         }
 
         std::string tempName = newLabel("var");
-        _stk_quad.push_back(tempName);
+        quad_arg_stk_.push_back(tempName);
         _GENQ4_(op, v1, v2, tempName);
     }
 }
@@ -718,17 +745,17 @@ void Parser::createQuadruple(const std::string &op)
 void Parser::createFuncQuad(std::vector<Node> &params)
 {
     for (size_t i = 0; i < params.size(); ++i) {
-        _GENQ2_("param", _stk_quad.back()); _stk_quad.pop_back();
+        _GENQ2_("param", quad_arg_stk_.back()); quad_arg_stk_.pop_back();
     }
 
     std::string func_name;
-    func_name = _stk_quad.back();
+    func_name = quad_arg_stk_.back();
 #ifdef _OVERLOAD_
     func_name = getOverLoadName(func_name, params);
 #endif // _OVERLOAD_
 
     Node fn = localenv->search(func_name);
-    _stk_quad.pop_back();
+    quad_arg_stk_.pop_back();
 
     for (size_t i = 0;i < fn.params.size(); ++i) {
         if (fn.params.at(i).type.getType() == ELLIPSIS) {
@@ -746,7 +773,7 @@ _skip_cheak_params_num:
     std::string ret_;
     if (fn.type.type != K_VOID || fn.type.retType != nullptr) {
         ret_ = newLabel("ret");
-        _stk_quad.push_back(ret_);
+        quad_arg_stk_.push_back(ret_);
         _GENQ4_("call", fn.name(), std::to_string(fn.params.size()), ret_);
     }
     else {

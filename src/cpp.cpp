@@ -343,9 +343,10 @@ Macro *Preprocessor::searchMacro(const std::string &_n)
 bool Preprocessor::deleteMacro(const std::string &_n)
 {
     for (auto iter = macros_.begin(); iter != macros_.end(); ++iter) {
-        if (_n == (*iter).name_)
+        if (_n == (*iter).name_) {
             macros_.erase(iter);
-        return true;
+            return true;
+        }  
     }
     return false;
 }
@@ -438,8 +439,16 @@ void Preprocessor::Define(TokenSequence &is)
             } while (t.getType() != T_NEWLINE);
         }
     }
-    if(!invalid_)
+    
+    if (!invalid_) {
+        for (auto &m : macros_) {
+            if (m.name_ == _macro.name_) {
+                m = _macro;
+                return;
+            }
+        }
         macros_.push_back(_macro);
+    }  
 }
 
 /**

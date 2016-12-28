@@ -31,33 +31,33 @@
  */
 class Env {
 public:
-	Env():Env(nullptr) {}
-	Env(Env *p) :pre_(p), nodes_() { }
+    Env() :Env(nullptr) {}
+    Env(Env *p) :pre_(p), nodes_() { }
     Env(const Env&) = delete;
     Env &operator=(const Env&) = delete;
     ~Env() = default;
 
-	void push_back(Node &n);
-	void pop_back() { nodes_.pop_back(); }
-	Node &back() { return nodes_.back(); }
-	Node &search(const std::string &key);
-   
+    void push_back(Node &n);
+    void pop_back() { nodes_.pop_back(); }
+    Node &back() { return nodes_.back(); }
+    Node &search(const std::string &key);
+
     void setFuncDef(Node &_def);
 
-	inline Env *pre() { return pre_; }
-	inline std::vector<Env *> getNext() { return next_; }
-	inline void setNext(Env *_n) { next_.push_back(_n); }
-	inline void setName(const std::string &_n) { name_ = _n; }
-	inline std::string getName() { return name_; }
-	size_t size() { return nodes_.size(); }
-	Node &at(size_t i) { return nodes_.at(i); }
-	int call_size_ = 0;
+    inline Env *pre() { return pre_; }
+    inline std::vector<Env *> getNext() { return next_; }
+    inline void setNext(Env *_n) { next_.push_back(_n); }
+    inline void setName(const std::string &_n) { name_ = _n; }
+    inline std::string getName() { return name_; }
+    size_t size() { return nodes_.size(); }
+    Node &at(size_t i) { return nodes_.at(i); }
+    int call_size_ = 0;
 
 private:
-	std::string name_;
-	Env *pre_;
-	std::vector<Env *> next_;
-	std::vector<Node> nodes_;
+    std::string name_;
+    Env *pre_;
+    std::vector<Env *> next_;
+    std::vector<Node> nodes_;
 };
 
 /**
@@ -65,57 +65,57 @@ private:
  */
 class Label {
 public:
-	Label() :Label(nullptr) {}
-	Label(Env *p): labels() { }
+    Label() :Label(nullptr) {}
+    Label(Env *p) : labels() { }
     Label(const Label&) = delete;
     Label &operator=(const Label&) = delete;
     ~Label() = default;
 
-	void push_back(const std::string &_l);
-	void push_back_un(const std::string &_l){
-		if (!_exist(_l)) {
-			labels.push_back(_l);
-			enLabels.push_back(false);
-		}
-	}
-	bool cheak();
+    void push_back(const std::string &_l);
+    void push_back_un(const std::string &_l) {
+        if (!_exist(_l)) {
+            labels.push_back(_l);
+            enLabels.push_back(false);
+        }
+    }
+    bool cheak();
 
 private:
-	bool _exist(const std::string &_l) {
-		for (size_t i = 0; i < labels.size(); ++i) {
-			if (_l == labels.at(i))
-				return true;
-		}
-		return false;
-	}
+    bool _exist(const std::string &_l) {
+        for (size_t i = 0; i < labels.size(); ++i) {
+            if (_l == labels.at(i))
+                return true;
+        }
+        return false;
+    }
 
-	std::vector<std::string> labels;
-	std::vector<bool> enLabels;
+    std::vector<std::string> labels;
+    std::vector<bool> enLabels;
 };
 
 /**
  * @berif BoolLabel
  */
-class BoolLabel{
+class BoolLabel {
 public:
-	BoolLabel() :true_(), false_() {}
+    BoolLabel() :true_(), false_() {}
     BoolLabel(BoolLabel *pre) : true_(), false_(), pre_(pre) {  }
-	BoolLabel(const BoolLabel &bl):
-        true_(bl.true_), 
-        false_(bl.false_), 
-        leaf_(bl.leaf_), 
-        trueList_(bl.trueList_), 
-        falseList_(bl.falseList_), 
+    BoolLabel(const BoolLabel &bl) :
+        true_(bl.true_),
+        false_(bl.false_),
+        leaf_(bl.leaf_),
+        trueList_(bl.trueList_),
+        falseList_(bl.falseList_),
         nextList_(bl.nextList_),
-        pre_(bl.pre_){
+        pre_(bl.pre_) {
     }
-    BoolLabel &operator=(const BoolLabel &bl) { 
+    BoolLabel &operator=(const BoolLabel &bl) {
         true_ = bl.true_;
-        false_ = bl.false_; 
+        false_ = bl.false_;
         leaf_ = bl.leaf_;
-        trueList_ = bl.trueList_; 
-        falseList_ = bl.falseList_; 
-        nextList_ = bl.nextList_; 
+        trueList_ = bl.trueList_;
+        falseList_ = bl.falseList_;
+        nextList_ = bl.nextList_;
         pre_ = bl.pre_;
         return *this;
     }
@@ -127,20 +127,20 @@ public:
     BoolLabel *pre_ = nullptr;
 
 
-	std::string true_;
-	std::string false_;
-	bool leaf_ = false;
+    std::string true_;
+    std::string false_;
+    bool leaf_ = false;
 };
 
 class StrCard {
 public:
-	StrCard() :_str(), _label(){}
-	StrCard(const std::string &_s, const std::string &_l) :_str(_s), _label(_l) { }
-	StrCard(const StrCard &bl) :_str(bl._str), _label(bl._label) {}
-	StrCard operator=(const StrCard &bl) { _str = bl._str; _label = bl._label; return *this; }
+    StrCard() :_str(), _label() {}
+    StrCard(const std::string &_s, const std::string &_l) :_str(_s), _label(_l) { }
+    StrCard(const StrCard &bl) :_str(bl._str), _label(bl._label) {}
+    StrCard operator=(const StrCard &bl) { _str = bl._str; _label = bl._label; return *this; }
 
-	std::string _str;
-	std::string _label;
+    std::string _str;
+    std::string _label;
 };
 
 /**
@@ -152,80 +152,81 @@ public:
 public:
     Parser() = default;
     Parser(TokenSequence &ts) :ts_(ts), quadStk_() { }
-	Parser(TokenSequence &ts, const std::string &_ofn) :ts_(ts), _of_name(_ofn + ".q"), quadStk_(){
-		globalenv = new Env(nullptr); 
+    Parser(TokenSequence &ts, const std::string &_ofn) :ts_(ts), _of_name(_ofn + ".q"), quadStk_() {
+        globalenv = new Env(nullptr);
         globalenv->setName(_of_name);
-		createQuadFile();
-		switch_case_label = newLabel("case");
+        createQuadFile();
+        switch_case_label = newLabel("case");
         trans_unit();
-	}
-	Parser(const Parser &p) = delete;
-	Parser &operator=(const Parser &p) = delete;
+    }
+    Parser(const Parser &p) = delete;
+    Parser &operator=(const Parser &p) = delete;
     ~Parser() = default;
 
-	std::vector<Node> trans_unit();
-	Env *getGloEnv() const { return globalenv; }
-	Env *getLocEnv() const { return localenv; }
-	std::vector<StrCard> getStrTbl() const { return const_string; }
-	std::string newLabel(const std::string &_l);
+    std::vector<Node> trans_unit();
+    Env *getGloEnv() const { return globalenv; }
+    Env *getLocEnv() const { return localenv; }
+    std::vector<StrCard> getStrTbl() const { return const_string; }
+    std::string newLabel(const std::string &_l);
     std::string getQuadrupleFileName() const { return _of_name; }
     inline std::vector<std::string> getFloatConst() const { return float_const; }
     std::string searchEnum(const std::string &key);
     bool compute_bool_expr();
-    Node expr(); 
+    Node expr();
 
 private:
     bool cheak_redefined(Env *_env, const std::string &_name);
-	Type conv2ptr(Type ty);
-	void createQuadFile();
-	void pushQuadruple(const std::string &name);
-	void pushIncDec(const std::string &name);
-	void createQuadruple(const std::string &op);
+    Type conv2ptr(Type ty);
+    void createQuadFile();
+    void pushQuadruple(const std::string &name);
+    void pushIncDec(const std::string &name);
+    void createQuadruple(const std::string &op);
     void createUnaryQuadruple(const std::string &op);
-	void createFuncQuad(std::vector<Node> &params);
-	void createIncDec();
-	std::string num2str(size_t num);
-	int str2int(std::string &str);
-	
+    void computeBoolExpr(const std::string &op);
+    void createFuncQuad(std::vector<Node> &params);
+    void createIncDec();
+    std::string num2str(size_t num);
+    int str2int(std::string &str);
 
-	bool next_is(int id);
-	void expect(int id);
-	bool is_keyword(const Token &t, int id);
-	bool is_type(const Token &t);
-	bool is_inttype(const Type &ty);
-	bool is_floattype(const Type &ty);
-	bool is_arithtype(const Type &ty);
-	Type get_type(const std::string &key);
-	int get_compound_assign_op(const Token &t);
-	std::string get_compound_assign_op_signal(const Token &t);
 
-	//
-	Node createFuncNode(const Type &ty, const std::string & funcName, std::vector<Node> params, Node *body);
-	Node createIntNode(const Token &t, int size, bool isch);
-	Node createIntNode(const Type &ty, int val);
-	Node createFloatNode(const Type &ty, double val);
-	Node createFloatNode(const Token &t);
-	Node createStrNode(const Token &t);
-	Node createCompoundStmtNode(std::vector<Node> &stmts);
-	Node createDeclNode(Node &var);
-	Node createDeclNode(Node &var, std::vector<Node> init);
-	Node createGLoVarNode(const Type &ty, const std::string &name);
-	Node createLocVarNode(const Type &ty, const std::string &name);
-	Node createFuncDeclParams(const Type &ty);
-	Node createFuncDecl(const Type &ty, const std::string & funcName, const std::vector<Node> &params);
-	Node createBinOpNode(const Type &ty, int kind, Node *left, Node *right);
-	Node createUnaryNode(int kind, const Type &ty, Node &node);
+    bool next_is(int id);
+    void expect(int id);
+    bool is_keyword(const Token &t, int id);
+    bool is_type(const Token &t);
+    bool is_inttype(const Type &ty);
+    bool is_floattype(const Type &ty);
+    bool is_arithtype(const Type &ty);
+    Type get_type(const std::string &key);
+    int get_compound_assign_op(const Token &t);
+    std::string get_compound_assign_op_signal(const Token &t);
 
-	Node createRetStmtNode(Node *n);
-	Node createJumpNode(const std::string &label);
+    //
+    Node createFuncNode(const Type &ty, const std::string & funcName, std::vector<Node> params, Node *body);
+    Node createIntNode(const Token &t, int size, bool isch);
+    Node createIntNode(const Type &ty, int val);
+    Node createFloatNode(const Type &ty, double val);
+    Node createFloatNode(const Token &t);
+    Node createStrNode(const Token &t);
+    Node createCompoundStmtNode(std::vector<Node> &stmts);
+    Node createDeclNode(Node &var);
+    Node createDeclNode(Node &var, std::vector<Node> init);
+    Node createGLoVarNode(const Type &ty, const std::string &name);
+    Node createLocVarNode(const Type &ty, const std::string &name);
+    Node createFuncDeclParams(const Type &ty);
+    Node createFuncDecl(const Type &ty, const std::string & funcName, const std::vector<Node> &params);
+    Node createBinOpNode(const Type &ty, int kind, Node *left, Node *right);
+    Node createUnaryNode(int kind, const Type &ty, Node &node);
 
-	Node createIfStmtNode(Node *cond, Node *then, Node *els);
+    Node createRetStmtNode(Node *n);
+    Node createJumpNode(const std::string &label);
 
-	//
-	bool isFuncDef();
-	Node funcDef();
-	std::vector<Node> param_list(int deal_type);
-	Node param_decl(int deal_type);
+    Node createIfStmtNode(Node *cond, Node *then, Node *els);
+
+    //
+    bool isFuncDef();
+    Node funcDef();
+    std::vector<Node> param_list(int deal_type);
+    Node param_decl(int deal_type);
 
 	/**
 	 * decl
@@ -366,8 +367,6 @@ private:
     std::map<std::string, std::string> enum_const;
 
 	std::string label_break;
-	std::vector<std::string> _stk_if_goto;
-	std::vector<std::string> _stk_if_goto_op;
 	std::vector<std::string> _stk_ctl_bg_l;
 	std::vector<std::string> _stk_ctl_end_l;
 
@@ -381,7 +380,7 @@ private:
      */
 	std::ofstream out;
 
-	std::vector<std::string> _stk_quad;
+	std::vector<std::string> quad_arg_stk_;
 	std::vector<std::string> _stk_incdec;
     std::map<std::string, Type> custom_type_tbl;
 

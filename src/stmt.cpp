@@ -167,7 +167,7 @@ Node Parser::switch_stmt()
     else if (r.kind == NODE_LOC_VAR || NODE_GLO_VAR)
         switch_expr = r.name();
     else
-        switch_expr = _stk_quad.back();
+        switch_expr = quad_arg_stk_.back();
     expect(')');
 
     expect('{');
@@ -264,7 +264,7 @@ Node Parser::return_stmt()
     Node *retval = new Node(expr_opt());
     expect(';');
 
-    _GENQ2_("ret", _stk_quad.back());
+    _GENQ2_("ret", quad_arg_stk_.back());
 
     return createRetStmtNode(retval);
 }

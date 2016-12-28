@@ -48,14 +48,14 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
                 list.push_back(createDeclNode(var, decl_init(ty)));
 
                 if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
-                    std::string _i2f = _stk_quad.back();
+                    std::string _i2f = quad_arg_stk_.back();
                     if (isNumber(_i2f)) {
-                        _stk_quad.pop_back();
+                        quad_arg_stk_.pop_back();
                         float_const.push_back(_i2f);
                         _i2f = newLabel("f");
                         float_const.push_back(_i2f);
                         float_const.push_back("4f");
-                        _stk_quad.push_back(_i2f);
+                        quad_arg_stk_.push_back(_i2f);
                     }
                 }
 
@@ -70,30 +70,30 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 
                         std::vector<std::string> arr_init;
                         for (int i = 0; i < var.type._all_len; ++i) {
-                            std::string init_val = _stk_quad.back();
+                            std::string init_val = quad_arg_stk_.back();
 
                             if (init_val != var.name()) {
                                 arr_init.push_back(init_val);
-                                _stk_quad.pop_back();
+                                quad_arg_stk_.pop_back();
                             }
                             else {
-                                _stk_quad.pop_back();
+                                quad_arg_stk_.pop_back();
                                 break;
                             }
                         }
                         if (!arr_init.empty())
                             for (size_t i = 0;i < arr_init.size(); ++i) {
-                                _stk_quad.push_back(arr_init.at(arr_init.size() - i - 1));
-                                _stk_quad.push_back(var.name());
-                                _stk_quad.push_back(std::to_string(i * var.type.size_));
+                                quad_arg_stk_.push_back(arr_init.at(arr_init.size() - i - 1));
+                                quad_arg_stk_.push_back(var.name());
+                                quad_arg_stk_.push_back(std::to_string(i * var.type.size_));
                                 createQuadruple("[]=");
                             }
                     }
                     else if (var.type.type == K_STRUCT || var.type.type == K_TYPEDEF) {
                         int _off = 0;
                         for (size_t i = ty.fields.size(); i > 0; --i) {
-                            _stk_quad.push_back(var.name());
-                            _stk_quad.push_back(std::to_string(ty.fields.at(i - 1)._off));
+                            quad_arg_stk_.push_back(var.name());
+                            quad_arg_stk_.push_back(std::to_string(ty.fields.at(i - 1)._off));
                             createQuadruple(".=");
                         }
                     }
@@ -265,7 +265,7 @@ int Parser::array_int_expr()
     Node r = com_conditional_expr();
 
     if (r.kind == NODE_INT || r.kind == NODE_CHAR || r.kind == NODE_INT) {
-        _stk_quad.pop_back();
+        quad_arg_stk_.pop_back();
         return r.int_val;
     }
     return 0;

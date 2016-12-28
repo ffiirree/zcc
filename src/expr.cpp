@@ -15,7 +15,7 @@ Node Parser::bool_expr()
 
     if (isCondition && boolLabels_.empty()) {
         BoolLabel *B = new BoolLabel();
-        std::string val = _stk_quad.back(); _stk_quad.pop_back();
+        std::string val = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
         
         B->trueList_ = makelist(quadStk_.size());
         B->falseList_ = makelist(quadStk_.size() + 1);
@@ -33,10 +33,10 @@ bool Parser::compute_bool_expr()
     isComputeBool = true;
     bool_expr();
 
-    if (_stk_quad.size() > 1)
+    if (quad_arg_stk_.size() > 1)
         error("bool_expr not res.");
-    if (_stk_quad.size() == 1) {
-        if (atoi(_stk_quad.back().c_str()) != 0)
+    if (quad_arg_stk_.size() == 1) {
+        if (atoi(quad_arg_stk_.back().c_str()) != 0)
             r = true;
     }
 
@@ -78,10 +78,10 @@ Node Parser::assignment_expr()
             _temp = binop(cop, *node, value);
             pushQuadruple((*node).name());
             std::string _1, _2;
-            _1 = _stk_quad.back(); _stk_quad.pop_back();
-            _2 = _stk_quad.back(); _stk_quad.pop_back();
-            _stk_quad.push_back(_1);
-            _stk_quad.push_back(_2);
+            _1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+            _2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+            quad_arg_stk_.push_back(_1);
+            quad_arg_stk_.push_back(_2);
 
             if (_temp.type.type == K_DOUBLE || _temp.type.type == K_FLOAT) {
                 createQuadruple(get_compound_assign_op_signal(t) + "f");
@@ -156,35 +156,24 @@ Node Parser::logical_or_expr()
 {
     Node *node = new Node(logical_and_expr(true));
     while (next_is(OP_LOGOR)) {
+        if (!isComputeBool) {
+            BoolLabel *B = new BoolLabel();
+            _GENQL_(newLabel("B"));
+            BoolLabel *B1 = boolLabels_.back(); boolLabels_.pop_back();
+            backpatch(B1->falseList_, quadStk_.size());
+            node = new Node(createBinOpNode(Type(K_INT, 4, false), OP_LOGOR, node, new Node(logical_and_expr(false))));
 
-        BoolLabel *B = new BoolLabel();
+            BoolLabel *B2 = boolLabels_.back(); boolLabels_.pop_back();
 
-        _GENQL_(newLabel("B"));
-        BoolLabel *B1 = boolLabels_.back(); boolLabels_.pop_back();
-        backpatch(B1->falseList_, quadStk_.size());
-        node = new Node(createBinOpNode(Type(K_INT, 4, false), OP_LOGOR, node, new Node(logical_and_expr(false))));
-        BoolLabel *B2 = boolLabels_.back(); boolLabels_.pop_back();
+            boolLabels_.push_back(B);
 
-        boolLabels_.push_back(B);
-
-        B->trueList_ = merge(B1->trueList_, B2->trueList_);
-        B->falseList_ = B2->falseList_;
-       
-        if (isComputeBool) {
-            if (_stk_quad.size() < 2)
-                error("|| operand < 2.");
-
-            std::string v1 = _stk_quad.back(); _stk_quad.pop_back();
-            std::string v2 = _stk_quad.back(); _stk_quad.pop_back();
-            int op1 = atoi(v1.c_str());
-            int op2 = atoi(v2.c_str());
-            if (op1 || op2)
-                _stk_quad.push_back("1");
-            else
-                _stk_quad.push_back("0");
+            B->trueList_ = merge(B1->trueList_, B2->trueList_);
+            B->falseList_ = B2->falseList_;
         }
-        else
-            _stk_if_goto_op.push_back("||");
+        else if (isComputeBool) {
+            node = new Node(createBinOpNode(Type(K_INT, 4, false), OP_LOGOR, node, new Node(logical_and_expr(false))));
+            computeBoolExpr("||");
+        }
     }
 
     return *node;
@@ -195,34 +184,25 @@ Node Parser::logical_and_expr(bool isLeft)
     Node *node = new Node(bit_or_expr());
 
     while (next_is(OP_LOGAND)) {
-        BoolLabel *B = new BoolLabel();
+        if (!isComputeBool) {
+            BoolLabel *B = new BoolLabel();
 
-        _GENQL_(newLabel("B"));
-        BoolLabel *B1 = boolLabels_.back(); boolLabels_.pop_back();
-        backpatch(B1->trueList_, quadStk_.size());
-        node = new Node(createBinOpNode(Type(K_INT, 4, false), OP_LOGAND, node, new Node(bit_or_expr())));
-        BoolLabel *B2 = boolLabels_.back(); boolLabels_.pop_back();
+            _GENQL_(newLabel("B"));
+            BoolLabel *B1 = boolLabels_.back(); boolLabels_.pop_back();
+            backpatch(B1->trueList_, quadStk_.size());
+            node = new Node(createBinOpNode(Type(K_INT, 4, false), OP_LOGAND, node, new Node(bit_or_expr())));
+            BoolLabel *B2 = boolLabels_.back(); boolLabels_.pop_back();
 
-        boolLabels_.push_back(B);
+            boolLabels_.push_back(B);
 
-        B->trueList_ = B2->trueList_;
-        B->falseList_ = merge(B1->falseList_, B2->falseList_);
-
-        if (isComputeBool) {
-            if (_stk_quad.size() < 2)
-                error("|| operand < 2.");
-
-            std::string v1 = _stk_quad.back(); _stk_quad.pop_back();
-            std::string v2 = _stk_quad.back(); _stk_quad.pop_back();
-            int op1 = atoi(v1.c_str());
-            int op2 = atoi(v2.c_str());
-            if (op1 && op2)
-                _stk_quad.push_back("1");
-            else
-                _stk_quad.push_back("0");
+            B->trueList_ = B2->trueList_;
+            B->falseList_ = merge(B1->falseList_, B2->falseList_);
         }
-        else
-            _stk_if_goto_op.push_back("&&");
+        else if (isComputeBool) {
+            node = new Node(createBinOpNode(Type(K_INT, 4, false), OP_LOGAND, node, new Node(bit_or_expr())));
+
+            computeBoolExpr("&&");
+        }
     }
 
 
@@ -265,29 +245,35 @@ Node Parser::equal_expr()
 
     if (next_is(OP_EQ)) {
         r = binop(OP_EQ, *node, *(new Node(equal_expr())));
-        {
+
+        if(!isComputeBool){
             BoolLabel *B = new BoolLabel();
             boolLabels_.push_back(B);
             B->trueList_ = makelist(quadStk_.size());
             B->falseList_ = makelist(quadStk_.size() + 1);
-            std::string E1 = _stk_quad.back(); _stk_quad.pop_back();
-            std::string E2 = _stk_quad.back(); _stk_quad.pop_back();
+            std::string E1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+            std::string E2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
             _GENQ3_("if", E2 + " == " + E1, "goto");
             _GENQ1_("goto");
         }
-
+        else {
+            computeBoolExpr("==");
+        }
     }
     else if (next_is(OP_NE)) {
         r = binop(OP_NE, *node, *(new Node(equal_expr())));
-        {
+        if (!isComputeBool) {
             BoolLabel *B = new BoolLabel();
             boolLabels_.push_back(B);
             B->trueList_ = makelist(quadStk_.size());
             B->falseList_ = makelist(quadStk_.size() + 1);
-            std::string E1 = _stk_quad.back(); _stk_quad.pop_back();
-            std::string E2 = _stk_quad.back(); _stk_quad.pop_back();
+            std::string E1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+            std::string E2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
             _GENQ3_("if", E2 + " != " + E1, "goto");
             _GENQ1_("goto");
+        }
+        else {
+            computeBoolExpr("!=");
         }
     }
     else {
@@ -303,62 +289,69 @@ Node Parser::relational_expr()
     for (;;) {
         if (next_is('<')) {
             node = new Node(binop('<', *node, *(new Node(shift_expr()))));
-            {
+            if (!isComputeBool) {
                 BoolLabel *B = new BoolLabel();
                 boolLabels_.push_back(B);
                 B->trueList_ = makelist(quadStk_.size());
                 B->falseList_ = makelist(quadStk_.size() + 1);
-                std::string E1 = _stk_quad.back(); _stk_quad.pop_back();
-                std::string E2 = _stk_quad.back(); _stk_quad.pop_back();
+                std::string E1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+                std::string E2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
                 _GENQ3_("if", E2 + " < " + E1, "goto");
                 _GENQ1_("goto");
             }
-            //createBoolGenQuadruple("<");
+            else {
+                computeBoolExpr("<");
+            }
         }
 
         else if (next_is('>')) {
             node = new Node(binop('>', *node, *(new Node(shift_expr()))));
-            {
+            if (!isComputeBool) {
                 BoolLabel *B = new BoolLabel();
                 boolLabels_.push_back(B);
                 B->trueList_ = makelist(quadStk_.size());
                 B->falseList_ = makelist(quadStk_.size() + 1);
-                std::string E1 = _stk_quad.back(); _stk_quad.pop_back();
-                std::string E2 = _stk_quad.back(); _stk_quad.pop_back();
+                std::string E1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+                std::string E2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
                 _GENQ3_("if", E2 + " > " + E1, "goto");
                 _GENQ1_("goto");
             }
-            //createBoolGenQuadruple(">");
+            else {
+                computeBoolExpr(">");
+            }
         }
         else if (next_is(OP_LE)) {
             node = new Node(binop(OP_LE, *node, *(new Node(shift_expr()))));
-            {
+            if (!isComputeBool) {
                 BoolLabel *B = new BoolLabel();
                 boolLabels_.push_back(B);
                 B->trueList_ = makelist(quadStk_.size());
                 B->falseList_ = makelist(quadStk_.size() + 1);
-                std::string E1 = _stk_quad.back(); _stk_quad.pop_back();
-                std::string E2 = _stk_quad.back(); _stk_quad.pop_back();
+                std::string E1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+                std::string E2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
                 _GENQ3_("if", E2 + " <= " + E1, "goto");
                 _GENQ1_("goto");
             }
-
-            //createBoolGenQuadruple("<=");
+            else {
+                computeBoolExpr("<=");
+            }
         }
 
         else if (next_is(OP_GE)) {
             node = new Node(binop(OP_GE, *node, *(new Node(shift_expr()))));
-            {
+            if (!isComputeBool) {
                 BoolLabel *B = new BoolLabel();
                 boolLabels_.push_back(B);
                 B->trueList_ = makelist(quadStk_.size());
                 B->falseList_ = makelist(quadStk_.size() + 1);
-                std::string E1 = _stk_quad.back(); _stk_quad.pop_back();
-                std::string E2 = _stk_quad.back(); _stk_quad.pop_back();
+                std::string E1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
+                std::string E2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
                 _GENQ3_("if", E2 + " >= " + E1, "goto");
                 _GENQ1_("goto");
             }
-            //createBoolGenQuadruple(">=");
+            else {
+                computeBoolExpr(">=");
+            }
         }
         else
             return *node;
@@ -571,7 +564,7 @@ Node Parser::postfix_expr_tail(Node &node)
                 expect(']');
                 counter++;
                 for (size_t i = counter; i < node.type.len.size(); ++i) {
-                    _stk_quad.push_back(std::to_string(node.type.len.at(i)));
+                    quad_arg_stk_.push_back(std::to_string(node.type.len.at(i)));
                     createQuadruple("*");
                 }
                 if (counter > 1) {
@@ -594,7 +587,7 @@ Node Parser::postfix_expr_tail(Node &node)
                 if (t.getSval() == node.type.fields.at(i)._name)
                     _off = node.type.fields.at(i)._off;
             }
-            _stk_quad.push_back(std::to_string(_off));
+            quad_arg_stk_.push_back(std::to_string(_off));
 
             if (ts_.peek().getId() == '=')
                 createQuadruple(".&");
@@ -608,7 +601,7 @@ Node Parser::postfix_expr_tail(Node &node)
                 if (t.getSval() == node.type.ptr->fields.at(i)._name)
                     _off = node.type.ptr->fields.at(i)._off;
             }
-            _stk_quad.push_back(std::to_string(_off));
+            quad_arg_stk_.push_back(std::to_string(_off));
 
             if (ts_.peek().getId() == '=')
                 createQuadruple("->&");
@@ -621,7 +614,7 @@ Node Parser::postfix_expr_tail(Node &node)
             ensure_lvalue(node);
             int op = is_keyword(tok, OP_INC) ? OP_POST_INC : OP_POST_DEC;
 
-            pushIncDec(_stk_quad.back());
+            pushIncDec(quad_arg_stk_.back());
             if (op == OP_POST_DEC)
                 pushIncDec("--");
             else

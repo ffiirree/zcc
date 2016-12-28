@@ -1,16 +1,13 @@
 #include <stdio.h>
 
 #define MACRO_A 1
-#define MACRO_B 2
+#define MACRO_B 0
 
 #if MACRO_A && MACRO_B
-#define Hi "Hello~"
+#define Hi "Hi"
 #else 
-#define Hi "Hi~"
+#define Hi "Hello"
 #endif
-
-#undef MACRO_A
-#undef MACRO_B
 
 int main(void)
 {
