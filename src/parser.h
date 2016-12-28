@@ -232,82 +232,82 @@ private:
 	/**
 	 * decl
 	 */
-	void declaration(std::vector<Node> &list, bool isGlo);
-	void skip_parenthesis(int *count);
-	Type declarator(Type *ty, std::string &name, std::vector<Node> &params, int deal_type);
-	Type decl_spec_opt(int *sclass);
-	Type decl_specifiers(int *rsclass);
-	Type direct_decl_tail(Type *retty, std::vector<Node> &params, int deal_type);
-	Type func_param_list(Type *basetype, std::vector<Node> &params, int deal_type);
-	void decl_array(Type *ty);
-	int array_int_expr();
-	Node func_body(Type &functype, std::string, std::vector<Node> &params);
-	std::vector<Node> initializer(Type &ty);
-	std::vector<Node> decl_init(Type &ty);
-	void init_list(std::vector<Node> &r, Type &ty, int off, bool designated);
-	Node designator_list();
-	void decl_or_stmt(std::vector<Node> &list);
+    void declaration(std::vector<Node> &list, bool isGlo);
+    void skip_parenthesis(int *count);
+    Type declarator(Type *ty, std::string &name, std::vector<Node> &params, int deal_type);
+    Type decl_spec_opt(int *sclass);
+    Type decl_specifiers(int *rsclass);
+    Type direct_decl_tail(Type *retty, std::vector<Node> &params, int deal_type);
+    Type func_param_list(Type *basetype, std::vector<Node> &params, int deal_type);
+    void decl_array(Type *ty);
+    int array_int_expr();
+    Node func_body(Type &functype, std::string, std::vector<Node> &params);
+    std::vector<Node> initializer(Type &ty);
+    std::vector<Node> decl_init(Type &ty);
+    void init_list(std::vector<Node> &r, Type &ty, int off, bool designated);
+    Node designator_list();
+    void decl_or_stmt(std::vector<Node> &list);
     Type struct_def();
     Type enum_def();
 
 	/**
 	 * stmt
 	 */
-	Node statement();
-	Node compound_stmt();
-	Node if_stmt();
-	Node while_stmt();
-	Node switch_stmt();
-	Node for_stmt();
-	Node do_stmt();
-	Node goto_stmt();
-	Node continue_stmt();
-	Node return_stmt();
-	Node case_stmt();
-	Node default_stmt();
-	Node break_stmt();
+    Node statement();
+    Node compound_stmt();
+    Node if_stmt();
+    Node while_stmt();
+    Node switch_stmt();
+    Node for_stmt();
+    Node do_stmt();
+    Node goto_stmt();
+    Node continue_stmt();
+    Node return_stmt();
+    Node case_stmt();
+    Node default_stmt();
+    Node break_stmt();
 
 	/**
 	 * expr
 	 */
-	//Node expr();
+     //Node expr();
     Node bool_expr();
-	Node expr_opt();
-	Node comma_expr();
-	Node assignment_expr();
+    Node expr_opt();
+    Node comma_expr();
+    Node assignment_expr();
     Node conditional_expr(Node *node);
     Node com_conditional_expr();
-	Node logical_or_expr();
-	Node logical_and_expr(bool isLeft);
-	Node bit_or_expr();
-	Node bit_xor_expr();
-	Node bit_and_expr();
-	Node equal_expr();
-	Node relational_expr();
-	Node shift_expr();
-	Node add_expr();
-	Node multi_expr();
-	Node cast_expr();
-	Node unary_expr();
-	Node postfix_expr();
-	Node postfix_expr_tail(Node &node);
-	std::vector<Node> argument_expr_list();
-	Node primary_expr();
+    Node logical_or_expr();
+    Node logical_and_expr(bool isLeft);
+    Node bit_or_expr();
+    Node bit_xor_expr();
+    Node bit_and_expr();
+    Node equal_expr();
+    Node relational_expr();
+    Node shift_expr();
+    Node add_expr();
+    Node multi_expr();
+    Node cast_expr();
+    Node unary_expr();
+    Node postfix_expr();
+    Node postfix_expr_tail(Node &node);
+    std::vector<Node> argument_expr_list();
+    Node primary_expr();
 
-	Node var_or_func(Token &t);
-	Node binop(int op, Node &lhs, Node &rhs);
+    Node var_or_func(Token &t);
+    Node binop(int op, Node &lhs, Node &rhs);
 
-	Node sizeof_operand();
-	Node unary_incdec(int ty);
-	Node unary_addr();
-	Node unary_deref(Token &t);
-	Node unary_minus();
-	Node unary_bitnot(Token &t);
-	Node unary_lognot();
+    Node sizeof_operand();
+    Node unary_incdec(int ty);
+    Node unary_addr();
+    Node unary_deref(Token &t);
+    Node unary_minus();
+    Node unary_bitnot(Token &t);
+    Node unary_lognot();
 
-	Node wrap(Type &t, Node &node);
+    Node wrap(Type &t, Node &node);
     Type getCustomType(const std::string &_n);
-    
+
 
 #ifdef _OVERLOAD_
     std::string getOverLoadName(const std::string &name, std::vector<Node> &_p);
@@ -363,26 +363,26 @@ private:
      * \ float 
      * \ enum
      */
-	std::vector<StrCard> const_string;
+    std::vector<StrCard> const_string;
     std::vector<std::string> float_const;
     std::map<std::string, std::string> enum_const;
 
-	std::string label_break;
-	std::vector<std::string> _stk_ctl_bg_l;
-	std::vector<std::string> _stk_ctl_end_l;
+    std::string label_break;
+    std::vector<std::string> _stk_ctl_bg_l;
+    std::vector<std::string> _stk_ctl_end_l;
 
-	std::string switch_case_label;
-	std::string switch_expr;
+    std::string switch_case_label;
+    std::string switch_expr;
 
     std::string _of_name;
 
     /**
      * \ Output stream for quad file.
      */
-	std::ofstream out;
+    std::ofstream out;
 
-	std::vector<std::string> quad_arg_stk_;
-	std::vector<std::string> _stk_incdec;
+    std::vector<std::string> quad_arg_stk_;
+    std::vector<std::string> _stk_incdec;
     std::map<std::string, Type> custom_type_tbl;
 
     bool isCondition = false;
