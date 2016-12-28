@@ -229,9 +229,9 @@ private:
     std::vector<Node> param_list(int deal_type);
     Node param_decl(int deal_type);
 
-	/**
-	 * decl
-	 */
+    /**
+     * \ declaration
+     */
     void declaration(std::vector<Node> &list, bool isGlo);
     void skip_parenthesis(int *count);
     Type declarator(Type *ty, std::string &name, std::vector<Node> &params, int deal_type);
@@ -250,9 +250,9 @@ private:
     Type struct_def();
     Type enum_def();
 
-	/**
-	 * stmt
-	 */
+    /**
+     * \ statement
+     */
     Node statement();
     Node compound_stmt();
     Node if_stmt();
@@ -267,10 +267,9 @@ private:
     Node default_stmt();
     Node break_stmt();
 
-	/**
-	 * expr
-	 */
-     //Node expr();
+    /**
+     * \ expression
+     */
     Node bool_expr();
     Node expr_opt();
     Node comma_expr();
