@@ -2,9 +2,9 @@
 #include "parser.h"
 #include "error.h"
 
-std::vector<Node> Parser::trans_unit()
+std::vector<Node*> Parser::trans_unit()
 {
-    std::vector<Node> list;
+    std::vector<Node*> list;
     for (;;) {
         Token t = ts_.peek();
 
@@ -24,13 +24,13 @@ std::vector<Node> Parser::trans_unit()
 }
 
 void Env::push_back(Node &n) {
-    if (n.kind == NODE_FUNC) {
+    if (n.kind_ == NODE_FUNC) {
         Node r = search(n.name());
-        if (r.kind == NODE_FUNC_DECL) {
+        if (r.kind_ == NODE_FUNC_DECL) {
             setFuncDef(n);
             return;
         }
-        else if (r.kind != 0) {
+        else if (r.kind_ != 0) {
             error("Function redefined: " + n.name());
         }
     }
@@ -38,22 +38,22 @@ void Env::push_back(Node &n) {
     nodes_.push_back(n);
 }
 
-void Label::push_back(const std::string &_l) {
+void Label::push_back(const std::string &label) {
 
     for (size_t i = 0; i < labels.size(); ++i) {
-        if (_l == labels.at(i)) {
+        if (label == labels.at(i)) {
             if (enLabels.at(i) == false) {
                 enLabels.at(i) = true;
                 return;
             }
             else {
-                error(_l + " is existed");
+                error(label + " is existed");
                 return;
             }
         }
     }
 
-    labels.push_back(_l);
+    labels.push_back(label);
     enLabels.push_back(true);
 }
 
@@ -110,11 +110,11 @@ _end:
     return true;
 }
 
-Node Parser::funcDef()
+Node *Parser::funcDef()
 {
     int current_class = 0;                                                  // static ...
     std::string funcName;
-    std::vector<Node> params;
+    std::vector<Node*> params;
     __IN_SCOPE__(localenv, globalenv, newLabel("fun"));
 
     Type *retty = new Type(decl_spec_opt(&current_class));
@@ -135,7 +135,7 @@ Node Parser::funcDef()
 
     functype.setStatic(current_class == K_STATIC);
     expect('{');
-    Node r = func_body(functype, funcName, params);
+    Node *r = func_body(functype, funcName, params);
 
     __OUT_SCOPE__(localenv);
     _GENQ1_(".end");
@@ -144,7 +144,7 @@ Node Parser::funcDef()
 
 
 
-Type Parser::func_param_list(Type *retty, std::vector<Node> &params, int deal_type)
+Type Parser::func_param_list(Type *retty, std::vector<Node *> &params, int deal_type)
 {
     // foo()
     if (next_is(')')) {
@@ -164,9 +164,9 @@ Type Parser::func_param_list(Type *retty, std::vector<Node> &params, int deal_ty
     }
 }
 
-std::vector<Node> Parser::param_list(int decl_type)
+std::vector<Node *> Parser::param_list(int decl_type)
 {
-    std::vector<Node> list;
+    std::vector<Node*> list;
     list.push_back(param_decl(decl_type));
 
     while (next_is(','))
@@ -174,12 +174,12 @@ std::vector<Node> Parser::param_list(int decl_type)
     return list;
 }
 
-Node Parser::param_decl(int decl_type)
+Node *Parser::param_decl(int decl_type)
 {
     int sclass = 0;
     Type basety = decl_specifiers(&sclass);
     std::string paramname;
-    std::vector<Node> list;
+    std::vector<Node *> list;
     Type type = declarator(&basety, paramname, list, NODE_PARAMS);
 
     if (decl_type == NODE_FUNC_DECL)
@@ -189,10 +189,10 @@ Node Parser::param_decl(int decl_type)
 }
 
 
-Node Parser::func_body(Type &functype, std::string name, std::vector<Node> &params)
+Node *Parser::func_body(Type &functype, std::string name, std::vector<Node *> &params)
 {
-    Node body = compound_stmt();
-    return  createFuncNode(functype, name, params, &body);
+    Node *body = compound_stmt();
+    return  createFuncNode(functype, name, params, body);
 }
 
 
@@ -283,180 +283,179 @@ bool Parser::next_is(int id)
     return false;
 }
 
-Node Parser::createIntNode(const Token &t, int size, bool isch)
+Node *Parser::createIntNode(const Token &t, int size, bool isch)
 {
     if (isch) {
-        Node node(NODE_CHAR);
+        Node *node = new Node(NODE_CHAR);
 
-        node.int_val = t.getCh();
-        node.type = Type(K_CHAR, size, false);
+        node->int_val = t.getCh();
+        node->type_ = Type(K_CHAR, size, false);
         return node;
     }
     else {
-        Node node(NODE_INT);
+        Node *node = new Node(NODE_INT);
 
-        node.int_val = atoi(t.getSval().c_str());
-        node.type = Type(K_INT, size, false);
+        node->int_val = atoi(t.getSval().c_str());
+        node->type_ = Type(K_INT, size, false);
         return node;
     }
 }
 
 
-Node Parser::createIntNode(const Type &ty, int val)
+Node *Parser::createIntNode(const Type &ty, int val)
 {
-    Node node(NODE_INT);
-    node.int_val = val;
-    node.type = ty;
+    Node *node = new Node(NODE_INT);
+    node->int_val = val;
+    node->type_ = ty;
     return node;
 }
 
-Node Parser::createFloatNode(const Type &ty, double val)
+Node *Parser::createFloatNode(const Type &ty, double val)
 {
-    Node node(NODE_DOUBLE);
+    Node *node = new Node(NODE_DOUBLE);
 
-    node.type = ty;
-    node.float_val = val;
-    return node;
-}
-
-
-Node Parser::createFloatNode(const Token &t)
-{
-    Node node(NODE_DOUBLE);
-
-    node.sval = t.getSval();
-    node.type = Type(K_FLOAT, 4, false);
-    return node;
-}
-
-Node Parser::createStrNode(const Token &t)
-{
-    Node node(NODE_STRING);
-
-    node.sval = t.getSval();
-    return node;
-}
-
-Node Parser::createFuncNode(const Type &ty, const std::string & funcName, std::vector<Node> params, Node *body)
-{
-    Node node(NODE_FUNC, ty);
-    node.setFuncName(funcName);
-    node.params = params;
-    node.body = body;
-
-    globalenv->push_back(node);
-
-    return node;
-}
-
-Node Parser::createFuncDecl(const Type &ty, const std::string & funcName, const std::vector<Node> &params)
-{
-    Node node(NODE_FUNC_DECL, ty);
-    node.setFuncName(funcName);
-    node.params = params;
-
-    globalenv->push_back(node);
-
+    node->type_ = ty;
+    node->float_val = val;
     return node;
 }
 
 
-
-Node Parser::createCompoundStmtNode(std::vector<Node> &stmts)
+Node *Parser::createFloatNode(const Token &t)
 {
-    Node node(NODE_COMP_STMT);
-    node.stmts = stmts;
+    Node *node = new Node(NODE_DOUBLE);
+
+    node->sval_ = t.getSval();
+    node->type_ = Type(K_FLOAT, 4, false);
     return node;
 }
-Node Parser::createDeclNode(Node &var)
+
+Node *Parser::createStrNode(const Token &t)
 {
-    Node node(NODE_DECL);
-    node.decl_var = &var;
+    Node *node = new Node(NODE_STRING);
+    node->sval_ = t.getSval();
     return node;
 }
-Node Parser::createDeclNode(Node &var, std::vector<Node> init)
-{
-    Node node(NODE_DECL);
-    node.decl_var = &var;
-    node.decl_init = init;
 
-    if (var.kind == NODE_GLO_VAR) {
-        globalenv->back().lvarinit = init;
+Node *Parser::createFuncNode(const Type &ty, const std::string & funcName, std::vector<Node *> params, Node *body)
+{
+    Node *node = new Node(NODE_FUNC, ty);
+    node->setFuncName(funcName);
+    node->params = params;
+    node->body = body;
+
+    globalenv->push_back(*node);
+
+    return node;
+}
+
+Node *Parser::createFuncDecl(const Type &ty, const std::string & funcName, const std::vector<Node *> &params)
+{
+    Node *node = new Node(NODE_FUNC_DECL, ty);
+    node->setFuncName(funcName);
+    node->params = params;
+
+    globalenv->push_back(*node);
+
+    return node;
+}
+
+
+
+Node *Parser::createCompoundStmtNode(std::vector<Node *> &stmts)
+{
+    Node *node = new Node(NODE_COMP_STMT);
+    node->stmts = stmts;
+    return node;
+}
+Node *Parser::createDeclNode(Node &var)
+{
+    Node *node = new Node(NODE_DECL);
+    node->decl_var = &var;
+    return node;
+}
+Node *Parser::createDeclNode(Node &var, std::vector<Node *> init)
+{
+    Node *node = new Node(NODE_DECL);
+    node->decl_var = &var;
+    node->decl_init = init;
+
+    if (var.kind_ == NODE_GLO_VAR) {
+        globalenv->back().lvarinit_ = init;
     }
-    else if (var.kind == NODE_LOC_VAR) {
-        localenv->back().lvarinit = init;
+    else if (var.kind_ == NODE_LOC_VAR) {
+        localenv->back().lvarinit_ = init;
     }
 
     return node;
 }
 
-Node Parser::createGLoVarNode(const Type &ty, const std::string &name)
+Node *Parser::createGLoVarNode(const Type &ty, const std::string &name)
 {
-    Node r(NODE_GLO_VAR, ty);
-    r.setVarName(name);
+    Node *r = new Node(NODE_GLO_VAR, ty);
+    r->setVarName(name);
 
-    if (cheak_redefined(globalenv, r.name()))
-        errorp(ts_.getPos(), "redefined global variable : " + r.name());
+    if (cheak_redefined(globalenv, r->name()))
+        errorp(ts_.getPos(), "redefined global variable : " + r->name());
 
-    globalenv->push_back(r);
+    globalenv->push_back(*r);
 
     return r;
 }
-Node Parser::createLocVarNode(const Type &ty, const std::string &name)
+Node *Parser::createLocVarNode(const Type &ty, const std::string &name)
 {
-    Node r(NODE_LOC_VAR, ty);
-    r.setVarName(name);
+    Node *r = new Node(NODE_LOC_VAR, ty);
+    r->setVarName(name);
 
-    if (cheak_redefined(localenv, r.name()))
-        errorp(ts_.getPos(), "redefined local variable : " + r.name());
+    if (cheak_redefined(localenv, r->name()))
+        errorp(ts_.getPos(), "redefined local variable : " + r->name());
 
-    localenv->push_back(r);
+    localenv->push_back(*r);
     return r;
 }
 
-Node Parser::createFuncDeclParams(const Type &ty)
+Node *Parser::createFuncDeclParams(const Type &ty)
 {
-    Node r(NODE_DECL_PARAM, ty);
+    Node *r = new Node(NODE_DECL_PARAM, ty);
     return r;
 }
 
-Node Parser::createBinOpNode(const Type &ty, int kind, Node *left, Node *right)
+Node *Parser::createBinOpNode(const Type &ty, int kind, Node *left, Node *right)
 {
-    Node r(kind, ty);
-    r.left = left;
-    r.right = right;
+    Node *r = new Node(kind, ty);
+    r->left_ = left;
+    r->right_ = right;
     return r;
 }
 
-Node Parser::createUnaryNode(int kind, const Type &ty, Node &node)
+Node *Parser::createUnaryNode(int kind, const Type &ty, Node *node)
 {
-    Node r(kind);
-    r.type = ty;
-    r.operand = &node;
+    Node *r = new Node(kind);
+    r->type_ = ty;
+    r->operand_ = node;
     return r;
 }
 
-Node Parser::createRetStmtNode(Node *n)
+Node *Parser::createRetStmtNode(Node *n)
 {
-    Node r(NODE_RETURN);
-    r.retval = n;
+    Node *r = new Node(NODE_RETURN);
+    r->retval = n;
     return r;
 }
 
-Node Parser::createJumpNode(const std::string &label)
+Node *Parser::createJumpNode(const std::string &label)
 {
-    Node r(NODE_GOTO);
-    r.label = label;
-    r.newLabel = label;
+    Node *r = new Node(NODE_GOTO);
+    r->label = label;
+    r->newLabel = label;
     return r;
 }
 
-Node Parser::createIfStmtNode(Node *cond, Node *then, Node *els)
+Node *Parser::createIfStmtNode(Node *cond, Node *then, Node *els)
 {
-    Node r(NODE_IF_STMT);
-    r.cond = cond;
-    r.then = then;
-    r.els = els;
+    Node *r = new Node(NODE_IF_STMT);
+    r->cond = cond;
+    r->then = then;
+    r->els = els;
     return r;
 }
 
@@ -738,7 +737,7 @@ void Parser::createQuadruple(const std::string &op)
 }
 
 
-void Parser::createFuncQuad(std::vector<Node> &params)
+void Parser::createFuncQuad(std::vector<Node *> &params)
 {
     for (size_t i = 0; i < params.size(); ++i) {
         _GENQ2_("param", quad_arg_stk_.back()); quad_arg_stk_.pop_back();
@@ -754,20 +753,20 @@ void Parser::createFuncQuad(std::vector<Node> &params)
     quad_arg_stk_.pop_back();
 
     for (size_t i = 0;i < fn.params.size(); ++i) {
-        if (fn.params.at(i).type.getType() == ELLIPSIS) {
+        if (fn.params.at(i)->type_.getType() == ELLIPSIS) {
             goto _skip_cheak_params_num;
         }
     }
-    if ((fn.kind != NODE_FUNC && fn.kind != NODE_FUNC_DECL) || (fn.params.size() != params.size()))
+    if ((fn.kind_ != NODE_FUNC && fn.kind_ != NODE_FUNC_DECL) || (fn.params.size() != params.size()))
         errorp(ts_.getPos(), "func call parms size error.");
 
 _skip_cheak_params_num:
     for (size_t i = 0; i < fn.params.size(); ++i) {
-        localenv->call_size_ += fn.params.at(i).type.size_;
+        localenv->call_size_ += fn.params.at(i)->type_.size_;
     }
 
     std::string ret_;
-    if (fn.type.type != K_VOID || fn.type.retType != nullptr) {
+    if (fn.type_.type != K_VOID || fn.type_.retType != nullptr) {
         ret_ = newLabel("ret");
         quad_arg_stk_.push_back(ret_);
         _GENQ4_("call", fn.name(), std::to_string(fn.params.size()), ret_);

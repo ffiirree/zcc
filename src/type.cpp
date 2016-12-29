@@ -73,25 +73,25 @@ void Type::coping(const Type &t)
     is_struct = t.is_struct;
 }
 
-inline void Node::copying(const Node &n)
+void Node::copying(const Node &n)
 {
-    kind = n.kind;
-    type = n.type;
+    kind_ = n.kind_;
+    type_ = n.type_;
 
     int_val = n.int_val;
 
     float_val = n.float_val;
 
-    sval = n.sval;
+    sval_ = n.sval_;
 
     varName = n.varName;
-    _off = n._off;
-    lvarinit = n.lvarinit;
+    off_ = n.off_;
+    lvarinit_ = n.lvarinit_;
 
 
-    left = n.left;
-    right = n.right;
-    operand = n.operand;
+    left_ = n.left_;
+    right_ = n.right_;
+    operand_ = n.operand_;
 
     funcName = n.funcName;
     params = n.params;

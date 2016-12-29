@@ -243,7 +243,7 @@ public:
     Type(int ty) :type(ty) {}
     Type(int ty, int _s, std::vector<int> _l) :type(ty), _all_len(_s), len(_l) {}
     Type(int ty, int s, bool isunsig) :type(ty), size_(s), isUnsig(isunsig), len(0), fields(), params() { }
-    Type(int ty, Type *ret, std::vector<Node> _params) : type(ty), retType(ret), params(_params) { }
+    Type(int ty, Type *ret, std::vector<Node*> _params) : type(ty), retType(ret), params(_params) { }
 
     Type(const Type &t) { coping(t); }
     Type &operator=(const Type &t) { coping(t); return *this; }
@@ -277,7 +277,7 @@ public:
 
     //function
     Type *retType = nullptr;
-    std::vector<Node> params;
+    std::vector<Node*> params;
 
 private:
     void coping(const Type &t);
@@ -325,22 +325,22 @@ class Node;
 class Node {
 public:
     Node() : Node(NODE_NULL) { }
-    Node(int k) :kind(k) { }
-    Node(int k, const Type &ty) :kind(k), type(ty) { }
-    Node(int k, const Type &ty, long val) :kind(k), type(ty), int_val(val) { }
-    Node(int k, const Type &ty, double val) :kind(k), type(ty), float_val(val) { }
+    Node(int k) :kind_(k) { }
+    Node(int k, const Type &ty) :kind_(k), type_(ty) { }
+    Node(int k, const Type &ty, long val) :kind_(k), type_(ty), int_val(val) { }
+    Node(int k, const Type &ty, double val) :kind_(k), type_(ty), float_val(val) { }
 
     Node(const Node &n) { copying(n); }
     Node &operator=(const Node &n) { copying(n); return *this; }
     ~Node() = default;
 
-    inline int getKind() const { return kind; }
-    inline Type getType() const { return type; }
-    inline void setType(Type ty) { type = ty; }
+    inline int getKind() const { return kind_; }
+    inline Type getType() const { return type_; }
+    inline void setType(Type ty) { type_ = ty; }
 
     std::string name() const {
-        if (kind == NODE_GLO_VAR || kind == NODE_LOC_VAR) return varName;
-        if (kind == NODE_FUNC || kind == NODE_FUNC_DECL) return funcName;
+        if (kind_ == NODE_GLO_VAR || kind_ == NODE_LOC_VAR) return varName;
+        if (kind_ == NODE_FUNC || kind_ == NODE_FUNC_DECL) return funcName;
 
         return std::string();
     }
@@ -360,8 +360,8 @@ public:
     }
 
 public:
-    int kind = NODE_NULL;
-    Type type;
+    int kind_ = NODE_NULL;
+    Type type_;
 
 	/**
      * \ Char short int long
@@ -376,37 +376,37 @@ public:
 	/**
      * \ string
      */
-    std::string sval;
+    std::string sval_;
 
 	/**
      * \ Local/global variable
      */
     // private: std::string varName;
-    int _off = 0;
-    std::vector<Node> lvarinit;
+    int off_ = 0;
+    std::vector<Node*> lvarinit_;
 
 	/**
      * \ 
      */
-    Node *left = nullptr;
-    Node *right = nullptr;
+    Node *left_ = nullptr;
+    Node *right_ = nullptr;
 
 	/**
      * \ unary op
      */
-    Node *operand = nullptr;
+    Node *operand_ = nullptr;
 
 	/**
      * \function define and function declartion
      */
     // private: std::string funcName;
-    std::vector<Node> params;
+    std::vector<Node*> params;
     Node *body = nullptr;
 
 
 	// declartion
     Node *decl_var = nullptr;
-    std::vector<Node> decl_init;
+    std::vector<Node*> decl_init;
 
 	// Initializer
     Node *init_val = nullptr;
@@ -425,7 +425,7 @@ public:
     Node *retval = nullptr;
 
     // Compound statement
-    std::vector<Node> stmts;
+    std::vector<Node *> stmts;
 private:
     void copying(const Node &n);
     std::string funcName;

@@ -24,13 +24,13 @@ int Generate::gas_flo_load(const std::string &name, bool isChange)
     }
     else  if (isLocVar(name)) {
         Node var = searchLocvar(name);
-        if (var.kind == NODE_GLO_VAR) {
-            gas_tab(gas_fld(var.type.size_, var.type.type) + "\t" + var.name());
-            return var.type.type;
+        if (var.kind_ == NODE_GLO_VAR) {
+            gas_tab(gas_fld(var.type_.size_, var.type_.type) + "\t" + var.name());
+            return var.type_.type;
         }
-        else if (var.kind == NODE_LOC_VAR) {
-            gas_tab(gas_fld(var.type.size_, var.type.type) + "\t" + loc_var_val(var._off));
-            return var.type.type;
+        else if (var.kind_ == NODE_LOC_VAR) {
+            gas_tab(gas_fld(var.type_.size_, var.type_.type) + "\t" + loc_var_val(var.off_));
+            return var.type_.type;
         }
     }
     else {
@@ -48,16 +48,16 @@ Type Generate::gas_fstp(const std::string &name)
 
     if (isLocVar(name)) {
         var = searchLocvar(name);
-        _size = var.type.size_;
-        _des = loc_var_val(var._off);
+        _size = var.type_.size_;
+        _des = loc_var_val(var.off_);
     }
     else {
         var = gloEnv->search(name);
-        _size = var.type.size_;
+        _size = var.type_.size_;
         _des = var.name();
     }
 
-    switch (var.type.type)
+    switch (var.type_.type)
     {
     case K_CHAR:    _ins = "fistps"; break;
     case K_SHORT:   _ins = "fistps"; break;
@@ -151,10 +151,10 @@ void Generate::gas_def_arr(Node &n, bool is_fir)
     gas(n.name() + ":");
 
     size_t i = 0;
-    for (; i < n.lvarinit.size(); ++i) {
-        out << getTypeString(n.type) << n.lvarinit.at(i).int_val << std::endl;
+    for (; i < n.lvarinit_.size(); ++i) {
+        out << getTypeString(n.type_) << n.lvarinit_.at(i)->int_val << std::endl;
     }
-    out << "\t.space\t" << (n.type._all_len - i) * n.type.size_ << std::endl;
+    out << "\t.space\t" << (n.type_._all_len - i) * n.type_.size_ << std::endl;
 }
 
 void Generate::gas_custom(Node &n, bool is_fir)
@@ -164,12 +164,12 @@ void Generate::gas_custom(Node &n, bool is_fir)
     gas(n.name() + ":");
 
     int _initsize = 0;
-    for (size_t i = 0; i < n.lvarinit.size(); ++i) {
-        out << getTypeString(*n.type.fields.at(i)._type) << n.lvarinit.at(i).int_val << std::endl;
-        _initsize += n.type.fields.at(i)._type->size_;
+    for (size_t i = 0; i < n.lvarinit_.size(); ++i) {
+        out << getTypeString(*n.type_.fields.at(i)._type) << n.lvarinit_.at(i)->int_val << std::endl;
+        _initsize += n.type_.fields.at(i)._type->size_;
     }
-    if (_initsize < n.type.size_)
-        out << "\t.space\t" << n.type.size_ - _initsize << std::endl;
+    if (_initsize < n.type_.size_)
+        out << "\t.space\t" << n.type_.size_ - _initsize << std::endl;
 }
 
 Type Generate::gas_load(const std::string &_q, const std::string &_reg)
@@ -189,20 +189,20 @@ Type Generate::gas_load(const std::string &_q, const std::string &_reg)
     Node var;
     if (isLocVar(_q)) {
         var = searchLocvar(_q);
-        if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
+        if (var.type_.type == K_FLOAT || var.type_.type == K_DOUBLE) {
             gas_flo_load(_q, false);
             clearRegTemp(_q);
-            return Type(var.type.type, var.type.size_, var.type.isUnsig);
+            return Type(var.type_.type, var.type_.size_, var.type_.isUnsig);
         }
-        else if (var.kind == NODE_GLO_VAR) {
-            gas_ins(movXXl(var.type.size_, var.type.isUnsig), var.name(), _reg);
+        else if (var.kind_ == NODE_GLO_VAR) {
+            gas_ins(movXXl(var.type_.size_, var.type_.isUnsig), var.name(), _reg);
             setReg(_reg, _q);
-            return Type(var.type.type, var.type.size_, var.type.isUnsig);
+            return Type(var.type_.type, var.type_.size_, var.type_.isUnsig);
         }
-        else if (var.kind == NODE_LOC_VAR) {
-            gas_ins(movXXl(var.type.size_, var.type.isUnsig), loc_var_val(var._off), _reg);
+        else if (var.kind_ == NODE_LOC_VAR) {
+            gas_ins(movXXl(var.type_.size_, var.type_.isUnsig), loc_var_val(var.off_), _reg);
             setReg(_reg, _q);
-            return Type(var.type.type, var.type.size_, var.type.isUnsig);
+            return Type(var.type_.type, var.type_.size_, var.type_.isUnsig);
         }
     }
 
@@ -365,9 +365,9 @@ void Generate::shift_op(std::vector<std::string> &_q, const std::string &op)
 
 Type Generate::getStructFieldType(Node &var, std::string &_off)
 {
-    for (size_t i = 0; i < var.type.fields.size(); ++i) {
-        if (_off == std::to_string(var.type.fields.at(i)._off)) {
-            return *(var.type.fields.at(i)._type);
+    for (size_t i = 0; i < var.type_.fields.size(); ++i) {
+        if (_off == std::to_string(var.type_.fields.at(i)._off)) {
+            return *(var.type_.fields.at(i)._type);
         }
     }
     error(var.name() + " do not have this field");
@@ -376,7 +376,7 @@ Type Generate::getStructFieldType(Node &var, std::string &_off)
 
 Type Generate::getPtrType(Node &var)
 {
-    return *(var.type.ptr);
+    return *(var.type_.ptr);
 }
 
 

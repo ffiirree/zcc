@@ -163,7 +163,7 @@ public:
     Parser &operator=(const Parser &p) = delete;
     ~Parser() = default;
 
-    std::vector<Node> trans_unit();
+    std::vector<Node *> trans_unit();
     Env *getGloEnv() const { return globalenv; }
     Env *getLocEnv() const { return localenv; }
     std::vector<StrCard> getStrTbl() const { return const_string; }
@@ -172,7 +172,7 @@ public:
     inline std::vector<std::string> getFloatConst() const { return float_const; }
     std::string searchEnum(const std::string &key);
     bool compute_bool_expr();
-    Node expr();
+    Node *expression();
 
 private:
     bool cheak_redefined(Env *_env, const std::string &_name);
@@ -183,7 +183,7 @@ private:
     void createQuadruple(const std::string &op);
     void createUnaryQuadruple(const std::string &op);
     void computeBoolExpr(const std::string &op);
-    void createFuncQuad(std::vector<Node> &params);
+    void createFuncQuad(std::vector<Node*> &params);
     void createIncDec();
     void createRelOpQuad(const std::string &op);
     std::string num2str(size_t num);
@@ -202,109 +202,109 @@ private:
     std::string get_compound_assign_op_signal(const Token &t);
 
     //
-    Node createFuncNode(const Type &ty, const std::string & funcName, std::vector<Node> params, Node *body);
-    Node createIntNode(const Token &t, int size, bool isch);
-    Node createIntNode(const Type &ty, int val);
-    Node createFloatNode(const Type &ty, double val);
-    Node createFloatNode(const Token &t);
-    Node createStrNode(const Token &t);
-    Node createCompoundStmtNode(std::vector<Node> &stmts);
-    Node createDeclNode(Node &var);
-    Node createDeclNode(Node &var, std::vector<Node> init);
-    Node createGLoVarNode(const Type &ty, const std::string &name);
-    Node createLocVarNode(const Type &ty, const std::string &name);
-    Node createFuncDeclParams(const Type &ty);
-    Node createFuncDecl(const Type &ty, const std::string & funcName, const std::vector<Node> &params);
-    Node createBinOpNode(const Type &ty, int kind, Node *left, Node *right);
-    Node createUnaryNode(int kind, const Type &ty, Node &node);
+    Node *createFuncNode(const Type &ty, const std::string & funcName, std::vector<Node*> params, Node *body);
+    Node *createIntNode(const Token &t, int size, bool isch);
+    Node *createIntNode(const Type &ty, int val);
+    Node *createFloatNode(const Type &ty, double val);
+    Node *createFloatNode(const Token &t);
+    Node *createStrNode(const Token &t);
+    Node *createCompoundStmtNode(std::vector<Node*> &stmts);
+    Node *createDeclNode(Node &var);
+    Node *createDeclNode(Node &var, std::vector<Node *> init);
+    Node *createGLoVarNode(const Type &ty, const std::string &name);
+    Node *createLocVarNode(const Type &ty, const std::string &name);
+    Node *createFuncDeclParams(const Type &ty);
+    Node *createFuncDecl(const Type &ty, const std::string & funcName, const std::vector<Node *> &params);
+    Node *createBinOpNode(const Type &ty, int kind, Node *left, Node *right);
+    Node *createUnaryNode(int kind, const Type &ty, Node *node);
 
-    Node createRetStmtNode(Node *n);
-    Node createJumpNode(const std::string &label);
+    Node *createRetStmtNode(Node *n);
+    Node *createJumpNode(const std::string &label);
 
-    Node createIfStmtNode(Node *cond, Node *then, Node *els);
+    Node *createIfStmtNode(Node *cond, Node *then, Node *els);
 
     //
     bool isFuncDef();
-    Node funcDef();
-    std::vector<Node> param_list(int deal_type);
-    Node param_decl(int deal_type);
+    Node *funcDef();
+    std::vector<Node*> param_list(int deal_type);
+    Node *param_decl(int deal_type);
 
     /**
      * \ declaration
      */
-    void declaration(std::vector<Node> &list, bool isGlo);
+    void declaration(std::vector<Node *> &list, bool isGlo);
     void skip_parenthesis(int *count);
-    Type declarator(Type *ty, std::string &name, std::vector<Node> &params, int deal_type);
+    Type declarator(Type *ty, std::string &name, std::vector<Node*> &params, int deal_type);
     Type decl_spec_opt(int *sclass);
     Type decl_specifiers(int *rsclass);
-    Type direct_decl_tail(Type *retty, std::vector<Node> &params, int deal_type);
-    Type func_param_list(Type *basetype, std::vector<Node> &params, int deal_type);
+    Type direct_decl_tail(Type *retty, std::vector<Node*> &params, int deal_type);
+    Type func_param_list(Type *basetype, std::vector<Node*> &params, int deal_type);
     void decl_array(Type *ty);
     int array_int_expr();
-    Node func_body(Type &functype, std::string, std::vector<Node> &params);
-    std::vector<Node> initializer(Type &ty);
-    std::vector<Node> decl_init(Type &ty);
-    void init_list(std::vector<Node> &r, Type &ty, int off, bool designated);
-    Node designator_list();
-    void decl_or_stmt(std::vector<Node> &list);
+    Node *func_body(Type &functype, std::string, std::vector<Node*> &params);
+    std::vector<Node*> initializer(Type &ty);
+    std::vector<Node*> decl_init(Type &ty);
+    void init_list(std::vector<Node*> &r, Type &ty, int off, bool designated);
+    Node *designator_list();
+    void decl_or_stmt(std::vector<Node*> &list);
     Type struct_def();
     Type enum_def();
 
     /**
      * \ statement
      */
-    Node statement();
-    Node compound_stmt();
-    Node if_stmt();
-    Node while_stmt();
-    Node switch_stmt();
-    Node for_stmt();
-    Node do_stmt();
-    Node goto_stmt();
-    Node continue_stmt();
-    Node return_stmt();
-    Node case_stmt();
-    Node default_stmt();
-    Node break_stmt();
+    Node *statement();
+    Node *compound_stmt();
+    Node *if_stmt();
+    Node *while_stmt();
+    Node *switch_stmt();
+    Node *for_stmt();
+    Node *do_stmt();
+    Node *goto_stmt();
+    Node *continue_stmt();
+    Node *return_stmt();
+    Node *case_stmt();
+    Node *default_stmt();
+    Node *break_stmt();
 
     /**
      * \ expression
      */
-    Node bool_expr();
-    Node expr_opt();
-    Node comma_expr();
-    Node assignment_expr();
-    Node conditional_expr(Node *node);
-    Node com_conditional_expr();
-    Node logical_or_expr();
-    Node logical_and_expr(bool isLeft);
-    Node bit_or_expr();
-    Node bit_xor_expr();
-    Node bit_and_expr();
-    Node equal_expr();
-    Node relational_expr();
-    Node shift_expr();
-    Node add_expr();
-    Node multi_expr();
-    Node cast_expr();
-    Node unary_expr();
-    Node postfix_expr();
-    Node postfix_expr_tail(Node &node);
-    std::vector<Node> argument_expr_list();
-    Node primary_expr();
+    Node *bool_expr();
+    Node *expr_opt();
+    Node *comma_expr();
+    Node *assignment_expr();
+    Node *conditional_expr(Node *node);
+    Node *com_conditional_expr();
+    Node *logical_or_expr();
+    Node *logical_and_expr(bool isLeft);
+    Node *bit_or_expr();
+    Node *bit_xor_expr();
+    Node *bit_and_expr();
+    Node *equal_expr();
+    Node *relational_expr();
+    Node *shift_expr();
+    Node *add_expr();
+    Node *multi_expr();
+    Node *cast_expr();
+    Node *unary_expr();
+    Node *postfix_expr();
+    Node *postfix_expr_tail(Node *node);
+    std::vector<Node*> argument_expr_list();
+    Node *primary_expr();
 
-    Node var_or_func(Token &t);
-    Node binop(int op, Node &lhs, Node &rhs);
+    Node *var_or_func(Token &t);
+    Node *binop(int op, Node *lhs, Node *rhs);
 
-    Node sizeof_operand();
-    Node unary_incdec(int ty);
-    Node unary_addr();
-    Node unary_deref(Token &t);
-    Node unary_minus();
-    Node unary_bitnot(Token &t);
-    Node unary_lognot();
+    Node *sizeof_operand();
+    Node *unary_incdec(int ty);
+    Node *unary_addr();
+    Node *unary_deref(Token &t);
+    Node *unary_minus();
+    Node *unary_bitnot(Token &t);
+    Node *unary_lognot();
 
-    Node wrap(Type &t, Node &node);
+    Node *wrap(Type &t, Node *node);
     Type getCustomType(const std::string &_n);
 
 
@@ -351,10 +351,10 @@ private:
      * \ globalenv: Always point to global scope.
      * \ localenv: Always point to current scope.
      */
-	Env *globalenv = nullptr;
-	Env *localenv = nullptr;
+    Env *globalenv = nullptr;
+    Env *localenv = nullptr;
 
-	Label labels;
+    Label labels;
 
     /**
      * @berif constant
@@ -393,21 +393,21 @@ private:
  */
 inline bool isNumber(const std::string &str)
 {
-	if (str.empty())
-		return false;
+    if (str.empty())
+        return false;
 
-	if (!((str.at(0) >= '0' && str.at(0) <= '9')
-		|| (str.at(0) == '-' || str.at(0) == '+')))
-		return false;
+    if (!((str.at(0) >= '0' && str.at(0) <= '9')
+        || (str.at(0) == '-' || str.at(0) == '+')))
+        return false;
 
-	bool _has_dot = false;
-	for (size_t i = 1; i < str.size();++i) {
-		if (!((str.at(i) >= '0' && str.at(i) <= '9') || (str.at(i) == '.' && _has_dot == false)))
-			return false;
-		if (str.at(i) == '.')
-			_has_dot = true;
-	}
-	return true;
+    bool _has_dot = false;
+    for (size_t i = 1; i < str.size();++i) {
+        if (!((str.at(i) >= '0' && str.at(i) <= '9') || (str.at(i) == '.' && _has_dot == false)))
+            return false;
+        if (str.at(i) == '.')
+            _has_dot = true;
+    }
+    return true;
 }
 
 #endif // !_ZCC_PARSER_H

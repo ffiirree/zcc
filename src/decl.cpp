@@ -1,7 +1,7 @@
 #include "parser.h"
 #include "error.h"
 
-void Parser::declaration(std::vector<Node> &list, bool isGlo)
+void Parser::declaration(std::vector<Node *> &list, bool isGlo)
 {
     int sclass = 0;
     Type baseType = decl_spec_opt(&sclass);
@@ -10,7 +10,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 
     for (;;) {
         std::string name;
-        std::vector<Node> params;
+        std::vector<Node *> params;
 
         Type ty = declarator(&baseType, name, params, DECL_BODY);
         ty.setStatic(sclass == K_STATIC);
@@ -30,7 +30,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
             createFuncDecl(baseType, name, params);
         }
         else {
-            Node var;
+            Node *var;
             if (isGlo) {
                 var = createGLoVarNode(ty, name);
             }
@@ -45,9 +45,9 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
             }
 
             if (next_is('=')) {
-                list.push_back(createDeclNode(var, decl_init(ty)));
+                list.push_back(createDeclNode(*var, decl_init(ty)));
 
-                if (var.type.type == K_FLOAT || var.type.type == K_DOUBLE) {
+                if (var->type_.type == K_FLOAT || var->type_.type == K_DOUBLE) {
                     std::string _i2f = quad_arg_stk_.back();
                     if (isNumber(_i2f)) {
                         quad_arg_stk_.pop_back();
@@ -61,18 +61,18 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 
 
                 if (!isGlo) {
-                    if (var.type.type == K_FLOAT)
+                    if (var->type_.type == K_FLOAT)
                         createQuadruple("=f");
-                    else if (var.type.type == K_DOUBLE)
+                    else if (var->type_.type == K_DOUBLE)
                         createQuadruple("=d");
-                    else if (var.type.type == ARRAY) {
+                    else if (var->type_.type == ARRAY) {
                         int _off = 0;
 
                         std::vector<std::string> arr_init;
-                        for (int i = 0; i < var.type._all_len; ++i) {
+                        for (int i = 0; i < var->type_._all_len; ++i) {
                             std::string init_val = quad_arg_stk_.back();
 
-                            if (init_val != var.name()) {
+                            if (init_val != var->name()) {
                                 arr_init.push_back(init_val);
                                 quad_arg_stk_.pop_back();
                             }
@@ -84,15 +84,15 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
                         if (!arr_init.empty())
                             for (size_t i = 0;i < arr_init.size(); ++i) {
                                 quad_arg_stk_.push_back(arr_init.at(arr_init.size() - i - 1));
-                                quad_arg_stk_.push_back(var.name());
-                                quad_arg_stk_.push_back(std::to_string(i * var.type.size_));
+                                quad_arg_stk_.push_back(var->name());
+                                quad_arg_stk_.push_back(std::to_string(i * var->type_.size_));
                                 createQuadruple("[]=");
                             }
                     }
-                    else if (var.type.type == K_STRUCT || var.type.type == K_TYPEDEF) {
+                    else if (var->type_.type == K_STRUCT || var->type_.type == K_TYPEDEF) {
                         int _off = 0;
                         for (size_t i = ty.fields.size(); i > 0; --i) {
-                            quad_arg_stk_.push_back(var.name());
+                            quad_arg_stk_.push_back(var->name());
                             quad_arg_stk_.push_back(std::to_string(ty.fields.at(i - 1)._off));
                             createQuadruple(".=");
                         }
@@ -103,7 +103,7 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 
             }
             else if (sclass != K_EXTERN && ty.getType() != NODE_FUNC) {
-                list.push_back(createDeclNode(var));
+                list.push_back(createDeclNode(*var));
             }
         }
         if (next_is(';')) {
@@ -116,9 +116,9 @@ void Parser::declaration(std::vector<Node> &list, bool isGlo)
 }
 
 //initializer
-std::vector<Node> Parser::decl_init(Type &ty)
+std::vector<Node *> Parser::decl_init(Type &ty)
 {
-    std::vector<Node> list;
+    std::vector<Node*> list;
     if (is_keyword(ts_.peek(), '{') || ty.getType() == T_STRING) {
         init_list(list, ty, 0, false);
     }
@@ -129,10 +129,10 @@ std::vector<Node> Parser::decl_init(Type &ty)
 }
 
 
-void  Parser::init_list(std::vector<Node> &r, Type &ty, int off, bool designated)
+void  Parser::init_list(std::vector<Node *> &r, Type &ty, int off, bool designated)
 {
     expect('{');
-    std::vector<Node> list;
+    std::vector<Node *> list;
     do {
         if (is_keyword(ts_.peek(), '[') || is_keyword(ts_.peek(), '.')) {
             r.push_back(designator_list());
@@ -146,23 +146,23 @@ void  Parser::init_list(std::vector<Node> &r, Type &ty, int off, bool designated
     expect('}');
 }
 
-Node Parser::designator_list()
+Node *Parser::designator_list()
 {
     if (next_is('[')) {
-        Node r = com_conditional_expr();
+        Node *r = com_conditional_expr();
         expect(']');
         return r;
     }
     else if (next_is('.')) {
-        Node r;
+        Node *r;
         Token t = ts_.next();
         if (t.getId() == T_IDENTIFIER)
-            r = localenv->search(t.getSval());
-        if (r.getKind() == 0)
+            *r = localenv->search(t.getSval());
+        if (r->getKind() == 0)
             errorp(ts_.getPos(), "init list error");
         return r;
     }
-    return Node();                       // for warning 
+    return nullptr;                       // for warning 
 }
 
 
@@ -191,7 +191,7 @@ Type Parser::conv2ptr(Type ty)
     return r;
 }
 
-Type Parser::declarator(Type *ty, std::string &name, std::vector<Node> &params, int deal_type)
+Type Parser::declarator(Type *ty, std::string &name, std::vector<Node *> &params, int deal_type)
 {
     if (next_is('*')) {
         return declarator(new Type(conv2ptr(*ty)), name, params, deal_type);
@@ -224,7 +224,7 @@ Type Parser::decl_spec_opt(int *sclass)
     return Type(K_INT, 4, false);
 }
 
-Type Parser::direct_decl_tail(Type *retty, std::vector<Node> &params, int decl_type)
+Type Parser::direct_decl_tail(Type *retty, std::vector<Node *> &params, int decl_type)
 {
     if (next_is('[')) {
         decl_array(retty);
@@ -259,11 +259,13 @@ void Parser::decl_array(Type *ty)
 
 int Parser::array_int_expr()
 {
-    Node r = com_conditional_expr();
+    Node *r = com_conditional_expr();
 
-    if (r.kind == NODE_INT || r.kind == NODE_CHAR || r.kind == NODE_INT) {
+    if (!r) return 0;
+
+    if (r->kind_ == NODE_INT || r->kind_ == NODE_CHAR || r->kind_ == NODE_INT) {
         quad_arg_stk_.pop_back();
-        return r.int_val;
+        return r->int_val;
     }
     return 0;
 }
@@ -369,9 +371,9 @@ _end:
 }
 
 
-std::vector<Node> Parser::initializer(Type &ty)
+std::vector<Node *> Parser::initializer(Type &ty)
 {
-    std::vector<Node> list;
+    std::vector<Node *> list;
     return list;
 }
 
