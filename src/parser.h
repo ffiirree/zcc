@@ -329,7 +329,7 @@ private:
         const std::string &q2 = std::string(), 
         const std::string &q3 = std::string(), 
         const std::string &q4 = std::string()) {
-        quadStk_.push_back({ q1, q2, q3, q4 });
+        quadStk_.push_back(Quadruple(q1, q2, q3, q4));
     }
 
     void out_quad();
