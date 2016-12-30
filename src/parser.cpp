@@ -7,7 +7,6 @@ std::vector<Node*> Parser::trans_unit()
     std::vector<Node*> list;
     for (;;) {
         Token t = ts_.peek();
-
         if (t.getType() == T_EOF) {
             labels.cheak();
             out_quad();
@@ -135,7 +134,10 @@ Node *Parser::funcDef()
 
     functype.setStatic(current_class == K_STATIC);
     expect('{');
+
+    __IN_FUNC_DEF__(retty);
     Node *r = func_body(functype, funcName, params);
+    __OUT_FUNC_DEF__();
 
     __OUT_SCOPE__(localenv);
     _GENQ1_(".end");
@@ -192,10 +194,15 @@ Node *Parser::param_decl(int decl_type)
 Node *Parser::func_body(Type &functype, std::string name, std::vector<Node *> &params)
 {
     Node *body = compound_stmt();
+    if (noReturnValue) {
+        if (functype.retType->type == K_VOID)
+            _GENQ2_("ret", "0");
+        else 
+            errorp(ts_.getPos(), "Function need a return statement");
+    }
+    
     return  createFuncNode(functype, name, params, body);
 }
-
-
 
 Node &Env::search(const std::string &key)
 {

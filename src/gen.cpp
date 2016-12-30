@@ -37,12 +37,6 @@ void Generate::reg_init()
     float_reg.push_back({ "st(2)" });
     float_reg.push_back({ "st(1)" });
     float_reg.push_back({ "st(0)" });
-
-    // 段寄存器 // 16bits
-    segReg.push_back({ "%ecs" });
-    segReg.push_back({ "%eds" });
-    segReg.push_back({ "%ees" });
-    segReg.push_back({ "%ess" });
 }
 
 void Generate::run()
@@ -365,40 +359,41 @@ void Generate::generate(std::vector<std::string> &_q)
     else if (_q_0_is("ret")) {
         if (is_main) is_main = false;         // 退出主函数
 
-        std::string _src;
-        // 获取函数返回类型
-        int size = currentFunc.type_.retType->getSize();
+        if (_q.size() > 1) {
+            std::string _src;
+            // 获取函数返回类型
+            int size = currentFunc.type_.retType->getSize();
 
-        // 查找变量
-        LocVar ret = searchLocvar(_q.at(1));
+            // 查找变量
+            LocVar ret = searchLocvar(_q.at(1));
 
-        if (ret.name().empty())
-            _src = "$" + _q.at(1);
-        else
-            _src = std::to_string(ret.off_) + "(%ebp)";
+            if (ret.name().empty())
+                _src = "$" + _q.at(1);
+            else
+                _src = std::to_string(ret.off_) + "(%ebp)";
 
-        if (isNumber(_q.at(1))) {
-            gas_ins(movXXl(4, false), "$" + _q.at(1), "%eax");
-        }
-        else if (isEnumConst(_q.at(1))) {
-            gas_ins(movXXl(4, false), "$" + parser->searchEnum(_q.at(1)), "%eax");
-        }
-        else if (isTempVar(_q.at(1))) {
-            TempVar var = searchTempvar(_q.at(1));
-            gas_ins("movl", var._reg, "%eax");
-        }
-        else if (isLocVar(_q.at(1))) {
-            LocVar var = searchLocvar(_q.at(1));
-
-            if (var.kind_ == NODE_GLO_VAR) {
-                gas_ins(movXXl(var.type_.size_, var.type_.isUnsig), var.name(), "%eax");
+            if (isNumber(_q.at(1))) {
+                gas_ins(movXXl(4, false), "$" + _q.at(1), "%eax");
             }
-            else if (var.kind_ == NODE_LOC_VAR) {
-                _src = loc_var_val(var.off_);
-                gas_ins(movXXl(var.type_.size_, var.type_.isUnsig), _src, "%eax");
+            else if (isEnumConst(_q.at(1))) {
+                gas_ins(movXXl(4, false), "$" + parser->searchEnum(_q.at(1)), "%eax");
             }
+            else if (isTempVar(_q.at(1))) {
+                TempVar var = searchTempvar(_q.at(1));
+                gas_ins("movl", var._reg, "%eax");
+            }
+            else if (isLocVar(_q.at(1))) {
+                LocVar var = searchLocvar(_q.at(1));
 
-        }
+                if (var.kind_ == NODE_GLO_VAR) {
+                    gas_ins(movXXl(var.type_.size_, var.type_.isUnsig), var.name(), "%eax");
+                }
+                else if (var.kind_ == NODE_LOC_VAR) {
+                    _src = loc_var_val(var.off_);
+                    gas_ins(movXXl(var.type_.size_, var.type_.isUnsig), _src, "%eax");
+                }
+            }
+       }
 
         gas_tab("leave");
         if (vm_->use_) vm_->push_back({ vm_->getInsByOp("leave"), "leave" });

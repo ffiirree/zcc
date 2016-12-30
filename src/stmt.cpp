@@ -44,7 +44,13 @@ Node *Parser::compound_stmt()
     std::vector<Node*> list;
 
     for (;;) {
-        if (next_is('}')) break;
+        if (next_is('}')) 
+            break;
+        /**
+         * \ Ensure last stmt is return stmt.
+         */
+        noReturnValue = true;
+
         decl_or_stmt(list);
     }
 
@@ -89,12 +95,21 @@ Node *Parser::if_stmt()
 
         Node *els = statement();
         _GENQL_(nextLabel);
+        /**
+         * \ Ensure last function body's last stmt is return stmt.
+         */
+        noReturnValue = true;
 
         return createIfStmtNode(cond, then, els);
     }
 
     _GENQL_(nextLabel);
     backpatch(B->falseList_, quadStk_.size());
+
+    /**
+     * \ Ensure last function body's last stmt is return stmt.
+     */
+    noReturnValue = true;
 
     return createIfStmtNode(cond, then, nullptr);
 }
@@ -122,6 +137,10 @@ Node *Parser::while_stmt()
     backpatch(B->falseList_, quadStk_.size());
 
     std::vector<Node *> list;
+    /**
+     * \ Ensure last function body's last stmt is return stmt.
+     */
+    noReturnValue = true;
     return createCompoundStmtNode(list);
 }
 
@@ -146,6 +165,11 @@ Node *Parser::do_stmt()
 
     _GENQL_(newLabel("sn"));
     backpatch(B->falseList_, quadStk_.size());
+
+    /**
+     * \ Ensure last function body's last stmt is return stmt.
+     */
+    noReturnValue = true;
 
     return r;
 }
@@ -175,6 +199,12 @@ Node *Parser::switch_stmt()
 
     _GENQL_(_next);
     _stk_ctl_end_l.pop_back();
+
+    /**
+     * \ Ensure last function body's last stmt is return stmt.
+     */
+    noReturnValue = true;
+
     return nullptr;
 }
 
@@ -238,6 +268,11 @@ Node *Parser::for_stmt()
     _GENQL_(_next);
     backpatch(B->falseList_, quadStk_.size());
 
+    /**
+     * \ Ensure last function body's last stmt is return stmt.
+     */
+    noReturnValue = true;
+
     return nullptr;
 }
 
@@ -264,7 +299,24 @@ Node *Parser::return_stmt()
     Node *retval = expr_opt();
     expect(';');
 
-    _GENQ2_("ret", quad_arg_stk_.back());
+    /**
+     * \ Such as: int min(void) return;
+     */
+    if (retval == nullptr && currentFuncRetType->type != K_VOID)
+        errorp(ts_.getPos(), "Function need a return value");
+
+    /**
+     * \ Such as: void min(void) return 9;
+     */
+    if(retval != nullptr && currentFuncRetType->type == K_VOID)
+        errorp(ts_.getPos(), "Function do not need a return value");
+
+    if(retval == nullptr && currentFuncRetType->type == K_VOID)
+        _GENQ2_("ret", "0");
+    else if (retval != nullptr && currentFuncRetType->type != K_VOID)
+        _GENQ2_("ret", quad_arg_stk_.back());
+
+    noReturnValue = false;
 
     return createRetStmtNode(retval);
 }

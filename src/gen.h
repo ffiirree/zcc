@@ -152,7 +152,6 @@ private:
     std::vector<Reg> universReg;
     std::vector<Reg> float_reg;
 
-    std::vector<Reg> segReg;
     File inf;
     std::ofstream out;
     std::string _infilename;

@@ -36,7 +36,7 @@ public:
     /**
      * @berif pos of current token;
      */
-    inline Pos getPos() const { return tokens_.at(index_).getPos(); }
+    inline Pos getPos() const { return tokens_.at(index_ - 1).getPos(); }
 
     inline void push_back(const Token &t) { tokens_.push_back(t); }
     inline void pop_back() { tokens_.pop_back(); }

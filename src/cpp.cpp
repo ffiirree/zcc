@@ -112,8 +112,6 @@ void Preprocessor::expand(TokenSequence is, TokenSequence &os)
     }
 }
 
-
-
 void Preprocessor::group_part(TokenSequence &is, TokenSequence &os)
 {
 	Token t = is.peek2();

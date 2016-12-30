@@ -19,6 +19,9 @@
 
 #define _EN_CONDITION_()                isCondition = true
 #define _DIS_CONDITION_()               isCondition = false
+
+#define __IN_FUNC_DEF__(RET_TYPE)       do { currentFuncRetType = RET_TYPE; noReturnValue = true;} while(0)          
+#define __OUT_FUNC_DEF__()              currentFuncRetType = nullptr;
  
 #define _GENQL_(q1)                     gen_quad(q1, ":")
 #define _GENQ1_(q1)                     gen_quad(q1)
@@ -157,7 +160,7 @@ public:
         globalenv->setName(_of_name);
         createQuadFile();
         switch_case_label = newLabel("case");
-        trans_unit();
+        root = trans_unit();
     }
     Parser(const Parser &p) = delete;
     Parser &operator=(const Parser &p) = delete;
@@ -362,6 +365,7 @@ private:
      * \ float 
      * \ enum
      */
+    std::vector<Node*> root;
     std::vector<StrCard> const_string;
     std::vector<std::string> float_const;
     std::map<std::string, std::string> enum_const;
@@ -383,6 +387,12 @@ private:
     std::vector<std::string> quad_arg_stk_;
     std::vector<std::string> _stk_incdec;
     std::map<std::string, Type> custom_type_tbl;
+
+    /**
+     * \ Cheak functions' return value
+     */
+    Type *currentFuncRetType = nullptr;
+    bool noReturnValue = true;
 
     bool isCondition = false;
     bool isComputeBool = false;

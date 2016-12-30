@@ -18,6 +18,9 @@
 #define case_A_Z    _CASE_12('A','B','C','D','E','F','G','H','I','J','K','L'): _CASE_12('M','N','O','P','Q','R','S','T','U','V','W','X'): case 'Y': case'Z'
 #define case_op		_CASE_6('=', '+', '-', '*', '/', '%'):_CASE_6('&', '^', '|', '<' ,'>', '!'):case '~'
 
+/**
+ * \ Operator
+ */
 #define OP_MAP  op(OP_ARROW, "->")\
 				op(OP_A_ADD, "+=")\
 				op(OP_A_AND, "&=")\
@@ -40,6 +43,9 @@
 				op(OP_SAL, "<<")\
 				op(OP_SAR, ">>")
 
+/**
+ * \ Keyword
+ */
 #define KEYWORD_MAP keyword(K_AUTO, "auto", true)\
 					keyword(K_BOOL, "_Bool", true)\
 					\
@@ -81,6 +87,9 @@
 					keyword(K_VOLATILE, "volatile", true)\
 					keyword(K_WHILE, "while", false)
 
+/**
+ * \ Virtual Machine Instructions
+ */
 #define VM_INS vminsmap("mov",    mov)\
                 vminsmap("movl",  movl)\
                 vminsmap("movb",  movb)\
@@ -210,7 +219,6 @@ public:
         int ch_;                  // CHAR_ value
     };
 
-
 private:
     void copyUnion(const Token &t);
     void copying(const Token &t);
@@ -283,6 +291,7 @@ private:
     void coping(const Type &t);
 };
 
+
 enum NodeKind {
     NODE_NULL,
     NODE_CHAR,
@@ -344,20 +353,14 @@ public:
 
         return std::string();
     }
-    inline void setFuncName(const std::string &name) {
+    
 #if defined(WIN32)
-        funcName = "_" + name;
+    inline void setFuncName(const std::string &name) { funcName = "_" + name; }
+    inline void setVarName(const std::string &name) { varName = "_" + name; }
 #elif defined(__linux__)
-        funcName = name;
+    inline void setFuncName(const std::string &name) { funcName = name; }
+    inline void setVarName(const std::string &name) { varName = name; }
 #endif
-    }
-    inline void setVarName(const std::string &name) {
-#if defined(WIN32)
-        varName = "_" + name;
-#elif defined(__linux__)
-        varName = name;
-#endif
-    }
 
 public:
     int kind_ = NODE_NULL;
