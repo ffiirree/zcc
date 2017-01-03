@@ -15,8 +15,6 @@ Generate::Generate(Parser *p, VirtualMachine *vm) :vm_(vm)
 
     // init register
     reg_init();
-
-    //
     run();
 }
 
@@ -101,8 +99,6 @@ void Generate::run()
         }
     }
 
-    // 标志
-
     gas("\t.ident \"zcc 0.0.1\"");
 }
 
@@ -156,7 +152,7 @@ void Generate::generate(std::vector<std::string> &_q)
             return;
         }
 
-        gas_jxx_label(_q.at(0));                          // 如果是其他标签，输出
+        gas_jxx_label(_q.at(0));
     }
     else if (_q_0_is(".inscope")) {
         setLocEnv(_q.at(1));
@@ -165,7 +161,6 @@ void Generate::generate(std::vector<std::string> &_q)
         if (locEnv->pre() != nullptr)
             locEnv = locEnv->pre();
     }
-    // 每个表达式后都要清空栈
     else if (_q_0_is("clr")) {
         for (size_t i = 0; i < universReg.size(); ++i)
             universReg.at(i)._var.clear();
@@ -184,7 +179,6 @@ void Generate::generate(std::vector<std::string> &_q)
         std::string _src, _des;
         int _des_size = 0;
 
-        // 目的地
         if (isLocVar(_q.at(2))) {
             LocVar var = searchLocvar(_q.at(2));
 
@@ -243,7 +237,6 @@ void Generate::generate(std::vector<std::string> &_q)
     }
     else if (_q_0_is("if")) {
         Type _t1, _t2;
-        // 注意出栈和入栈的顺序
         std::string _q1 = _q.at(3);
         std::string _q2 = _q.at(1);
 

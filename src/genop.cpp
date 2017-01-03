@@ -147,7 +147,7 @@ void Generate::getReg(std::vector<std::string> &_q)
         Type _ty = getStructFieldType(var, _q1);
         gas_ins(mov2stk(_ty.size_), "$" + _q3, std::to_string(var.off_ + atoi(_q1.c_str())) + "(%ebp)");
     }
-    // 取数组和结构体的某一元素的地址，用来赋值
+    // struct.first = 90;
     else if (_q_0_is(".&")) {
         getReg("%eax");
         Node var = searchLocvar(_q2);
@@ -512,7 +512,6 @@ void Generate::getReg(std::vector<std::string> &_q)
 
         gas_ins("addl", "$" + _q1, "%eax");
 
-        // 取值
         if (_ty.getType() == K_STRUCT) {
             Type _struct_ty;
 
@@ -524,8 +523,6 @@ void Generate::getReg(std::vector<std::string> &_q)
             gas_ins(movXXl(_struct_ty.size_, _struct_ty.isUnsig), "(%eax)", "%eax");
         }
 
-
-        // 保存
         TempVar _temp(_q3, "%eax");
         _temp._size = _ty.size_;
         push_back_temp_stk(_temp, _temp._reg);
@@ -612,7 +609,7 @@ void Generate::getReg(std::vector<std::string> &_q)
 #undef _q3
 
 /**
-* @berif 自增自减， ++ a
+* @berif ++/--
 */
 void Generate::genIncDec(const std::string &_obj, const std::string &op)
 {
@@ -661,7 +658,7 @@ void Generate::genIncDec(const std::string &_obj, const std::string &op)
 void Generate::genMulOrModAsm(std::vector<std::string> &_q)
 {
     Type _save, _t;
-    std::string _save_reg;                // 保存结果
+    std::string _save_reg;
     if (_q.at(0) == "/")
         _save_reg = "%eax";
     else
@@ -670,11 +667,9 @@ void Generate::genMulOrModAsm(std::vector<std::string> &_q)
     getReg("%eax");
     getReg("%edx");
 
-    // 除数放入eax
     _t = gas_load(_q.at(2), "%eax"); _save.type < _t.type ? _save = _t : true;
-    gas_tab("cltd");                 // edx + eax ,扩充为64bits
+    gas_tab("cltd");                 // edx + eax , ->64bits
 
-                                     // 被除数
     if (isNumber(_q.at(1))) {
         getReg("%ecx");
 

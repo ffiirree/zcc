@@ -320,7 +320,7 @@ private:
 
 
 #ifdef _OVERLOAD_
-    std::string getOverLoadName(const std::string &name, std::vector<Node> &_p);
+    std::string getOverLoadName(const std::string &name, std::vector<Node *> &_p);
 #endif
 
     void ensure_inttype(Node &node);

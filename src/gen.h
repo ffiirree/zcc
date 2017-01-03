@@ -55,10 +55,10 @@ public:
     ~TempVar() = default;
 
     int type;
-    std::string _name;             // 变量名
-    int _size = 0;                 // 变量大小
+    std::string _name;
+    int _size = 0;
     bool _isUnsig = false;
-    std::string _reg;              // 是否放在了寄存器中
+    std::string _reg;              // in register?
 };
 
 /**
@@ -82,7 +82,7 @@ private:
     void setLocEnv(const std::string &envName);
 
 
-    // 控制指令
+    // 
     std::string mov2stk(int size);
     std::string movXXl(int size, bool isz);
     std::string reg2stk(const std::string &_reg, int size);
@@ -91,7 +91,7 @@ private:
     Type gas_fstp(const std::string &name);
     std::string getTypeString(Type _t);
 
-    // 产生ASM
+    // generate gas code.
     inline void gas(const std::string &_s) { out << _s << std::endl; }
     void gas_ins(const std::string &_i, const std::string &_src, const std::string &_des);
     void gas_ins(const std::string &_i, const std::string &_des);
@@ -100,13 +100,13 @@ private:
 
     void const_str();
     void func_decl(Node &n);
-    void gas_dec(const std::string &n, int size);                                    // 全局声明
-    void gas_def_arr(Node &n, bool is_fir);                                          // 数组定义
+    void gas_dec(const std::string &n, int size); 
+    void gas_def_arr(Node &n, bool is_fir); 
     void gas_def_int(const std::string &n, int size, int init, bool is_fir);
     void gas_def_flo(const std::string &n, int size, const std::string &init, bool is_fir);
     void gas_custom(Node &n, bool is_fir);
 
-    Type gas_load(const std::string &_q, const std::string &_reg);                   // 加载数据
+    Type gas_load(const std::string &_q, const std::string &_reg);
     int gas_flo_load(const std::string &fl, bool isChange);
     Type getStructFieldType(Node &var, std::string &_off);
     Type getPtrType(Node &var);
@@ -159,12 +159,10 @@ private:
     std::vector<std::tuple<std::string, int, int>> params;
     Node currentFunc;
 
-    // 使用表达式栈来分配寄存器
     std::vector<TempVar> _stk_temp_var;
     std::vector<TempVar> _stk_float_temp_var;
 
-    bool finit = true;                   // FPU是否初始化过
-
+    bool finit = true;
 
     VirtualMachine *vm_;
 };

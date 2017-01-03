@@ -849,7 +849,7 @@ Type Parser::getCustomType(const std::string &_n)
 }
 
 #ifdef _OVERLOAD_
-std::string Parser::getOverLoadName(const std::string &name, std::vector<Node> &_p)
+std::string Parser::getOverLoadName(const std::string &name, std::vector<Node *> &_p)
 {
     if (name == "main")
         return name;
@@ -864,7 +864,7 @@ std::string Parser::getOverLoadName(const std::string &name, std::vector<Node> &
     _name_r += name + "@";
 
     for (size_t i = 0; i < _p.size(); ++i) {
-        switch (_p.at(i).type.type)
+        switch (_p.at(i)->type_.type)
         {
         case K_INT: _name_r += "i";break;
         case K_CHAR: _name_r += "c";break;
@@ -874,10 +874,10 @@ std::string Parser::getOverLoadName(const std::string &name, std::vector<Node> &
         case K_DOUBLE: _name_r += "d";break;
         case K_STRUCT:
         case K_TYPEDEF:
-            errorp(lex.getPos(), "Unspport struct and typedef overload.");
+            errorp(ts_.getPos(), "Unspport struct and typedef overload.");
             break;
         default:
-            errorp(lex.getPos(), "Unspport type overload.");
+            errorp(ts_.getPos(), "Unspport type overload.");
             break;
         }
     }

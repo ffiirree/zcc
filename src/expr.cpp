@@ -415,7 +415,6 @@ Node *Parser::unary_expr()
         Node *r;
         switch (tok.getId()) {
         case K_SIZEOF:
-            createUnaryQuadruple("sizeof");
             return sizeof_operand();
         case OP_INC:
             r = unary_incdec(OP_PRE_INC);
@@ -697,7 +696,41 @@ void Parser::ensure_inttype(Node &node)
 
 Node *Parser::sizeof_operand()
 {
-    return nullptr;
+    Type ty(K_INT, 4, true);
+    Node *r = new Node(NODE_INT, ty);
+    int size = 0;
+    
+    if (next_is('('))
+    {
+        if (ts_.peek().kind_ == T_KEYWORD) {
+            Type ty = decl_specifiers(new int);
+            size = ty.size_;
+        }
+        else {
+#if defined(WIN32)
+            Node var = localenv->search("_" + ts_.next().sval_);
+#elif(__linux__)
+            Node var = localenv->search(ts_.next().sval_);
+#endif
+            size = var.type_.size_;
+        }
+        expect(')');
+    }
+    else {
+        if (ts_.peek().kind_ != T_IDENTIFIER)
+            errorp(ts_.getPos(), "expect a object.");
+
+#if defined(WIN32)
+        Node var = localenv->search("_" + ts_.next().sval_);
+#elif(__linux__)
+        Node var = localenv->search(ts_.next().sval_);
+#endif
+        size = var.type_.size_;
+    }
+
+    r->sval_ = std::to_string(size);
+    quad_arg_stk_.push_back(r->sval_);
+    return r;
 }
 
 Node *Parser::unary_incdec(int ty)
