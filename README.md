@@ -3,6 +3,16 @@
 <br><br>
 
 ## 一、 使用
+### 1.0 平台
+支持Windows和Linux平台
+```
+Windows环境:
+        windows 10 + Visual Studio 2015 + cmake 3.6.1 + MinGW
+        
+Linux环境:
+        Ubuntu 16.04 + CLion 2016.3 + gcc 5.4 + cmake 3.5
+```
+
 ### 1.1 控制命令
 ```
 命令:
