@@ -84,7 +84,6 @@ void Generate::getReg(std::vector<std::string> &_q)
         temp_save(_q2, var.type_, "%eax");
     }
     else if (_q_0_is("*U")) {
-        // 取其他类型的值还有问题，没有通过指针看出原始类型，需要修改
         getReg("%eax");
 
         Node var;
@@ -120,6 +119,7 @@ void Generate::getReg(std::vector<std::string> &_q)
         else {
             error("pre * var error");
         }
+        gas_ins("leal", "0(%eax)", "%eax");
 
         temp_save(_q2, var.type_, "%eax");
     }

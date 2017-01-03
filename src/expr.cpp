@@ -433,12 +433,10 @@ Node *Parser::unary_expr()
 
         case '*':
             r = unary_deref(tok);
-            //if(lex.peek().toString() == "=")
-            //    createUnaryQuadruple("*=");
-            //else 
-            //    createUnaryQuadruple("*U");
-
-            createUnaryQuadruple("*U");
+            if(ts_.peek().toString() == "=")
+                createUnaryQuadruple("*=");
+            else 
+                createUnaryQuadruple("*U");
             return r;
 
 
@@ -459,8 +457,6 @@ Node *Parser::unary_expr()
 
         case '!':
             r = unary_lognot();
-            //boolLabel.push_back(BoolLabel());
-            //_stk_if_goto_op.push_back("!");
             return r;
         }
     }

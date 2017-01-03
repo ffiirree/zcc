@@ -3,13 +3,16 @@
 int main(void)
 {
 	int a[3] = {45, 46, 47};
-	int *ptr = a;
-	ptr +=1;
-	*ptr = 3;
-	if(a[1] == 3)
-		putchar('Y');
-	else
-		putchar('N');
+	
+	int off = 2;
+
+	int *ptr = &a;
+	ptr += off;
+	*ptr = 89;
+
+	for(int i = 0; i < 3; ++i){
+		printf("%d\n", a[i]);
+	}
 
 	return 0;
 }
