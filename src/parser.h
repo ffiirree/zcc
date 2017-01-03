@@ -182,7 +182,6 @@ private:
     Type conv2ptr(Type ty);
     void createQuadFile();
     void pushQuadruple(const std::string &name);
-    void pushIncDec(const std::string &name);
     void createQuadruple(const std::string &op);
     void createUnaryQuadruple(const std::string &op);
     void computeBoolExpr(const std::string &op);
@@ -385,7 +384,7 @@ private:
     std::ofstream out;
 
     std::vector<std::string> quad_arg_stk_;
-    std::vector<std::string> _stk_incdec;
+    std::vector<std::pair<std::string, std::string>> incDecStk_;
     std::map<std::string, Type> custom_type_tbl;
 
     /**

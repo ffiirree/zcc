@@ -556,11 +556,10 @@ Node *Parser::postfix_expr_tail(Node *node)
             ensure_lvalue(*node);
             int op = is_keyword(tok, OP_INC) ? OP_POST_INC : OP_POST_DEC;
 
-            pushIncDec(quad_arg_stk_.back());
             if (op == OP_POST_DEC)
-                pushIncDec("--");
+                incDecStk_.push_back({ "--", quad_arg_stk_.back() });
             else
-                pushIncDec("++");
+                incDecStk_.push_back({ "++", quad_arg_stk_.back() });
 
             return createUnaryNode(op, node->type_, node);
         }

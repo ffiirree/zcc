@@ -584,11 +584,6 @@ void Parser::pushQuadruple(const std::string &name)
     quad_arg_stk_.push_back(name);
 }
 
-void Parser::pushIncDec(const std::string &name)
-{
-    _stk_incdec.push_back(name);
-}
-
 std::string getReulst(std::string &v1, std::string &v2, const std::string &op)
 {
     int _var1 = atoi(v2.c_str());
@@ -617,6 +612,7 @@ void Parser::createUnaryQuadruple(const std::string &op)
 
     if ((op == "-U" || op == "+U")) {
 
+        // float constant
         std::string num = quad_arg_stk_.back();
         for (size_t i = 0;i < float_const.size(); ++i) {
             if (num == float_const.at(i)) {
@@ -624,12 +620,25 @@ void Parser::createUnaryQuadruple(const std::string &op)
                 return;
             }
         }
+        // integer constant
         if (isNumber(quad_arg_stk_.back())) {
             quad_arg_stk_.pop_back();
             num = "-" + num;
             quad_arg_stk_.push_back(num);
             return;
         }
+
+
+        // other variable
+        std::string lastarg = quad_arg_stk_.back();
+        quad_arg_stk_.pop_back();
+        quad_arg_stk_.push_back("0");
+        quad_arg_stk_.push_back(lastarg);
+        if (op == "-U")
+            createQuadruple("-");
+        else
+            createQuadruple("+");
+        return;
     }
 
     if (op == "~" && isNumber(quad_arg_stk_.back())) {
@@ -675,14 +684,17 @@ void Parser::computeBoolExpr(const std::string &op)
 
 void Parser::createRelOpQuad(const std::string &op)
 {
+    int off = 1;
     BoolLabel *B = new BoolLabel();
     boolLabels_.push_back(B);
     B->trueList_ = makelist(quadStk_.size());
-    B->falseList_ = makelist(quadStk_.size() + 1);
+    B->falseList_ = makelist(quadStk_.size() + off + incDecStk_.size());
     std::string E1 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
     std::string E2 = quad_arg_stk_.back(); quad_arg_stk_.pop_back();
     _GENQ3_("if", E2 + " " + op + " " + E1, "goto");
+    createIncDec();
     _GENQ1_("goto");
+
 }
 
 // + - * / % & | ^ 
@@ -786,24 +798,11 @@ _skip_cheak_params_num:
 void Parser::createIncDec()
 {
     for (;;) {
-        if (_stk_incdec.empty())
+        if (incDecStk_.empty())
             return;
 
-        std::string op = _stk_incdec.back(); _stk_incdec.pop_back();
-        std::string var = _stk_incdec.back(); _stk_incdec.pop_back();
-        std::string label;
-        std::string quad_op;
-        if (op == "++") {
-            label = newLabel("inc");
-            quad_op = "+";
-        }
-        else {
-            label = newLabel("dec");
-            quad_op = "-";
-        }
-
-        _GENQ4_(quad_op, "1", var, label);
-        _GENQ3_("=", label, var);
+        _GENQ2_(incDecStk_.back().first, incDecStk_.back().second);
+        incDecStk_.pop_back();
     }
 }
 
