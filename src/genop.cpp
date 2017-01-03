@@ -1,8 +1,6 @@
 #include "gen.h"
 #include "error.h"
 
-
-
 #define _q_0_is(str)          (_q.at(0) == str)
 #define _q1                    _q.at(1)
 #define _q2                    _q.at(2)
@@ -15,10 +13,10 @@ void Generate::getReg(std::vector<std::string> &_q)
     std::string _q2_reg;
 
     if (_q_0_is("+")) {
-        unlimited_binary_op(_q, "addl");
+        add_or_sub_op(_q, "addl");
     }
     else if (_q_0_is("-")) {
-        unlimited_binary_op(_q, "subl");
+        add_or_sub_op(_q, "subl");
     }
     else if (_q_0_is("&")) {
         unlimited_binary_op(_q, "andl");
@@ -107,7 +105,6 @@ void Generate::getReg(std::vector<std::string> &_q)
         temp_save(_q2, var.type_, "%eax");
     }
     else if (_q_0_is("*=")) {
-        // 取其他类型的值还有问题，没有通过指针看出原始类型，需要修改
         getReg("%eax");
 
         Node var;
@@ -126,7 +123,6 @@ void Generate::getReg(std::vector<std::string> &_q)
 
         temp_save(_q2, var.type_, "%eax");
     }
-    // 取结构体中的值
     // int a = str.b;
     // .  _off  str  .Lvar3
     else if (_q_0_is(".")) {
@@ -144,7 +140,7 @@ void Generate::getReg(std::vector<std::string> &_q)
         TempVar _temp(_q3, "%eax");
         push_back_temp_stk(_temp, _temp._reg);
     }
-    // 局部变量初始化时使用
+    //
     else if (_q_0_is(".=")) {
         Node var = searchLocvar(_q2);
         Type _ty = getStructFieldType(var, _q1);
@@ -162,12 +158,11 @@ void Generate::getReg(std::vector<std::string> &_q)
             gas_ins("leal", std::to_string(var.off_ + atoi(_q1.c_str())) + "(%ebp)", "%eax");
         }
 
-        // 保存
+        // Save
         TempVar _temp(_q3, "%eax");
         push_back_temp_stk(_temp, _temp._reg);
     }
     else if (_q_0_is("[]")) {
-        // 取其他类型的值还有问题，没有通过指针看出原始类型，需要修改
         getReg("%eax");
 
         if (isLocVar(_q2)) {
@@ -334,7 +329,6 @@ void Generate::getReg(std::vector<std::string> &_q)
             }
         }
 
-        // 保存
         TempVar _temp(_q3, "%eax");
         push_back_temp_stk(_temp, _temp._reg);
     }
@@ -492,7 +486,6 @@ void Generate::getReg(std::vector<std::string> &_q)
             }
         }
 
-        // 保存
         TempVar _temp(_q3, "%eax");
         push_back_temp_stk(_temp, _temp._reg);
     }
@@ -543,12 +536,10 @@ void Generate::getReg(std::vector<std::string> &_q)
 
         gas_ins("addl", "$" + _q1, "%eax");
 
-
-        // 保存
         TempVar _temp(_q3, "%eax");
         push_back_temp_stk(_temp, _temp._reg);
     }
-    // 浮点运算
+    // float
     else if (_q_0_is("=f") || _q_0_is("=d")) {
         gas_flo_load(_q1, false);
         gas_fstp(_q2);
@@ -557,8 +548,8 @@ void Generate::getReg(std::vector<std::string> &_q)
     else if (_q_0_is("+f")) {
         int _save = 0, _t;
 
-        _t = gas_flo_load(_q1, false); _t > _save ? _save = _t : true;
-        _t = gas_flo_load(_q2, false); _t > _save ? _save = _t : true;
+        _t = gas_flo_load(_q1, false); if(_t > _save ) _save = _t;
+        _t = gas_flo_load(_q2, false); if(_t > _save ) _save = _t;
         gas_tab("faddp");
 
         finit = false;
@@ -567,8 +558,8 @@ void Generate::getReg(std::vector<std::string> &_q)
     else if (_q_0_is("-f")) {
         int _save = 0, _t;
 
-        _t = gas_flo_load(_q1, false); _t > _save ? _save = _t : true;
-        _t = gas_flo_load(_q2, true); _t > _save ? _save = _t : true;
+        _t = gas_flo_load(_q1, false); if(_t > _save ) _save = _t;
+        _t = gas_flo_load(_q2, true); if(_t > _save ) _save = _t;
 
         gas_tab("fsubp");
 
@@ -578,8 +569,8 @@ void Generate::getReg(std::vector<std::string> &_q)
     else if (_q_0_is("*f")) {
         int _save = 0, _t;
 
-        _t = gas_flo_load(_q1, false); _t > _save ? _save = _t : true;
-        _t = gas_flo_load(_q2, false); _t > _save ? _save = _t : true;
+        _t = gas_flo_load(_q1, false); if(_t > _save ) _save = _t;
+        _t = gas_flo_load(_q2, false); if(_t > _save ) _save = _t;
         gas_tab("fmulp");
 
         finit = false;
@@ -588,8 +579,8 @@ void Generate::getReg(std::vector<std::string> &_q)
     else if (_q_0_is("/f")) {
         int _save = 0, _t;
 
-        _t = gas_flo_load(_q1, false); _t > _save ? _save = _t : true;
-        _t = gas_flo_load(_q2, true); _t > _save ? _save = _t : true;
+        _t = gas_flo_load(_q1, false); if(_t > _save ) _save = _t;
+        _t = gas_flo_load(_q2, true); if(_t > _save ) _save = _t;
         gas_tab("fdivp");
 
         finit = false;

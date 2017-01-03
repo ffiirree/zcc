@@ -23,6 +23,8 @@ int factorial_recursion(int n)
         return 1;
     else
         return n * factorial_recursion(n - 1);
+
+	return 0;
 }
 
 // 迭代计算阶乘

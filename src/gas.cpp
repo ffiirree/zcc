@@ -42,18 +42,15 @@ int Generate::gas_flo_load(const std::string &name, bool isChange)
 Type Generate::gas_fstp(const std::string &name)
 {
     Type _r;
-    int  _size = 0;
     std::string _ins, _des;
     Node var;
 
     if (isLocVar(name)) {
         var = searchLocvar(name);
-        _size = var.type_.size_;
         _des = loc_var_val(var.off_);
     }
     else {
         var = gloEnv->search(name);
-        _size = var.type_.size_;
         _des = var.name();
     }
 
@@ -80,9 +77,9 @@ std::string Generate::gas_fld(int size, int _t)
     case K_INT:
     case K_LONG:
     case K_CHAR:
-    case K_SHORT:   return "fildl"; break;
-    case K_FLOAT:   return "flds"; break;
-    case K_DOUBLE:  return "fldl"; break;
+    case K_SHORT:   return "fildl";
+    case K_FLOAT:   return "flds";
+    case K_DOUBLE:  return "fldl";
     default: error("Unspport type.");
     }
     return std::string();
@@ -323,29 +320,42 @@ void Generate::unlimited_binary_op(std::vector<std::string> &_q, const std::stri
     temp_save(_q.at(3), _save, _q2_reg);
 }
 
-void Generate::add_sub_with_ptr(std::vector<std::string> &_q, const std::string &op)
+void Generate::add_or_sub_op(std::vector<std::string> &_q, const std::string &op)
 {
-    Type _save, _t1, _t2;
+    Type _save, _t, q1_type, q2_type;
     std::string _q1_reg, _q2_reg;
 
     _q1_reg = getEmptyReg();
-    _t1 = gas_load(_q.at(1), _q1_reg);
+    q1_type = gas_load(_q.at(1), _q1_reg); _save.type < q1_type.type ? _save = q1_type : true;
     _q2_reg = getEmptyReg();
-    _t2 = gas_load(_q.at(2), _q2_reg);
+    q2_type = gas_load(_q.at(2), _q2_reg); _save.type < q2_type.type ? _save = q2_type : true;
 
-    //if (_t1.getType() == PTR &&_t2.getType() != PTR) {
-    //    if (_q1_reg != "%eax") {
-    //        
-    //        gas_ins("movl", _q1_reg, "%eax");
-    //    }
-    //    gas_ins("imull", )
-    //}
+    if(q1_type.type == PTR && q2_type.type != PTR){
+        switch(q1_type.size_){
+            case 1: break;
+            case 2: gas_ins("sall", "$1", _q2_reg);break;
+            case 4: gas_ins("sall", "$2", _q2_reg);break;
+            default: error("Pointer: error size.");
+        }
+    }
+    else if(q1_type.type != PTR && q2_type.type == PTR){
+        switch(q2_type.size_){
+            case 1: break;
+            case 2: gas_ins("sall", "$1", _q1_reg);break;
+            case 4: gas_ins("sall", "$2", _q1_reg);break;
+            default: error("Pointer: error size.");
+        }
+    }
+    else if(q1_type.type == PTR && q2_type.type == PTR){
+        error("Both q1 and q2 are pointer.");
+    }
 
     gas_ins(op, _q1_reg, _q2_reg);
 
     temp_clear(_q.at(1), _q.at(2));
     temp_save(_q.at(3), _save, _q2_reg);
 }
+
 
 void Generate::shift_op(std::vector<std::string> &_q, const std::string &op)
 {

@@ -1,5 +1,4 @@
 #include "gen.h"
-#include "type.h"
 #include "error.h"
 
 
@@ -14,7 +13,7 @@ Generate::Generate(Parser *p, VirtualMachine *vm) :vm_(vm)
     if (!out.is_open())
         error("Open file failed.");
 
-    // 寄存器初始化
+    // init register
     reg_init();
 
     //
@@ -23,7 +22,7 @@ Generate::Generate(Parser *p, VirtualMachine *vm) :vm_(vm)
 
 void Generate::reg_init()
 {
-    // 通用寄存器 //32bits
+    //32bits register
     universReg.push_back({ "%eax" });
     universReg.push_back({ "%ebx" });
     universReg.push_back({ "%ecx" });
@@ -43,10 +42,10 @@ void Generate::run()
 {
     gas("\t.file\t\"" + _infilename + "\"");
 
-    // 字符串常量
+    // string const
     const_str();
 
-    // 全局变量
+    // global var
     locEnv = gloEnv = parser->getGloEnv();
     bool is_fir_var = true;
     for (size_t i = 0; i < gloEnv->size(); ++i) {
@@ -71,7 +70,7 @@ void Generate::run()
         }
     }
 
-    // 函数
+    // function
     for (;;) {
         std::vector<std::string> quad = getQuad();
 
@@ -82,7 +81,7 @@ void Generate::run()
 
     gas(parser->newLabel("FE") + ":");
 
-    // 浮点数
+    // float number
     std::vector<std::string> floatConst = parser->getFloatConst();
     if (!floatConst.empty())
         gas_tab(".section .rodata");
@@ -221,12 +220,10 @@ void Generate::generate(std::vector<std::string> &_q)
             _des = "(" + _tem._reg + ")";
         }
 
-        // 源 为临时变量
         TempVar _temp = searchTempvar(_q.at(1));
         if (!_temp._name.empty()) {
             gas_ins(mov2stk(_des_size), reg2stk(_temp._reg, _des_size), _des);
         }
-        // 第一个参数为数字
         else if (isNumber(_q.at(1))) {
             gas_ins(mov2stk(_des_size), "$" + _q.at(1), _des);
         }
@@ -357,14 +354,12 @@ void Generate::generate(std::vector<std::string> &_q)
         }
     }
     else if (_q_0_is("ret")) {
-        if (is_main) is_main = false;         // 退出主函数
+        if (is_main) is_main = false;
 
         if (_q.size() > 1) {
             std::string _src;
-            // 获取函数返回类型
             int size = currentFunc.type_.retType->getSize();
 
-            // 查找变量
             LocVar ret = searchLocvar(_q.at(1));
 
             if (ret.name().empty())

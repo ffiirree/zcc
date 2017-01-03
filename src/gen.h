@@ -26,7 +26,7 @@
 
 #define loc_var_val(pos)      (std::to_string(pos) + "(%ebp)")
 /**
- * 寄存器描述
+ * @class Reg
  */
 class Reg {
 public:
@@ -42,7 +42,7 @@ public:
 };
 
 /**
- * 临时变量状态
+ * @class TempVar
  */
 class TempVar {
 public:
@@ -62,7 +62,7 @@ public:
 };
 
 /**
- * 产生汇编代码
+ * @class Generate
  */
 using LocVar = Node;
 class Generate {
@@ -117,7 +117,12 @@ private:
 
     void gas_jxx(const std::string &op, const std::string &des, Type &_t);
     void unlimited_binary_op(std::vector<std::string> &_q, const std::string &op);
-    void add_sub_with_ptr(std::vector<std::string> &_q, const std::string &op);
+
+    /**
+     * \ operator+/-, pointer
+     */
+    void add_or_sub_op(std::vector<std::string> &_q, const std::string &op);
+
     void shift_op(std::vector<std::string> &_q, const std::string &op);
     void genMulOrModAsm(std::vector<std::string> &_q);
     void genIncDec(const std::string &_obj, const std::string &op);
@@ -162,7 +167,6 @@ private:
     // 使用表达式栈来分配寄存器
     std::vector<TempVar> _stk_temp_var;
     std::vector<TempVar> _stk_float_temp_var;
-    std::vector<TempVar> _stk_ret_;
 
     bool finit = true;                   // FPU是否初始化过
 
