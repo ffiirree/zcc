@@ -84,7 +84,7 @@ void Node::copying(const Node &n)
 
     sval_ = n.sval_;
 
-    varName = n.varName;
+    name_ = n.name_;
     off_ = n.off_;
     lvarinit_ = n.lvarinit_;
 
@@ -93,18 +93,19 @@ void Node::copying(const Node &n)
     right_ = n.right_;
     operand_ = n.operand_;
 
-    funcName = n.funcName;
     params = n.params;
     body = n.body;
+    local_vars_stk_size_ = n.local_vars_stk_size_;
+    params_stk_size_ = n.params_stk_size_;
+    max_call_params_size_ = n.max_call_params_size_;
 
     decl_var = n.decl_var;
     decl_init = n.decl_init;
 
-    init_val = n.init_val;
-    init_off = n.init_off;
     cond = n.cond;
     then = n.then;
     els = n.els;
+
     label = n.label;
     newLabel = n.newLabel;
 

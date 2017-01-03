@@ -20,8 +20,17 @@
 #define _EN_CONDITION_()                isCondition = true
 #define _DIS_CONDITION_()               isCondition = false
 
-#define __IN_FUNC_DEF__(RET_TYPE)       do { currentFuncRetType = RET_TYPE; noReturnValue = true;} while(0)          
-#define __OUT_FUNC_DEF__()              currentFuncRetType = nullptr;
+/**
+ * \ local var offset address & ..
+ */
+#define __IN_FUNC_DEF__(RET_TYPE)       do { isFunction = true; currentFuncRetType = RET_TYPE; noReturnValue = true; localVarsSize_ = 0; paramsSize_ = 0; maxCallSize_ = 0; } while(0)          
+#define __OUT_FUNC_DEF__()              do { isFunction = false; currentFuncRetType = nullptr; }while(0)
+
+/**
+ * \ param offset address
+ */
+#define __BEGIN_PARAMS__()              do{ isParams = true; paramsSize_ = 8;} while(0)
+#define __END_PARAMS__()                do{ isParams = false; } while(0)
  
 #define _GENQL_(q1)                     gen_quad(q1, ":")
 #define _GENQ1_(q1)                     gen_quad(q1)
@@ -392,6 +401,19 @@ private:
      */
     Type *currentFuncRetType = nullptr;
     bool noReturnValue = true;
+
+    /**
+     * \ local vars size & params size
+     */
+    size_t localVarsSize_ = 0;
+    size_t paramsSize_ = 0;
+    bool isFunction = false;
+    bool isParams = false;
+
+    /**
+     * \ max call size
+     */
+    size_t maxCallSize_ = 0;
 
     bool isCondition = false;
     bool isComputeBool = false;

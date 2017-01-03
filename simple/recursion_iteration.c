@@ -1,5 +1,5 @@
-//#include<stdio.h>
-int printf(char *ch, int a, long b);
+#include <stdio.h>
+
 int factorial_recursion(int n);
 int factorial_iteration(int n);
 

@@ -169,10 +169,15 @@ Type Parser::func_param_list(Type *retty, std::vector<Node *> &params, int deal_
 std::vector<Node *> Parser::param_list(int decl_type)
 {
     std::vector<Node*> list;
+
+    __BEGIN_PARAMS__();
+
     list.push_back(param_decl(decl_type));
 
     while (next_is(','))
         list.push_back(param_decl(decl_type));
+
+    __END_PARAMS__();
     return list;
 }
 
@@ -339,6 +344,10 @@ Node *Parser::createFloatNode(const Token &t)
 Node *Parser::createStrNode(const Token &t)
 {
     Node *node = new Node(NODE_STRING);
+    node->type_.type = PTR;
+    node->type_.size_ = 4;
+    node->type_.ptr = new Type(K_CHAR, 1, false);
+
     node->sval_ = t.getSval();
     return node;
 }
@@ -346,19 +355,22 @@ Node *Parser::createStrNode(const Token &t)
 Node *Parser::createFuncNode(const Type &ty, const std::string & funcName, std::vector<Node *> params, Node *body)
 {
     Node *node = new Node(NODE_FUNC, ty);
-    node->setFuncName(funcName);
+    node->setName(funcName);
     node->params = params;
     node->body = body;
 
-    globalenv->push_back(*node);
+    node->local_vars_stk_size_ = localVarsSize_;
+    node->params_stk_size_ = paramsSize_;
+    node->max_call_params_size_ = maxCallSize_;
 
+    globalenv->push_back(*node);
     return node;
 }
 
 Node *Parser::createFuncDecl(const Type &ty, const std::string & funcName, const std::vector<Node *> &params)
 {
     Node *node = new Node(NODE_FUNC_DECL, ty);
-    node->setFuncName(funcName);
+    node->setName(funcName);
     node->params = params;
 
     globalenv->push_back(*node);
@@ -399,7 +411,7 @@ Node *Parser::createDeclNode(Node &var, std::vector<Node *> init)
 Node *Parser::createGLoVarNode(const Type &ty, const std::string &name)
 {
     Node *r = new Node(NODE_GLO_VAR, ty);
-    r->setVarName(name);
+    r->setName(name);
 
     if (cheak_redefined(globalenv, r->name()))
         errorp(ts_.getPos(), "redefined global variable : " + r->name());
@@ -411,10 +423,24 @@ Node *Parser::createGLoVarNode(const Type &ty, const std::string &name)
 Node *Parser::createLocVarNode(const Type &ty, const std::string &name)
 {
     Node *r = new Node(NODE_LOC_VAR, ty);
-    r->setVarName(name);
+    r->setName(name);
 
     if (cheak_redefined(localenv, r->name()))
         errorp(ts_.getPos(), "redefined local variable : " + r->name());
+
+    if (isFunction) {
+        if (ty.type == ARRAY) {
+            localVarsSize_ += ty.size_ *ty._all_len;
+        }
+        else {
+            localVarsSize_ += ty.size_;
+        }
+        r->off_ = -localVarsSize_;
+    }
+    else if (isParams) {
+        r->off_ = paramsSize_;
+        paramsSize_ += ty.size_;
+    }
 
     localenv->push_back(*r);
     return r;
@@ -758,8 +784,13 @@ void Parser::createQuadruple(const std::string &op)
 
 void Parser::createFuncQuad(std::vector<Node *> &params)
 {
+    size_t callSize = 0;
     for (size_t i = 0; i < params.size(); ++i) {
-        _GENQ2_("param", quad_arg_stk_.back()); quad_arg_stk_.pop_back();
+        std::string type = std::to_string(params.at(params.size() - 1 - i)->getType().type);
+        std::string size = std::to_string(params.at(params.size() - 1 - i)->getType().size_);
+        _GENQ4_("param", quad_arg_stk_.back(), type, size);
+        quad_arg_stk_.pop_back();
+        callSize += params.at(i)->getType().size_;
     }
 
     std::string func_name;
@@ -788,11 +819,13 @@ _skip_cheak_params_num:
     if (fn.type_.type != K_VOID || fn.type_.retType != nullptr) {
         ret_ = newLabel("ret");
         quad_arg_stk_.push_back(ret_);
-        _GENQ4_("call", fn.name(), std::to_string(fn.params.size()), ret_);
+        _GENQ4_("call", fn.name(), std::to_string(params.size()), ret_);
     }
     else {
-        _GENQ3_("call", fn.name(), std::to_string(fn.params.size()));
+        _GENQ3_("call", fn.name(), std::to_string(params.size()));
     }
+    if (maxCallSize_ < callSize)
+        maxCallSize_ = callSize;
 }
 
 void Parser::createIncDec()

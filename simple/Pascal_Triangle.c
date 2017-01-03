@@ -21,11 +21,11 @@ void main(int argc, char *argv[])
 
     for (i = 1; i <= n; i++) {
         for (k = 1; k <= n - i; k++)
-            printf("   ", 1);  
+            printf("   ");  
         for (j = 1; j <= i; j++)
             printf("%6d", a[i][j]);
 
-        printf("\n", 1);
+        printf("\n");
     }
-    printf("\n", 1);
+    printf("\n");
 }

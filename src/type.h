@@ -347,19 +347,18 @@ public:
     inline Type getType() const { return type_; }
     inline void setType(Type ty) { type_ = ty; }
 
-    std::string name() const {
-        if (kind_ == NODE_GLO_VAR || kind_ == NODE_LOC_VAR) return varName;
-        if (kind_ == NODE_FUNC || kind_ == NODE_FUNC_DECL) return funcName;
+    inline std::string name() const {
+        if (kind_ == NODE_GLO_VAR || kind_ == NODE_LOC_VAR 
+            || kind_ == NODE_FUNC || kind_ == NODE_FUNC_DECL) 
+            return name_;
 
         return std::string();
     }
     
 #if defined(WIN32)
-    inline void setFuncName(const std::string &name) { funcName = "_" + name; }
-    inline void setVarName(const std::string &name) { varName = "_" + name; }
+    inline void setName(const std::string &name) { name_ = "_" + name; }
 #elif defined(__linux__)
-    inline void setFuncName(const std::string &name) { funcName = name; }
-    inline void setVarName(const std::string &name) { varName = name; }
+    inline void setName(const std::string &name) { name_ = name; }
 #endif
 
 public:
@@ -384,12 +383,11 @@ public:
 	/**
      * \ Local/global variable
      */
-    // private: std::string varName;
     int off_ = 0;
     std::vector<Node*> lvarinit_;
 
 	/**
-     * \ 
+     * \ BOP
      */
     Node *left_ = nullptr;
     Node *right_ = nullptr;
@@ -402,18 +400,15 @@ public:
 	/**
      * \function define and function declartion
      */
-    // private: std::string funcName;
     std::vector<Node*> params;
     Node *body = nullptr;
-
+    size_t local_vars_stk_size_ = 0;
+    size_t params_stk_size_ = 0;
+    size_t max_call_params_size_ = 0;
 
 	// declartion
     Node *decl_var = nullptr;
     std::vector<Node*> decl_init;
-
-	// Initializer
-    Node *init_val = nullptr;
-    int init_off = 0;
 
 	// If statement or ternary operator
     Node *cond = nullptr;
@@ -429,10 +424,10 @@ public:
 
     // Compound statement
     std::vector<Node *> stmts;
+
 private:
     void copying(const Node &n);
-    std::string funcName;
-    std::string varName;
+    std::string name_;
 };
 
 #endif // !_ZCC_TYPE_H

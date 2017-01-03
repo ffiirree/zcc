@@ -79,10 +79,6 @@ private:
     void reg_init();
     void generate(std::vector<std::string> &_q);
     std::string getOutName();
-
-    void getEnvSize(Env *_b, int &_size);
-    int getFuncLocVarSize(Node &n);
-    int getFuncCallSize(Node &n);
     void setLocEnv(const std::string &envName);
 
 
@@ -160,8 +156,7 @@ private:
     File inf;
     std::ofstream out;
     std::string _infilename;
-    bool is_main = false;
-    std::vector<std::string> params;
+    std::vector<std::tuple<std::string, int, int>> params;
     Node currentFunc;
 
     // 使用表达式栈来分配寄存器

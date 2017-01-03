@@ -137,7 +137,6 @@ void Generate::gas_dec(const std::string &n, int size)
     out << "\t.comm\t";
     out << n;
     out << "," << size;
-    // out << ", " << ((size / 2 < 3) ? size / 2 : 3);
     out << std::endl;
 }
 

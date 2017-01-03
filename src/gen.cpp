@@ -124,12 +124,8 @@ void Generate::const_str()
 
 void Generate::func_decl(Node &n)
 {
-    int size = getFuncLocVarSize(n);            // 获取临时变量的 大小
-    size += getFuncCallSize(n);
+    int size = n.local_vars_stk_size_ + n.max_call_params_size_ * 2;
 
-    if (n.name() == "main") {
-        is_main = true;
-    }
     gas_tab(".text");
     gas_glo(n.name());
     gas_label(n.name());
@@ -278,7 +274,8 @@ void Generate::generate(std::vector<std::string> &_q)
         gas_ins("jmp", _q.at(1));
     }
     else if (_q_0_is("param")) {
-        params.push_back(_q.at(1));
+
+        params.push_back({ _q.at(1) , atoi(_q.at(2).c_str()), atoi(_q.at(3).c_str())});
     }
     else if (_q_0_is("call")) {
         std::string funcName = _q.at(1);
@@ -287,23 +284,20 @@ void Generate::generate(std::vector<std::string> &_q)
         std::string _src, _des;
 
         int pos = 0;
-        for (size_t i = 0; i < func.params.size(); ++i) {
-            size_t param_size = func.params.at(i)->type_.size_;
+        for (size_t i = params.size(); i > 0; --i) {
+            size_t param_size = std::get<2>(params.at(i-1));
 
-            // 目的地址
             _des = std::to_string(pos) + "(%esp)"; pos += param_size;
 
-            if (func.params.at(i)->getType().getType() == PTR) {
-                gas_ins(mov2stk(4), "$" + params.back(), _des);
-                params.pop_back();
+            if (std::get<1>(params.at(i-1)) == PTR) {
+                gas_ins(mov2stk(4), "$" + std::get<0>(params.at(i - 1)), _des);
                 continue;
             }
 
             std::string _out_str;
 
-            if (isLocVar(params.back())) {
-                LocVar var = searchLocvar(params.back());
-
+            if (isLocVar(std::get<0>(params.at(i - 1)))) {
+                LocVar var = searchLocvar(std::get<0>(params.at(i - 1)));
                 if (var.kind_ == NODE_GLO_VAR) {
                     gas_ins(movXXl(var.type_.size_, var.type_.isUnsig), var.name(), "%eax");
                     _src = reg2stk("%eax", param_size);
@@ -321,21 +315,21 @@ void Generate::generate(std::vector<std::string> &_q)
                 }
 
             }
-            else if (isNumber(params.back())) {
-                _src = "$" + params.back();
+            else if (isNumber(std::get<0>(params.at(i - 1)))) {
+                _src = "$" + std::get<0>(params.at(i - 1));
             }
-            else if (isEnumConst(params.back())) {
-                _src = "$" + parser->searchEnum(params.back());
+            else if (isEnumConst(std::get<0>(params.at(i - 1)))) {
+                _src = "$" + parser->searchEnum(std::get<0>(params.at(i - 1)));
             }
-            else if (isTempVar(params.back())) {
-                TempVar _te = searchTempvar(params.back());
-                _src = reg2stk(_te._reg, param_size);
+            else if (isTempVar(std::get<0>(params.at(i - 1)))) {
+                TempVar _te = searchTempvar(std::get<0>(params.at(i - 1)));
+                _src = reg2stk(_te._reg, _te._size);
             }
 
             gas_ins(mov2stk(param_size), _src, _des);
-            params.pop_back();
         }
         gas_call(_q.at(1));
+        params.clear();
 
         if (_q.size() == 4) {
             setReg("%eax", _q.at(3));
@@ -354,8 +348,6 @@ void Generate::generate(std::vector<std::string> &_q)
         }
     }
     else if (_q_0_is("ret")) {
-        if (is_main) is_main = false;
-
         if (_q.size() > 1) {
             std::string _src;
             int size = currentFunc.type_.retType->getSize();
@@ -604,66 +596,6 @@ std::string Generate::getTypeString(Type _t)
     }
 }
 
-int Generate::getFuncLocVarSize(Node &n)
-{
-    int _rsize = -1;
-    getEnvSize(locEnv, _rsize);
-    return _rsize;
-}
-
-void Generate::getEnvSize(Env *_begin, int &_size)
-{
-    if (_begin == nullptr)
-        return;
-
-    bool is_params = false;
-    int params_pos = 8;
-    if (_size == -1) {
-        is_params = true;
-        _size = 0;
-    }
-
-    for (size_t i = 0; i < _begin->size(); ++i) {
-        int _var_size = 0;
-
-        if (_begin->at(i).type_.getType() == ARRAY)
-            _var_size = _begin->at(i).type_.size_ * _begin->at(i).type_._all_len;
-        else
-            _var_size = _begin->at(i).type_.size_;
-
-        // 处理参数在栈中的位置，栈底ebp
-        if (is_params) {
-            _begin->at(i).off_ = params_pos;
-            params_pos += _var_size;
-        }
-        else {
-            _size += _var_size;
-            _begin->at(i).off_ = -_size;
-        }
-    }
-    std::vector<Env *> node = _begin->getNext();
-    for (size_t i = 0; i < node.size(); ++i) {
-        getEnvSize(node.at(i), _size);
-    }
-}
-
-void getEnvCallSize(Env * _begin, int *size)
-{
-    if (_begin == nullptr)
-        return;
-    *size += _begin->call_size_;
-    std::vector<Env *> node = _begin->getNext();
-    for (size_t i = 0; i < node.size(); ++i) {
-        getEnvCallSize(node.at(i), size);
-    }
-}
-
-int Generate::getFuncCallSize(Node &n)
-{
-    int _rsize = 0;
-    getEnvCallSize(locEnv, &_rsize);
-    return _rsize;
-}
 std::vector<std::string> Generate::getQuad()
 {
     std::vector<std::string> _quad;

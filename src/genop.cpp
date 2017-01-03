@@ -138,6 +138,7 @@ void Generate::getReg(std::vector<std::string> &_q)
 
         // ±£´æ
         TempVar _temp(_q3, "%eax");
+        _temp._size = _ty.size_;
         push_back_temp_stk(_temp, _temp._reg);
     }
     //
@@ -160,17 +161,21 @@ void Generate::getReg(std::vector<std::string> &_q)
 
         // Save
         TempVar _temp(_q3, "%eax");
+        _temp._size = var.type_.size_;
         push_back_temp_stk(_temp, _temp._reg);
     }
     else if (_q_0_is("[]")) {
         getReg("%eax");
+        size_t temp_size = 0;
 
         if (isLocVar(_q2)) {
             Node var = searchLocvar(_q2);
+            temp_size = var.type_.size_;
             if (var.kind_ == NODE_LOC_VAR) {
 
                 if (var.getType().getType() == PTR) {
                     Type _ty = getPtrType(var);
+                    
                     if (isNumber(_q1)) {
                         gas_ins("movl", loc_var_val(var.off_), "%eax");
                         gas_ins("addl", "$" + std::to_string(_ty.size_ * atoi(_q1.c_str())), "%eax");
@@ -330,6 +335,7 @@ void Generate::getReg(std::vector<std::string> &_q)
         }
 
         TempVar _temp(_q3, "%eax");
+        _temp._size = temp_size;
         push_back_temp_stk(_temp, _temp._reg);
     }
     else if (_q_0_is("[]=")) {
@@ -340,8 +346,9 @@ void Generate::getReg(std::vector<std::string> &_q)
     else if (_q_0_is("[]&")) {
         getReg("%eax");
 
+        Node var;
         if (isLocVar(_q2)) {
-            Node var = searchLocvar(_q2);
+            var = searchLocvar(_q2);
 
             if (var.kind_ == NODE_LOC_VAR) {
 
@@ -487,6 +494,7 @@ void Generate::getReg(std::vector<std::string> &_q)
         }
 
         TempVar _temp(_q3, "%eax");
+        _temp._size = var.type_.size_;
         push_back_temp_stk(_temp, _temp._reg);
     }
     else if (_q_0_is("->")) {
@@ -519,6 +527,7 @@ void Generate::getReg(std::vector<std::string> &_q)
 
         // ±£´æ
         TempVar _temp(_q3, "%eax");
+        _temp._size = _ty.size_;
         push_back_temp_stk(_temp, _temp._reg);
     }
     else if (_q_0_is("->&")) {
@@ -537,6 +546,7 @@ void Generate::getReg(std::vector<std::string> &_q)
         gas_ins("addl", "$" + _q1, "%eax");
 
         TempVar _temp(_q3, "%eax");
+        _temp._size = _ty.size_;
         push_back_temp_stk(_temp, _temp._reg);
     }
     // float
