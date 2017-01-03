@@ -16,7 +16,7 @@ void Preprocessor::init()
 #endif
 
     macros_.push_back({ "__ZCC__", {T_INTEGER, "1"}, Macro::M_PRE });
-    macros_.push_back({ "__ZCC_VERSION__", { T_STRING, "Version 0.02" }, Macro::M_PRE });
+    macros_.push_back({ "__ZCC_VERSION__", { T_STRING, "Version 0.10" }, Macro::M_PRE });
     macros_.push_back({ "__FILE__", Macro::M_PRE });
     macros_.push_back({ "__LINE__", Macro::M_PRE });
     macros_.push_back({ "__FUNC__", Macro::M_PRE });

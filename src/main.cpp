@@ -91,7 +91,11 @@ int main(int argc, char *argv[])
             }
             else {
                 if (!stopAsm) {
+#if defined(WIN32)
                     std::string runGccSys = "gcc " + _ofn + ".s -o" + _ofn + ".exe -m32";
+#elif(__linux__)
+                    std::string runGccSys = "gcc " + _ofn + ".s -o" + _ofn + " -m32";
+#endif       
                     auto ret = system(runGccSys.c_str());
                 }
             }
