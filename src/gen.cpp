@@ -268,7 +268,7 @@ void Generate::generate(std::vector<std::string> &_q)
     }
     else if (_q_0_is("param")) {
 
-        params.push_back({ _q.at(1) , atoi(_q.at(2).c_str()), atoi(_q.at(3).c_str())});
+        params.push_back(std::tuple<std::string, int, int>(_q.at(1) , atoi(_q.at(2).c_str()), atoi(_q.at(3).c_str())));
     }
     else if (_q_0_is("call")) {
         std::string funcName = _q.at(1);
