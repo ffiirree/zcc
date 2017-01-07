@@ -1,10 +1,13 @@
 #include<stdio.h>
 
-#define  N    19
-
-void main(int argc, char *argv[])
+int main() 
 {
-    int a = 90;
-    int i = sizeof(a) + 90;
-    printf("%d\n", i);
+    int a = 90, b = 78;
+
+    a ^= b;
+    b ^= a;
+    a ^= b;
+    printf("%d", a);
+
+	return 0;
 }

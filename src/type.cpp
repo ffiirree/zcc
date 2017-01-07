@@ -1,3 +1,4 @@
+#include<iomanip>
 #include "type.h"
 #include "error.h"
 
@@ -135,7 +136,25 @@ std::string getOnlyFileName(const std::string &_fn)
 
 std::ostream &operator<<(std::ostream & os, const Token & t)
 {
-    os << t.toString();
+    os << std::left << std::setw(15);
+    switch (t.kind_)
+    {
+    case T_CHAR:        os << "T_CHAR"; break;
+    case T_FLOAT:       os << "T_FLOAT"; break;
+    case T_IDENTIFIER:  os << "T_IDENTIFIER"; break;
+    case T_INTEGER:     os << "T_INTEGER"; break;
+    case T_KEYWORD:     os << "T_KEYWORD"; break;
+    case T_NEWLINE:     os << "T_NEWLINE"; break;
+    case T_OP:          os << "T_OP"; break;
+    case T_SPACE:       os << "T_SPACE"; break;
+    case T_STRING:      os << "T_STRING"; break;
+    case T_EOF:         os << "T_EOF"; break;
+    default:
+        errorp(t.getPos(), "unknown token type.");
+        break;
+    }
+
+    os << t.toString() << std::endl;
     return os;
 }
 
@@ -163,7 +182,23 @@ std::string Token::toString() const
     case T_STRING: _r = "\"" + sval_ + "\""; break;
 
 
-    case T_CHAR:  _r.push_back(static_cast<char>(ch_)); break;
+    case T_CHAR:  _r += "'"; 
+        switch (ch_)
+        {
+        case '\n': _r += "\\n"; break;
+        case '\t': _r += "\\t"; break;
+        case '\r': _r += "\\r"; break;
+        case '\'': _r += "\\'"; break;
+        case '\f': _r += "\\f"; break;
+        case '\0': _r += "\\0"; break;
+        case '\"': _r += "\\\""; break;
+        case '\\': _r += "\\\\"; break;
+        default:
+            _r.push_back(static_cast<char>(ch_));
+            break;
+        }
+        
+        _r += "'"; break;
     case T_EOF:  break;
     case T_NEWLINE: _r = "\n"; break;
     default:

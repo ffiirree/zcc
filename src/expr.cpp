@@ -412,26 +412,36 @@ Node *Parser::unary_expr()
 {
     Token tok = ts_.next();
     if (tok.getType() == T_KEYWORD) {
-        Node *r;
+        Node *r = nullptr;
+        Node *node = nullptr;
+
         switch (tok.getId()) {
         case K_SIZEOF:
-            return sizeof_operand();
+            return sizeof_op();
+
         case OP_INC:
-            r = unary_incdec(OP_PRE_INC);
+            node = unary_expr();
             createUnaryQuadruple("++");
-            return r;
+            return createUnaryNode(OP_PRE_INC, node->type_, node);
+
         case OP_DEC:
-            r = unary_incdec(OP_PRE_DEC);
+            node = unary_expr();
             createUnaryQuadruple("--");
-            return r;
+            return createUnaryNode(OP_PRE_DEC, node->type_, node);
 
         case '&':
-            r = unary_addr();
+            node = cast_expr();
             createUnaryQuadruple("&U");
-            return r;
+            return createUnaryNode(NODE_ADDR, conv2ptr(node->type_), node);
 
         case '*':
-            r = unary_deref(tok);
+            node = cast_expr();
+            if (node->type_.getType() != PTR)
+                errorp(ts_.getPos(), "pointer type expected.");
+            if (node->type_.getType() == NODE_FUNC)
+                r = node;
+            r = createUnaryNode(NODE_DEREF, *(node->type_.ptr), node);
+
             if(ts_.peek().toString() == "=")
                 createUnaryQuadruple("*=");
             else 
@@ -445,32 +455,29 @@ Node *Parser::unary_expr()
             return r;
 
         case '-':
-            r = unary_minus();
+            node = cast_expr();
+
+            if (is_inttype(node->type_)) {
+                createUnaryQuadruple("-U");
+                return binop('-', createIntNode(node->type_, 0), node);
+            }
+
             createUnaryQuadruple("-U");
-            return r;
+            return binop('-', createFloatNode(node->type_, 0.0), node);
 
         case '~':
-            r = unary_bitnot(tok);
+            node = cast_expr();
+            if (!is_inttype(node->type_))
+                errorp(ts_.getPos(), "invalid use of '~'.");
             createUnaryQuadruple("~");
-            return r;
+            return createUnaryNode('~', node->type_, node);
 
         case '!':
-            r = unary_lognot();
-            return r;
+            return createUnaryNode('!', Type(K_INT, 4, false), cast_expr());
         }
     }
     ts_.back();
     return postfix_expr();
-}
-
-Node *Parser::unary_minus()
-{
-    Node *expr = cast_expr();
-
-    if (is_inttype(expr->type_))
-        return binop('-', createIntNode(expr->type_, 0), expr);
-
-    return binop('-', createFloatNode(expr->type_, 0.0), expr);
 }
 
 Node *Parser::postfix_expr()
@@ -694,7 +701,7 @@ void Parser::ensure_inttype(Node &node)
 }
 
 
-Node *Parser::sizeof_operand()
+Node *Parser::sizeof_op()
 {
     Type ty(K_INT, 4, true);
     Node *r = new Node(NODE_INT, ty);
@@ -731,43 +738,4 @@ Node *Parser::sizeof_operand()
     r->sval_ = std::to_string(size);
     quad_arg_stk_.push_back(r->sval_);
     return r;
-}
-
-Node *Parser::unary_incdec(int ty)
-{
-    Node *node = unary_expr();
-
-    return createUnaryNode(ty, node->type_, node);
-}
-
-Node *Parser::unary_addr()
-{
-    Node *operand = cast_expr();
-
-    return createUnaryNode(NODE_ADDR, conv2ptr(operand->type_), operand);
-}
-
-
-Node *Parser::unary_deref(Token &t)
-{
-    Node *operand = cast_expr();
-    if (operand->type_.getType() != PTR)
-        errorp(ts_.getPos(), "pointer type expected.");
-    if (operand->type_.getType() == NODE_FUNC)
-        return operand;
-    return createUnaryNode(NODE_DEREF, *(operand->type_.ptr), operand);
-}
-
-Node *Parser::unary_bitnot(Token &t)
-{
-    Node *expr = cast_expr();
-
-    if (!is_inttype(expr->type_))
-        errorp(ts_.getPos(), "invalid use of '~'.");
-    return createUnaryNode('~', expr->type_, expr);
-}
-Node *Parser::unary_lognot()
-{
-    Node *operand = cast_expr();
-    return createUnaryNode('!', Type(K_INT, 4, false), operand);
 }

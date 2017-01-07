@@ -928,3 +928,109 @@ void Parser::out_quad() {
             << std::endl;
     }
 }
+
+std::ostream &operator<<(std::ostream &os, const Env &env)
+{
+    os << "############################## " << env.getName() << " ##############################" << std::endl;
+    
+#define _L(S) std::left << std:: setw(S)
+    os << _L(15) << "[name]" << _L(15) << "[kind]" 
+        << _L(20) << "[type]" << _L(10) << "[size]" 
+        << _L(15) << "[offset]" << std::endl;
+
+    for (size_t i = 0; i < env.size(); ++i) {
+        Node n = env.at(i);
+        os << _L(15) << n.name();
+        os << _L(15);
+        switch (n.kind_)
+        {
+        case NODE_GLO_VAR: os << "GLO_VAR"; break;
+        case NODE_LOC_VAR: os << "LOC_VAR"; break;
+        case NODE_FUNC: os << "FUNCTION"; break;
+        case NODE_FUNC_DECL: os << "FUNC DECL"; break;
+        default:
+            error("unknown Node kind");
+            break;
+        }
+        os << _L(20);
+        switch (n.type_.type)
+        {
+        case K_VOID:    os << "void"; break;
+        case K_BOOL:    os << "bool"; break;
+        case K_CHAR:    if (!n.type_.isUnsig) os << "signed char"; else os << "unsigned char"; break;
+        case K_SHORT:   if (!n.type_.isUnsig) os << "signed short"; else os << "unsigned short";  break;
+        case K_INT:     if (!n.type_.isUnsig) os << "signed int"; else os << "unsigned int"; break;
+        case K_LONG:    if (!n.type_.isUnsig) os << "signed long"; else os << "unsigned long"; break;
+        case K_FLOAT:   os << "float"; break;
+        case K_DOUBLE:  os << "double"; break;
+        case PTR:       os << "pointer"; break;
+        case ARRAY:     os << "array"; break;
+        case K_ENUM:    os << "enum";  break;
+        case K_STRUCT:  os << "struct";  break;
+        case K_TYPEDEF: os << "typedef"; break;
+        case ELLIPSIS:  os << "..."; break;
+        case NODE_FUNC:  
+            switch (n.type_.retType->type)
+            {
+            case K_VOID:    os << "void"; break;
+            case K_BOOL:    os << "bool"; break;
+            case K_CHAR:    if (!n.type_.isUnsig) os << "signed char"; else os << "unsigned char"; break;
+            case K_SHORT:   if (!n.type_.isUnsig) os << "signed short"; else os << "unsigned short";  break;
+            case K_INT:     if (!n.type_.isUnsig) os << "signed int"; else os << "unsigned int"; break;
+            case K_LONG:    if (!n.type_.isUnsig) os << "signed long"; else os << "unsigned long"; break;
+            case K_FLOAT:   os << "float"; break;
+            case K_DOUBLE:  os << "double"; break;
+            case PTR:       os << "pointer"; break;
+            case ARRAY:     os << "array"; break;
+            case K_ENUM:    os << "enum";  break;
+            case K_STRUCT:  os << "struct";  break;
+            case K_TYPEDEF: os << "typedef"; break;
+            case ELLIPSIS:  os << "..."; break;
+            }
+            break;
+        default:
+            error("unknown Node type");
+            break;
+        }
+        os << _L(10) << n.type_.size_;
+
+        if (n.kind_ == NODE_FUNC || n.kind_ == NODE_FUNC_DECL)
+            os << _L(15) << n.name();
+        else 
+            os << _L(15) << n.off_;
+
+        os << std::endl;
+    }
+
+#undef _L
+    os << "-------------------------------"<<  env.getName()  <<"-------------------------------" << std::endl << std::endl;
+    return os;
+}
+
+
+void env_next(Env *ptr, std::ofstream & stf)
+{
+    if (!ptr) return;
+
+    std::vector<Env *> next_ = ptr->getNext();
+    for (size_t i = 0; i < next_.size(); ++i) {
+        stf << *next_.at(i);
+        env_next(next_.at(i), stf);
+    }
+}
+
+void Parser::printSymbolTable()
+{
+    Env *ptr = globalenv;
+
+    std::string stfname = _of_name.substr(0, _of_name.length() - 2);
+    std::ofstream stf(stfname + ".st", std::ios::binary);
+    if (!stf.is_open())
+        error("Open " + stfname + "failed.");
+
+    stf << *ptr;
+
+    env_next(ptr, stf);
+
+    stf.close();
+}

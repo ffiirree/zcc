@@ -65,6 +65,8 @@ private:
     std::string filename_;
 };
 
+std::ostream &operator<<(std::ostream &os, const TokenSequence &ts);
+
 /**
  * @class Lex
  */

@@ -60,9 +60,10 @@ public:
     inline std::vector<Env *> getNext() { return next_; }
     inline void setNext(Env *_n) { next_.push_back(_n); }
     inline void setName(const std::string &_n) { name_ = _n; }
-    inline std::string getName() { return name_; }
-    size_t size() { return nodes_.size(); }
+    inline std::string getName() const { return name_; }
+    inline size_t size() const { return nodes_.size(); }
     Node &at(size_t i) { return nodes_.at(i); }
+    inline Node at(size_t i) const { return nodes_.at(i); }
     int call_size_ = 0;
 
 private:
@@ -71,6 +72,7 @@ private:
     std::vector<Env *> next_;
     std::vector<Node> nodes_;
 };
+std::ostream &operator<<(std::ostream &os, const Env &env);
 
 /**
  * @class Label
@@ -185,6 +187,7 @@ public:
     std::string searchEnum(const std::string &key);
     bool compute_bool_expr();
     Node *expression();
+    void printSymbolTable();
 
 private:
     bool cheak_redefined(Env *_env, const std::string &_name);
@@ -307,13 +310,7 @@ private:
     Node *var_or_func(Token &t);
     Node *binop(int op, Node *lhs, Node *rhs);
 
-    Node *sizeof_operand();
-    Node *unary_incdec(int ty);
-    Node *unary_addr();
-    Node *unary_deref(Token &t);
-    Node *unary_minus();
-    Node *unary_bitnot(Token &t);
-    Node *unary_lognot();
+    Node *sizeof_op();
 
     Node *wrap(Type &t, Node *node);
     Type getCustomType(const std::string &_n);

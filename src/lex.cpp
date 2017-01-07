@@ -288,3 +288,11 @@ void TokenSequence::insert(TokenSequence l)
         tokens_.insert(tokens_.begin() + index_, l.at(i - 1));
     }
 }
+
+std::ostream &operator<<(std::ostream &os, const TokenSequence &ts)
+{
+    for (int i = 0; i < ts.size(); ++i) {
+        os << ts.at(i);
+    }
+    return os;
+}

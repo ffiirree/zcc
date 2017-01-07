@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include "zcc.h"
 #include "error.h"
 #include "cpp.h"
@@ -19,13 +20,14 @@ void Help()
         "  -h                help\n"
         "  -V                use virtual machine to run the program.\n"
         "  -D                Debug(virtual machine mode)\n"
+        "  -A                Print all data\n"
         "\n";
 }
 
 void print_pp(TokenSequence &ts)
 {
     for (size_t i = 0; i < ts.size(); ++i) {
-        std::cout << ts.next() << " ";
+        std::cout << ts.next().toString() << " ";
     }
 }
 
@@ -33,7 +35,7 @@ int main(int argc, char *argv[])
 {
     std::vector<std::string> args;
     std::vector<std::string> fileName;
-    bool isOnlyPP = false, to_print = false, stopAsm = false, useVM = false, debug = false;
+    bool isOnlyPP = false, to_print = false, stopAsm = false, useVM = false, debug = false, printAll = false;
     std::string _ofn;
 
     // 读取所有命令参数
@@ -54,6 +56,7 @@ int main(int argc, char *argv[])
             case 'I': break;
             case 'V': useVM = true; break;
             case 'D': debug = true; break;
+            case 'A': printAll = true; break;
             default:
                 error("Undefined args.");
                 break;
@@ -80,9 +83,20 @@ int main(int argc, char *argv[])
         // 是否打印
         if (to_print) print_pp(os);
 
+        // print token sequence
+        if (printAll) {
+            std::ofstream tsf(_ofn + ".ts", std::ios::binary);
+            if (!tsf.is_open())
+                error("Open " + _ofn + ".ts failed.");
+            tsf << os;
+            tsf.close();
+        }
+
         // 
         if (!isOnlyPP) {
             Parser parser(os, _ofn);
+            if (printAll)
+                parser.printSymbolTable();
             VirtualMachine vm(useVM, debug);
             Generate gen(&parser, &vm);
 
