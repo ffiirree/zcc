@@ -151,17 +151,19 @@ void Generate::getReg(std::vector<std::string> &_q)
     else if (_q_0_is(".&")) {
         getReg("%eax");
         Node var = searchLocvar(_q2);
+        Type _ty;
         if (var.kind_ == NODE_GLO_VAR) {
-            Type _ty = getStructFieldType(var, _q1);
+            _ty = getStructFieldType(var, _q1);
             gas_ins(movXXl(_ty.size_, _ty.isUnsig), "$" + var.name() + "+" + _q1, "%eax");
         }
         else if (var.kind_ == NODE_LOC_VAR) {
+            _ty = getStructFieldType(var, _q1);
             gas_ins("leal", std::to_string(var.off_ + atoi(_q1.c_str())) + "(%ebp)", "%eax");
         }
 
         // Save
         TempVar _temp(_q3, "%eax");
-        _temp._size = var.type_.size_;
+        _temp._size = _ty.size_;
         push_back_temp_stk(_temp, _temp._reg);
     }
     else if (_q_0_is("[]")) {

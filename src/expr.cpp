@@ -532,8 +532,11 @@ Node *Parser::postfix_expr_tail(Node *node)
             Token t = ts_.next();
             int _off = 0;
             for (size_t i = 0; i < node->type_.fields.size(); ++i) {
-                if (t.getSval() == node->type_.fields.at(i)._name)
+                if (t.getSval() == node->type_.fields.at(i)._name) {
                     _off = node->type_.fields.at(i)._off;
+                    node->type_.size_ = node->type_.fields.at(i)._type->size_;
+                }
+                    
             }
             quad_arg_stk_.push_back(std::to_string(_off));
 
