@@ -110,8 +110,8 @@ void VirtualMachine::run()
         switch (asmIns.operator_)
         {
         case movl:  _32sR = _32sL; break;
-        case movb:  _16sR = _16sL; break;
-        case movw:  _8sR = _8sL; break;
+        case movw:  _16sR = _16sL; break;
+        case movb:  _8sR = _8sL; break;
         case subl:  _32sR = _32sR - _32sL; break;
         case addl:  _32sR = _32sR + _32sL; break;
         case imull: _32sR = _32sR * _32sL; break;

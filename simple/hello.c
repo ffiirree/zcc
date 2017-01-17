@@ -1,20 +1,8 @@
 #include <stdio.h>
 
-typedef struct Test{
-    int cols;
-    int rows;
-    char type;
-} Hask;
-Hask t = {1, 3, 1};
-
 int main(void)
 {
-
-    int a = t.rows;
-    printf("%d\n", a);
-
-    t.rows = 7;
-    printf("%d\n", t.rows);
-
+    int a, b, c, d, e, f, g;
+    f = a *b + c/ d- f%g;
     return 0;
 }
