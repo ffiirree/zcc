@@ -1,7 +1,7 @@
 #include "gen.h"
-#include "error.h"
+#include "logging.h"
 
-int Generate::gas_flo_load(const std::string &name, bool isChange)
+int Generate::gas_flo_load(const std::string& name, bool isChange)
 {
     std::string _src;
 
@@ -18,11 +18,10 @@ int Generate::gas_flo_load(const std::string &name, bool isChange)
 
     if (isFloatTemVar(name)) {
         TempVar temp = searchFloatTempvar(name);
-        if (isChange)
-            gas_tab("fxch");
+        if (isChange) gas_tab("fxch");
         return temp.type;
     }
-    else  if (isLocVar(name)) {
+    else if (isLocVar(name)) {
         Node var = searchLocvar(name);
         if (var.kind_ == NODE_GLO_VAR) {
             gas_tab(gas_fld(var.type_.size_, var.type_.type) + "\t" + var.name());
@@ -34,37 +33,36 @@ int Generate::gas_flo_load(const std::string &name, bool isChange)
         }
     }
     else {
-        error("error float number.");
+        log_e("error float number.");
     }
     return 0;
 }
 
-Type Generate::gas_fstp(const std::string &name)
+Type Generate::gas_fstp(const std::string& name)
 {
     Type _r;
     std::string _ins, _des;
     Node var;
 
     if (isLocVar(name)) {
-        var = searchLocvar(name);
+        var  = searchLocvar(name);
         _des = loc_var_val(var.off_);
     }
     else {
-        var = gloEnv->search(name);
+        var  = gloEnv->search(name);
         _des = var.name();
     }
 
-    switch (var.type_.type)
-    {
-    case K_CHAR:    _ins = "fistps"; break;
-    case K_SHORT:   _ins = "fistps"; break;
-    case K_INT:     _ins = "fistpl"; break;
-    case K_LONG:    _ins = "fistpl"; break;
+    switch (var.type_.type) {
+    case K_CHAR: _ins = "fistps"; break;
+    case K_SHORT: _ins = "fistps"; break;
+    case K_INT: _ins = "fistpl"; break;
+    case K_LONG: _ins = "fistpl"; break;
 
-    case K_FLOAT:   _ins = "fstps"; break;
-    case K_DOUBLE:  _ins = "fstpl"; break;
+    case K_FLOAT: _ins = "fstps"; break;
+    case K_DOUBLE: _ins = "fstpl"; break;
 
-    default:        error("Error float size."); break;
+    default: log_e("Error float size."); break;
     }
     gas_tab(_ins + "\t" + _des);
 
@@ -77,15 +75,15 @@ std::string Generate::gas_fld(int size, int _t)
     case K_INT:
     case K_LONG:
     case K_CHAR:
-    case K_SHORT:   return "fildl";
-    case K_FLOAT:   return "flds";
-    case K_DOUBLE:  return "fldl";
-    default: error("Unspport type.");
+    case K_SHORT: return "fildl";
+    case K_FLOAT: return "flds";
+    case K_DOUBLE: return "fldl";
+    default: log_e("Unspport type.");
     }
     return std::string();
 }
 
-std::string Generate::searchFLoat(const std::string &fl)
+std::string Generate::searchFLoat(const std::string& fl)
 {
     std::vector<std::string> floatConst = parser->getFloatConst();
     for (size_t i = 0; i < floatConst.size(); ++i) {
@@ -96,43 +94,34 @@ std::string Generate::searchFLoat(const std::string &fl)
     return std::string();
 }
 
-
-
-void Generate::gas_def_int(const std::string &n, int size, int init, bool is_fir)
+void Generate::gas_def_int(const std::string& n, int size, int init, bool is_fir)
 {
     gas_tab(".globl\t_" + n);
     if (is_fir) gas_tab(".data");
     gas(n + ":");
-    switch (size)
-    {
+    switch (size) {
     case 1: gas_tab(".byte\t" + std::to_string(init)); break;
     case 2: gas_tab(".word\t" + std::to_string(init)); break;
     case 4: gas_tab(".long\t" + std::to_string(init)); break;
-    default:
-        error("Error data size.");
-        break;
+    default: log_e("Error data size."); break;
     }
     if (vm_->use_) vm_->push_data(n, init, size);
 }
 
-void Generate::gas_def_flo(const std::string &n, int size, const std::string &init, bool is_fir)
+void Generate::gas_def_flo(const std::string& n, int size, const std::string& init, bool is_fir)
 {
     gas_tab(".globl\t_" + n);
     if (is_fir) gas_tab(".data");
     gas_tab(".align\t" + std::to_string(size));
     gas(n + ":");
-    switch (size)
-    {
+    switch (size) {
     case 4: gas_tab(".float\t" + init); break;
-    case 8: gas_tab(".double\t" + init);break;
-    default:
-        error("Error data size.");
-        break;
+    case 8: gas_tab(".double\t" + init); break;
+    default: log_e("Error data size."); break;
     }
 }
 
-
-void Generate::gas_dec(const std::string &n, int size)
+void Generate::gas_dec(const std::string& n, int size)
 {
     out << "\t.comm\t";
     out << n;
@@ -140,7 +129,7 @@ void Generate::gas_dec(const std::string &n, int size)
     out << std::endl;
 }
 
-void Generate::gas_def_arr(Node &n, bool is_fir)
+void Generate::gas_def_arr(Node& n, bool is_fir)
 {
     gas_tab(".globl\t" + n.name());
     if (is_fir) gas("\t.data");
@@ -153,7 +142,7 @@ void Generate::gas_def_arr(Node &n, bool is_fir)
     out << "\t.space\t" << (n.type_._all_len - i) * n.type_.size_ << std::endl;
 }
 
-void Generate::gas_custom(Node &n, bool is_fir)
+void Generate::gas_custom(Node& n, bool is_fir)
 {
     gas_tab(".globl\t" + n.name());
     if (is_fir) gas("\t.data");
@@ -164,11 +153,10 @@ void Generate::gas_custom(Node &n, bool is_fir)
         out << getTypeString(*n.type_.fields.at(i)._type) << n.lvarinit_.at(i)->int_val << std::endl;
         _initsize += n.type_.fields.at(i)._type->size_;
     }
-    if (_initsize < n.type_.size_)
-        out << "\t.space\t" << n.type_.size_ - _initsize << std::endl;
+    if (_initsize < n.type_.size_) out << "\t.space\t" << n.type_.size_ - _initsize << std::endl;
 }
 
-Type Generate::gas_load(const std::string &_q, const std::string &_reg)
+Type Generate::gas_load(const std::string& _q, const std::string& _reg)
 {
     if (isNumber(_q)) {
         gas_ins("movl", "$" + _q, _reg);
@@ -217,16 +205,16 @@ Type Generate::gas_load(const std::string &_q, const std::string &_reg)
         return Type(var.type, var._size, var._isUnsig);
     }
     else if (isFloatTemVar(_q)) {
-        TempVar  f = searchFLoat(_q);
+        TempVar f = searchFLoat(_q);
         return Type(f.type, f._size, f._isUnsig);
     }
     else {
-        error("unknown data.");
+        log_e("unknown data.");
         return false;
     }
 }
 
-void Generate::gas_jxx(const std::string &op, const std::string &des, Type &_t)
+void Generate::gas_jxx(const std::string& op, const std::string& des, Type& _t)
 {
     if (op == ">") {
         if (_t.isUnsig || _t.type == K_FLOAT || _t.type == K_DOUBLE)
@@ -258,19 +246,19 @@ void Generate::gas_jxx(const std::string &op, const std::string &des, Type &_t)
         gas_ins("jne", des);
 }
 
-void Generate::temp_save(const std::string &_n, int type, bool is_unsig, const std::string &_reg)
+void Generate::temp_save(const std::string& _n, int type, bool is_unsig, const std::string& _reg)
 {
     TempVar _t_save(_n);
     _t_save._isUnsig = is_unsig;
-    _t_save.type = type;
+    _t_save.type     = type;
     switch (type) {
-    case K_CHAR:	_t_save._size = 1; break;
-    case K_SHORT:	_t_save._size = 2; break;
-    case K_INT:		_t_save._size = 4; break;
-    case K_LONG:	_t_save._size = 4; break;
-    case K_FLOAT:	_t_save._size = 4; break;
-    case K_DOUBLE:	_t_save._size = 8; break;
-    default:		_t_save._size = 0; break;
+    case K_CHAR: _t_save._size = 1; break;
+    case K_SHORT: _t_save._size = 2; break;
+    case K_INT: _t_save._size = 4; break;
+    case K_LONG: _t_save._size = 4; break;
+    case K_FLOAT: _t_save._size = 4; break;
+    case K_DOUBLE: _t_save._size = 8; break;
+    default: _t_save._size = 0; break;
     }
     _t_save._reg = _reg;
     setReg(_reg, _n);
@@ -281,19 +269,19 @@ void Generate::temp_save(const std::string &_n, int type, bool is_unsig, const s
         _stk_temp_var.push_back(_t_save);
 }
 
-void Generate::temp_save(const std::string &_n, Type &_t, const std::string &_reg)
+void Generate::temp_save(const std::string& _n, Type& _t, const std::string& _reg)
 {
     TempVar _t_save(_n);
     _t_save._isUnsig = _t.isUnsig;
-    _t_save.type = _t.type;
+    _t_save.type     = _t.type;
     switch (_t_save.type) {
-    case K_CHAR:	_t_save._size = 1; break;
-    case K_SHORT:	_t_save._size = 2; break;
-    case K_INT:		_t_save._size = 4; break;
-    case K_LONG:	_t_save._size = 4; break;
-    case K_FLOAT:	_t_save._size = 4; break;
-    case K_DOUBLE:	_t_save._size = 8; break;
-    default:		_t_save._size = 0; break;
+    case K_CHAR: _t_save._size = 1; break;
+    case K_SHORT: _t_save._size = 2; break;
+    case K_INT: _t_save._size = 4; break;
+    case K_LONG: _t_save._size = 4; break;
+    case K_FLOAT: _t_save._size = 4; break;
+    case K_DOUBLE: _t_save._size = 8; break;
+    default: _t_save._size = 0; break;
     }
     _t_save._reg = _reg;
     setReg(_reg, _n);
@@ -303,15 +291,17 @@ void Generate::temp_save(const std::string &_n, Type &_t, const std::string &_re
         _stk_temp_var.push_back(_t_save);
 }
 
-void Generate::unlimited_binary_op(std::vector<std::string> &_q, const std::string &op)
+void Generate::unlimited_binary_op(std::vector<std::string>& _q, const std::string& op)
 {
     Type _save, _t;
     std::string _q1_reg, _q2_reg;
 
     _q1_reg = getEmptyReg();
-    _t = gas_load(_q.at(1), _q1_reg); _save.type < _t.type ? _save = _t : true;
+    _t      = gas_load(_q.at(1), _q1_reg);
+    _save.type < _t.type ? _save = _t : true;
     _q2_reg = getEmptyReg();
-    _t = gas_load(_q.at(2), _q2_reg); _save.type < _t.type ? _save = _t : true;
+    _t      = gas_load(_q.at(2), _q2_reg);
+    _save.type < _t.type ? _save = _t : true;
 
     gas_ins(op, _q1_reg, _q2_reg);
 
@@ -319,34 +309,36 @@ void Generate::unlimited_binary_op(std::vector<std::string> &_q, const std::stri
     temp_save(_q.at(3), _save, _q2_reg);
 }
 
-void Generate::add_or_sub_op(std::vector<std::string> &_q, const std::string &op)
+void Generate::add_or_sub_op(std::vector<std::string>& _q, const std::string& op)
 {
     Type _save, _t, q1_type, q2_type;
     std::string _q1_reg, _q2_reg;
 
     _q1_reg = getEmptyReg();
-    q1_type = gas_load(_q.at(1), _q1_reg); _save.type < q1_type.type ? _save = q1_type : true;
+    q1_type = gas_load(_q.at(1), _q1_reg);
+    _save.type < q1_type.type ? _save = q1_type : true;
     _q2_reg = getEmptyReg();
-    q2_type = gas_load(_q.at(2), _q2_reg); _save.type < q2_type.type ? _save = q2_type : true;
+    q2_type = gas_load(_q.at(2), _q2_reg);
+    _save.type < q2_type.type ? _save = q2_type : true;
 
-    if(q1_type.type == PTR && q2_type.type != PTR){
-        switch(q1_type.size_){
-            case 1: break;
-            case 2: gas_ins("sall", "$1", _q2_reg);break;
-            case 4: gas_ins("sall", "$2", _q2_reg);break;
-            default: error("Pointer: error size.");
+    if (q1_type.type == PTR && q2_type.type != PTR) {
+        switch (q1_type.size_) {
+        case 1: break;
+        case 2: gas_ins("sall", "$1", _q2_reg); break;
+        case 4: gas_ins("sall", "$2", _q2_reg); break;
+        default: log_e("Pointer: error size.");
         }
     }
-    else if(q1_type.type != PTR && q2_type.type == PTR){
-        switch(q2_type.size_){
-            case 1: break;
-            case 2: gas_ins("sall", "$1", _q1_reg);break;
-            case 4: gas_ins("sall", "$2", _q1_reg);break;
-            default: error("Pointer: error size.");
+    else if (q1_type.type != PTR && q2_type.type == PTR) {
+        switch (q2_type.size_) {
+        case 1: break;
+        case 2: gas_ins("sall", "$1", _q1_reg); break;
+        case 4: gas_ins("sall", "$2", _q1_reg); break;
+        default: log_e("Pointer: error size.");
         }
     }
-    else if(q1_type.type == PTR && q2_type.type == PTR){
-        error("Both q1 and q2 are pointer.");
+    else if (q1_type.type == PTR && q2_type.type == PTR) {
+        log_e("Both q1 and q2 are pointer.");
     }
 
     gas_ins(op, _q1_reg, _q2_reg);
@@ -355,63 +347,58 @@ void Generate::add_or_sub_op(std::vector<std::string> &_q, const std::string &op
     temp_save(_q.at(3), _save, _q2_reg);
 }
 
-
-void Generate::shift_op(std::vector<std::string> &_q, const std::string &op)
+void Generate::shift_op(std::vector<std::string>& _q, const std::string& op)
 {
     Type _save, _t;
 
     getReg("%edx");
     getReg("%ecx");
 
-    _t = gas_load(_q.at(1), "%ecx"); _save.type < _t.type ? _save = _t : true;
-    _t = gas_load(_q.at(2), "%edx"); _save.type < _t.type ? _save = _t : true;
+    _t = gas_load(_q.at(1), "%ecx");
+    _save.type < _t.type ? _save = _t : true;
+    _t = gas_load(_q.at(2), "%edx");
+    _save.type < _t.type ? _save = _t : true;
     gas_ins(op, "%cl", "%edx");
 
     temp_clear(_q.at(1), _q.at(2));
     temp_save(_q.at(3), _save, "%edx");
 }
 
-
-Type Generate::getStructFieldType(Node &var, std::string &_off)
+Type Generate::getStructFieldType(Node& var, std::string& _off)
 {
     for (size_t i = 0; i < var.type_.fields.size(); ++i) {
         if (_off == std::to_string(var.type_.fields.at(i)._off)) {
             return *(var.type_.fields.at(i)._type);
         }
     }
-    error(var.name() + " do not have this field");
+    log_e(var.name() + " do not have this field");
     return Type();
 }
 
-Type Generate::getPtrType(Node &var)
-{
-    return *(var.type_.ptr);
-}
+Type Generate::getPtrType(Node& var) { return *(var.type_.ptr); }
 
-
-void Generate::gas_ins(const std::string &_i, const std::string &_src, const std::string &_des)
+void Generate::gas_ins(const std::string& _i, const std::string& _src, const std::string& _des)
 {
     std::string ins = _i + "\t" + _src + ", " + _des;
     gas_tab(ins);
-    vm_->push_back({ vm_->getInsByOp(_i), _src, _des , ins });
+    vm_->push_back({ vm_->getInsByOp(_i), _src, _des, ins });
 }
 
-
-void Generate::gas_ins(const std::string &_i, const std::string &_des)
+void Generate::gas_ins(const std::string& _i, const std::string& _des)
 {
     std::string ins = _i + "\t" + _des;
     gas_tab(ins);
     vm_->push_back({ vm_->getInsByOp(_i), _des, ins });
 }
 
-void Generate::gas_call(const std::string &_des)
+void Generate::gas_call(const std::string& _des)
 {
     std::string ins = "call\t" + _des;
     gas_tab(ins);
-    vm_->push_back({ vm_->getInsByOp("call"), _des , ins });
+    vm_->push_back({ vm_->getInsByOp("call"), _des, ins });
 }
 
-void Generate::gas_jxx_label(const std::string &_l)
+void Generate::gas_jxx_label(const std::string& _l)
 {
     gas(_l + ":");
     vm_->setFuncAddr(_l);

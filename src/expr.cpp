@@ -1,5 +1,5 @@
 #include "parser.h"
-#include "error.h"
+#include "logging.h"
 
 Node *Parser::expression()
 {
@@ -34,7 +34,7 @@ bool Parser::compute_bool_expr()
     bool_expr();
 
     if (quad_arg_stk_.size() > 1)
-        error("bool_expr not res.");
+        log_e("bool_expr not res.");
     if (quad_arg_stk_.size() == 1) {
         if (atoi(quad_arg_stk_.back().c_str()) != 0)
             r = true;
@@ -318,8 +318,8 @@ Node *Parser::shift_expr()
             break;
         Node *right = add_expr();
 
-        if (cheak_is_int_type(*node)) errorp(ts_.getPos(), "shift operator need a interger object.");
-        if (cheak_is_int_type(*right)) errorp(ts_.getPos(), "shift operator need a interger object.");
+        if (cheak_is_int_type(*node)) log_e(ts_.location(), "shift operator need a integer object.");
+        if (cheak_is_int_type(*right)) log_e(ts_.location(), "shift operator need a integer object.");
 
         node = createBinOpNode(node->getType(), op, node, right);
         if (op == OP_SAL)
@@ -385,8 +385,8 @@ Node *Parser::multi_expr()
         else if (next_is('%')) {
             Node *right = cast_expr();
 
-            if (!cheak_is_int_type(*node)) errorp(ts_.getPos(), "mod op need a interger object.");
-            if (!cheak_is_int_type(*right)) errorp(ts_.getPos(), "mod op need a interger object.");
+            if (!cheak_is_int_type(*node)) log_e(ts_.location(), "mod op need a integer object.");
+            if (!cheak_is_int_type(*right)) log_e(ts_.location(), "mod op need a integer object.");
 
             node = binop('%', node, right);
             createQuadruple("%");
@@ -437,7 +437,7 @@ Node *Parser::unary_expr()
         case '*':
             node = cast_expr();
             if (node->type_.getType() != PTR)
-                errorp(ts_.getPos(), "pointer type expected.");
+                log_e(ts_.location(), "pointer type expected.");
             if (node->type_.getType() == NODE_FUNC)
                 r = node;
             r = createUnaryNode(NODE_DEREF, *(node->type_.ptr), node);
@@ -468,7 +468,7 @@ Node *Parser::unary_expr()
         case '~':
             node = cast_expr();
             if (!is_inttype(node->type_))
-                errorp(ts_.getPos(), "invalid use of '~'.");
+                log_e(ts_.location(), "invalid use of '~'.");
             createUnaryQuadruple("~");
             return createUnaryNode('~', node->type_, node);
 
@@ -620,7 +620,7 @@ Node *Parser::primary_expr()
         return nullptr;
 
     default:
-        errorp(ts_.getPos(), "internal error: unknown token kind");
+        log_e(ts_.location(), "internal error: unknown token kind");
     }
     return nullptr;       // for warning
 }
@@ -647,7 +647,7 @@ Node *Parser::var_or_func(Token &t)
     if (iter != enum_const.end())
         pushQuadruple(t.getSval());
     else if (r.kind_ == NODE_NULL)
-        errorp(ts_.getPos(), "undefined var : " + t.getSval());
+        log_e(ts_.location(), "undefined var : " + t.getSval());
 #endif // _OVERLOAD_
 
     return new Node(r);
@@ -700,7 +700,7 @@ Type Parser::usual_arith_conv(Type &t, Type &u)
 void Parser::ensure_inttype(Node &node)
 {
     if (!is_inttype(node.getType()))
-        errorp(ts_.getPos(), "integer type expected");
+        log_e(ts_.location(), "integer type expected");
 }
 
 
@@ -728,7 +728,7 @@ Node *Parser::sizeof_op()
     }
     else {
         if (ts_.peek().kind_ != T_IDENTIFIER)
-            errorp(ts_.getPos(), "expect a object.");
+            log_e(ts_.location(), "expect a object.");
 
 #if defined(WIN32)
         Node var = localenv->search("_" + ts_.next().sval_);

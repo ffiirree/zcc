@@ -1,12 +1,14 @@
 #ifndef _ZVM_ZVM_H
 #define _ZVM_ZVM_H
 
-#include <map>
-#include <vector>
 #include "parser.h"
 #include "type.h"
 
-enum Instruction {
+#include <map>
+#include <vector>
+
+enum Instruction
+{
     INS_NULL,
 #define vminsmap(_, ins) ins,
     VM_INS
@@ -16,14 +18,34 @@ enum Instruction {
 /**
  * @berif AsmIns
  */
-class AsmIns {
+class AsmIns
+{
 public:
-    AsmIns(Instruction optor, const std::string &ins) : operator_(optor), lstr_(), rstr_(), ins_(ins) {}
-    AsmIns(Instruction optor, const std::string operand, const std::string &ins) : operator_(optor), lstr_(operand), rstr_(), ins_(ins) {}
-    AsmIns(Instruction optor, const std::string lopand, const std::string ropand, const std::string &ins) : operator_(optor), lstr_(lopand), rstr_(ropand), ins_(ins) {}
+    AsmIns(Instruction optor, const std::string& ins)
+        : operator_(optor),
+          lstr_(),
+          rstr_(),
+          ins_(ins)
+    {}
+    AsmIns(Instruction optor, const std::string operand, const std::string& ins)
+        : operator_(optor),
+          lstr_(operand),
+          rstr_(),
+          ins_(ins)
+    {}
+    AsmIns(Instruction optor, const std::string lopand, const std::string ropand, const std::string& ins)
+        : operator_(optor),
+          lstr_(lopand),
+          rstr_(ropand),
+          ins_(ins)
+    {}
 
-    AsmIns(const AsmIns &ai) { copying(ai); }
-    AsmIns &operator=(const AsmIns &ai) { copying(ai); return *this; }
+    AsmIns(const AsmIns& ai) { copying(ai); }
+    AsmIns& operator=(const AsmIns& ai)
+    {
+        copying(ai);
+        return *this;
+    }
     ~AsmIns() = default;
 
 public:
@@ -35,34 +57,38 @@ public:
     std::string ins_;
     std::string lstr_;
     std::string rstr_;
-private:
-    void copying(const AsmIns&ai);
-};
 
+private:
+    void copying(const AsmIns& ai);
+};
 
 /**
  * @berif VirtualMachine
  */
-class VirtualMachine {
+class VirtualMachine
+{
 public:
     VirtualMachine(bool use = false, bool debug = false);
-    VirtualMachine(const VirtualMachine &vm) = delete;
-    VirtualMachine &operator=(const VirtualMachine &vm) = delete;
-    ~VirtualMachine() = default;
+    VirtualMachine(const VirtualMachine& vm)            = delete;
+    VirtualMachine& operator=(const VirtualMachine& vm) = delete;
+    ~VirtualMachine()                                   = default;
 
     void create(Parser *p);
-    void setFuncAddr(const std::string &fn);
+    void setFuncAddr(const std::string& fn);
     void link();
     void run();
-    void decode(AsmIns &ai);
+    void decode(AsmIns& ai);
 
-    bool isImmediate(const std::string &name);
-    int getImmediate(const std::string &name);
-    void push_back(const AsmIns &ai) { if(use_) text_.push_back(ai); }
+    bool isImmediate(const std::string& name);
+    int getImmediate(const std::string& name);
+    void push_back(const AsmIns& ai)
+    {
+        if (use_) text_.push_back(ai);
+    }
     void push_data(const std::string name, int val, int size);
-    Instruction getInsByOp(const std::string &name);
-    void *getOperandAddr(const std::string &name);
-    int getRegValByName(const std::string &name);
+    Instruction getInsByOp(const std::string& name);
+    void *getOperandAddr(const std::string& name);
+    int getRegValByName(const std::string& name);
 
     /**
      * @berif Virtual register
@@ -104,7 +130,5 @@ private:
     bool zf = false;
     bool sf = false;
 };
-
-
 
 #endif // !_ZVM_ZVM_H

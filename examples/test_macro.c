@@ -5,7 +5,7 @@
 
 #if MACRO_A && MACRO_B
 #define Hi "Hi"
-#else 
+#else
 #define Hi "Hello"
 #endif
 

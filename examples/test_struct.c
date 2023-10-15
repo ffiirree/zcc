@@ -1,11 +1,13 @@
 #include <stdio.h>
 
-typedef struct Test{
+typedef struct Test
+{
     int cols;
     int rows;
     char type;
 } Hask;
-Hask t = {1, 3, 1};
+
+Hask t = { 1, 3, 1 };
 
 int main(void)
 {

@@ -1,24 +1,24 @@
-#include<iomanip>
+#include "logging.h"
 #include "parser.h"
-#include "error.h"
+
+#include <iomanip>
 
 Node *Parser::statement()
 {
     Token t = ts_.next();
     if (t.getType() == T_KEYWORD) {
-        switch (t.getId())
-        {
+        switch (t.getId()) {
         case '{': return compound_stmt();
         case K_IF: return if_stmt();
-        case K_FOR:return for_stmt();
-        case K_WHILE:return while_stmt();
-        case K_DO:return do_stmt();
+        case K_FOR: return for_stmt();
+        case K_WHILE: return while_stmt();
+        case K_DO: return do_stmt();
         case K_RETURN: return return_stmt();
         case K_SWITCH: return switch_stmt();
         case K_CASE: return case_stmt();
         case K_DEFAULT: return default_stmt();
         case K_BREAK: return break_stmt();
-        case K_CONTINUE:return continue_stmt();
+        case K_CONTINUE: return continue_stmt();
         case K_GOTO: return goto_stmt();
         }
     }
@@ -41,11 +41,10 @@ Node *Parser::compound_stmt()
 {
     __IN_SCOPE__(localenv, localenv, newLabel("Env"));
 
-    std::vector<Node*> list;
+    std::vector<Node *> list;
 
     for (;;) {
-        if (next_is('}')) 
-            break;
+        if (next_is('}')) break;
         /**
          * \ Ensure last stmt is return stmt.
          */
@@ -58,10 +57,9 @@ Node *Parser::compound_stmt()
     return createCompoundStmtNode(list);
 }
 
-void Parser::decl_or_stmt(std::vector<Node *> &list)
+void Parser::decl_or_stmt(std::vector<Node *>& list)
 {
-    if (ts_.peek().getId() == T_EOF)
-        error("premature end of input");
+    if (ts_.peek().getId() == T_EOF) log_e("premature end of input");
 
     if (is_type(ts_.peek())) {
         declaration(list, false);
@@ -78,15 +76,16 @@ Node *Parser::if_stmt()
 
     expect('(');
     _EN_CONDITION_();
-    Node *cond = bool_expr();          // B.code
+    Node *cond = bool_expr(); // B.code
     _DIS_CONDITION_();
     expect(')');
 
-    BoolLabel *B = boolLabels_.back(); boolLabels_.pop_back();
+    BoolLabel *B = boolLabels_.back();
+    boolLabels_.pop_back();
     _GENQL_(newLabel("t"));
     backpatch(B->trueList_, quadStk_.size());
     _GENQ1_("clr");
-    Node *then = statement();     // S1.code
+    Node *then = statement(); // S1.code
 
     if (next_is(K_ELSE)) {
         _GENQ2_("goto", nextLabel);
@@ -118,7 +117,7 @@ Node *Parser::while_stmt()
 {
     std::string beginLabel = newLabel("wb");
 
-    _GENQL_(beginLabel);                       // Label(begin)
+    _GENQL_(beginLabel); // Label(begin)
     expect('(');
     _EN_CONDITION_();
     Node *node = bool_expr();
@@ -126,11 +125,12 @@ Node *Parser::while_stmt()
     expect(')');
     _GENQ1_("clr");
 
-    BoolLabel *B = boolLabels_.back(); boolLabels_.pop_back();
-    _GENQL_(newLabel("wt"));                 // Label(B.true)
+    BoolLabel *B = boolLabels_.back();
+    boolLabels_.pop_back();
+    _GENQL_(newLabel("wt"));  // Label(B.true)
     backpatch(B->trueList_, quadStk_.size());
 
-    Node *body = statement();                 // S1.code
+    Node *body = statement(); // S1.code
 
     _GENQ2_("goto", beginLabel);
     _GENQL_(newLabel("n"));
@@ -144,13 +144,12 @@ Node *Parser::while_stmt()
     return createCompoundStmtNode(list);
 }
 
-
 Node *Parser::do_stmt()
 {
     int M = 0;
 
     _GENQL_(newLabel("db"));
-    M = quadStk_.size();
+    M       = quadStk_.size();
     Node *r = statement();
     expect(K_WHILE);
     expect('(');
@@ -159,7 +158,8 @@ Node *Parser::do_stmt()
     _DIS_CONDITION_();
     expect(')');
     expect(';');
-    BoolLabel *B = boolLabels_.back(); boolLabels_.pop_back();
+    BoolLabel *B = boolLabels_.back();
+    boolLabels_.pop_back();
 
     backpatch(B->trueList_, M);
 
@@ -182,9 +182,9 @@ Node *Parser::switch_stmt()
 
     expect('(');
     Node *r = expression();
-    if (r->type_.getType() != K_INT && r->type_.getType() != K_CHAR
-        && r->type_.getType() != K_SHORT && r->type_.getType() != K_LONG)
-        error("Switch only integer!");
+    if (r->type_.getType() != K_INT && r->type_.getType() != K_CHAR && r->type_.getType() != K_SHORT &&
+        r->type_.getType() != K_LONG)
+        log_e("Switch only integer!");
 
     if (r->kind_ == NODE_INT || r->kind_ == NODE_CHAR || r->kind_ == NODE_SHORT || r->kind_ == NODE_LONG)
         switch_expr = std::to_string(r->int_val);
@@ -211,17 +211,16 @@ Node *Parser::switch_stmt()
 Node *Parser::for_stmt()
 {
     BoolLabel *B = nullptr;
-    int M = 0;
+    int M        = 0;
 
-    std::string _next = newLabel("forn");
+    std::string _next  = newLabel("forn");
     std::string _begin = newLabel("forb");
-    std::string _exp3 = newLabel("fe3");
-
+    std::string _exp3  = newLabel("fe3");
 
     expect('(');
     __IN_SCOPE__(localenv, localenv, newLabel("for"));
     if (is_type(ts_.peek())) {
-        std::vector<Node*> list;
+        std::vector<Node *> list;
         declaration(list, false);
     }
     else if (is_keyword(ts_.peek(), ';')) {
@@ -243,9 +242,10 @@ Node *Parser::for_stmt()
         bool_expr();
         _DIS_CONDITION_();
         expect(';');
-        B = boolLabels_.back(); boolLabels_.pop_back();
+        B = boolLabels_.back();
+        boolLabels_.pop_back();
     }
-    
+
     _GENQ1_("clr");
     _GENQL_(_exp3);
     if (is_keyword(ts_.peek(), ')')) {
@@ -255,8 +255,8 @@ Node *Parser::for_stmt()
         expression();
         expect(')');
     }
-    _GENQ1_("clr"); 
-    _GENQ2_("goto", _begin); 
+    _GENQ1_("clr");
+    _GENQ2_("goto", _begin);
 
     _GENQL_(newLabel("ft"));
     backpatch(B->trueList_, quadStk_.size());
@@ -275,7 +275,6 @@ Node *Parser::for_stmt()
 
     return nullptr;
 }
-
 
 Node *Parser::goto_stmt()
 {
@@ -303,15 +302,15 @@ Node *Parser::return_stmt()
      * \ Such as: int min(void) return;
      */
     if (retval == nullptr && currentFuncRetType->type != K_VOID)
-        errorp(ts_.getPos(), "Function need a return value");
+        log_e(ts_.location(), "Function need a return value");
 
     /**
      * \ Such as: void min(void) return 9;
      */
-    if(retval != nullptr && currentFuncRetType->type == K_VOID)
-        errorp(ts_.getPos(), "Function do not need a return value");
+    if (retval != nullptr && currentFuncRetType->type == K_VOID)
+        log_e(ts_.location(), "Function do not need a return value");
 
-    if(retval == nullptr && currentFuncRetType->type == K_VOID)
+    if (retval == nullptr && currentFuncRetType->type == K_VOID)
         _GENQ2_("ret", "0");
     else if (retval != nullptr && currentFuncRetType->type != K_VOID)
         _GENQ2_("ret", quad_arg_stk_.back());
@@ -320,7 +319,6 @@ Node *Parser::return_stmt()
 
     return createRetStmtNode(retval);
 }
-
 
 Node *Parser::case_stmt()
 {

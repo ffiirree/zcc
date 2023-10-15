@@ -1,11 +1,51 @@
-build/
-bin/
-*.s
-*.q
-.idea/
-cmake-build-debug/
-*.q
-*.s
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
 *.exe
-*.ts
-*.st
+*.out
+*.app
+
+out
+*build*
+.vscode
+.idea
+debian
+.vs
+x64
+*.user*
+*.vc*
+*.vs*
+*.json
+debug
+release
+*.rc
+
+# ZCC
+*.q
+*.s

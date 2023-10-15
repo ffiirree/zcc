@@ -1,13 +1,12 @@
 #include "gen.h"
-#include "error.h"
+#include "logging.h"
 
-#define _q_0_is(str)          (_q.at(0) == str)
-#define _q1                    _q.at(1)
-#define _q2                    _q.at(2)
-#define _q3                    _q.at(3)
+#define _q_0_is(str) (_q.at(0) == str)
+#define _q1          _q.at(1)
+#define _q2          _q.at(2)
+#define _q3          _q.at(3)
 
-
-void Generate::getReg(std::vector<std::string> &_q)
+void Generate::getReg(std::vector<std::string>& _q)
 {
     std::string _q1_reg;
     std::string _q2_reg;
@@ -56,8 +55,10 @@ void Generate::getReg(std::vector<std::string> &_q)
         getReg("%eax");
         getReg("%edx");
 
-        _t = gas_load(_q2, "%eax"); _save.type < _t.type ? _save = _t : true;
-        _t = gas_load(_q1, "%edx"); _save.type < _t.type ? _save = _t : true;
+        _t = gas_load(_q2, "%eax");
+        _save.type < _t.type ? _save = _t : true;
+        _t = gas_load(_q1, "%edx");
+        _save.type < _t.type ? _save = _t : true;
 
         gas_ins(mul(4, _t.isUnsig), "%edx", "%eax");
 
@@ -78,7 +79,7 @@ void Generate::getReg(std::vector<std::string> &_q)
             }
         }
         else {
-            error("pre & var error");
+            log_e("pre & var error");
         }
 
         temp_save(_q2, var.type_, "%eax");
@@ -97,7 +98,7 @@ void Generate::getReg(std::vector<std::string> &_q)
             }
         }
         else {
-            error("pre * var error");
+            log_e("pre * var error");
         }
         gas_ins(movXXl(var.type_.size_, var.type_.isUnsig), "0(%eax)", "%eax");
 
@@ -117,7 +118,7 @@ void Generate::getReg(std::vector<std::string> &_q)
             }
         }
         else {
-            error("pre * var error");
+            log_e("pre * var error");
         }
         gas_ins("leal", "0(%eax)", "%eax");
 
@@ -134,9 +135,10 @@ void Generate::getReg(std::vector<std::string> &_q)
         if (var.kind_ == NODE_GLO_VAR)
             gas_ins(movXXl(_ty.size_, _ty.isUnsig), var.name() + "+" + _q1, "%eax");
         else if (var.kind_ == NODE_LOC_VAR)
-            gas_ins(movXXl(_ty.size_, _ty.isUnsig), std::to_string(var.off_ + atoi(_q1.c_str())) + "(%ebp)", "%eax");
+            gas_ins(movXXl(_ty.size_, _ty.isUnsig), std::to_string(var.off_ + atoi(_q1.c_str())) + "(%ebp)",
+                    "%eax");
 
-        // ±£´æ
+        // ï¿½ï¿½ï¿½ï¿½
         TempVar _temp(_q3, "%eax");
         _temp._size = _ty.size_;
         push_back_temp_stk(_temp, _temp._reg);
@@ -171,13 +173,13 @@ void Generate::getReg(std::vector<std::string> &_q)
         size_t temp_size = 0;
 
         if (isLocVar(_q2)) {
-            Node var = searchLocvar(_q2);
+            Node var  = searchLocvar(_q2);
             temp_size = var.type_.size_;
             if (var.kind_ == NODE_LOC_VAR) {
 
                 if (var.getType().getType() == PTR) {
                     Type _ty = getPtrType(var);
-                    
+
                     if (isNumber(_q1)) {
                         gas_ins("movl", loc_var_val(var.off_), "%eax");
                         gas_ins("addl", "$" + std::to_string(_ty.size_ * atoi(_q1.c_str())), "%eax");
@@ -185,7 +187,9 @@ void Generate::getReg(std::vector<std::string> &_q)
                     }
                     else if (isEnumConst(_q1)) {
                         gas_ins("movl", loc_var_val(var.off_), "%eax");
-                        gas_ins("addl", "$" + std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())), "%eax");
+                        gas_ins("addl",
+                                "$" + std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())),
+                                "%eax");
                         gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                     else if (isLocVar(_q1)) {
@@ -215,15 +219,21 @@ void Generate::getReg(std::vector<std::string> &_q)
                         gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                     else {
-                        error("error.");
+                        log_e("error.");
                     }
                 }
                 else if (var.getType().getType() == ARRAY) {
                     Type _ty = var.getType();
                     if (isNumber(_q1))
-                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), std::to_string(var.off_ + var.type_.size_ * atoi(_q1.c_str())) + "(%ebp)", "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig),
+                                std::to_string(var.off_ + var.type_.size_ * atoi(_q1.c_str())) + "(%ebp)",
+                                "%eax");
                     else if (isEnumConst(_q1))
-                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), std::to_string(var.off_ + var.type_.size_ * atoi(parser->searchEnum(_q1).c_str())) + "(%ebp)", "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig),
+                                std::to_string(var.off_ +
+                                               var.type_.size_ * atoi(parser->searchEnum(_q1).c_str())) +
+                                    "(%ebp)",
+                                "%eax");
                     else if (isLocVar(_q1)) {
                         Node _loc = searchLocvar(_q1);
                         if (_loc.kind_ == NODE_GLO_VAR) {
@@ -251,7 +261,7 @@ void Generate::getReg(std::vector<std::string> &_q)
                         gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                     else {
-                        error("error.");
+                        log_e("error.");
                     }
                 }
             }
@@ -266,7 +276,9 @@ void Generate::getReg(std::vector<std::string> &_q)
                     }
                     else if (isEnumConst(_q1)) {
                         gas_ins("movl", var.name(), "%eax");
-                        gas_ins("addl", "$" + std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())), "%eax");
+                        gas_ins("addl",
+                                "$" + std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())),
+                                "%eax");
                         gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                     else if (isLocVar(_q1)) {
@@ -296,16 +308,21 @@ void Generate::getReg(std::vector<std::string> &_q)
                         gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                     else {
-                        error("error.");
+                        log_e("error.");
                     }
                 }
                 else if (var.getType().getType() == ARRAY) {
                     Type _ty = var.getType();
 
                     if (isNumber(_q1))
-                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), var.name() + "+" + std::to_string(var.type_.size_ * atoi(_q1.c_str())), "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig),
+                                var.name() + "+" + std::to_string(var.type_.size_ * atoi(_q1.c_str())),
+                                "%eax");
                     else if (isEnumConst(_q1))
-                        gas_ins(movXXl(_ty.size_, _ty.isUnsig), var.name() + "+" + std::to_string(var.type_.size_ * atoi(parser->searchEnum(_q1).c_str())), "%eax");
+                        gas_ins(movXXl(_ty.size_, _ty.isUnsig),
+                                var.name() + "+" +
+                                    std::to_string(var.type_.size_ * atoi(parser->searchEnum(_q1).c_str())),
+                                "%eax");
                     else if (isLocVar(_q1)) {
                         Node _loc = searchLocvar(_q1);
                         getReg("%ecx");
@@ -332,7 +349,6 @@ void Generate::getReg(std::vector<std::string> &_q)
                         gas_ins(movXXl(_ty.size_, _ty.isUnsig), "(%eax)", "%eax");
                     }
                 }
-
             }
         }
 
@@ -342,7 +358,8 @@ void Generate::getReg(std::vector<std::string> &_q)
     }
     else if (_q_0_is("[]=")) {
         Node var = searchLocvar(_q2);
-        gas_ins(mov2stk(var.type_.size_), "$" + _q3, std::to_string(var.off_ + atoi(_q1.c_str())) + "(%ebp)");
+        gas_ins(mov2stk(var.type_.size_), "$" + _q3,
+                std::to_string(var.off_ + atoi(_q1.c_str())) + "(%ebp)");
     }
 
     else if (_q_0_is("[]&")) {
@@ -362,7 +379,9 @@ void Generate::getReg(std::vector<std::string> &_q)
                     }
                     else if (isEnumConst(_q1)) {
                         gas_ins("movl", loc_var_val(var.off_), "%eax");
-                        gas_ins("addl", "$" + std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())), "%eax");
+                        gas_ins("addl",
+                                "$" + std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())),
+                                "%eax");
                     }
                     else if (isLocVar(_q1)) {
                         Node _loc = searchLocvar(_q1);
@@ -388,16 +407,21 @@ void Generate::getReg(std::vector<std::string> &_q)
                         gas_ins("addl", _loc._reg, "%eax");
                     }
                     else {
-                        error("error.");
+                        log_e("error.");
                     }
                 }
                 else if (var.getType().getType() == ARRAY) {
                     Type _ty = var.getType();
 
                     if (isNumber(_q1))
-                        gas_ins("leal", std::to_string(var.off_ + _ty.size_ * atoi(_q1.c_str())) + "(%ebp)", "%eax");
+                        gas_ins("leal", std::to_string(var.off_ + _ty.size_ * atoi(_q1.c_str())) + "(%ebp)",
+                                "%eax");
                     else if (isEnumConst(_q1))
-                        gas_ins("leal", std::to_string(var.off_ + _ty.size_ * atoi(parser->searchEnum(_q1).c_str())) + "(%ebp)", "%eax");
+                        gas_ins(
+                            "leal",
+                            std::to_string(var.off_ + _ty.size_ * atoi(parser->searchEnum(_q1).c_str())) +
+                                "(%ebp)",
+                            "%eax");
                     else if (isLocVar(_q1)) {
                         Node _loc = searchLocvar(_q1);
                         getReg("%ecx");
@@ -432,7 +456,9 @@ void Generate::getReg(std::vector<std::string> &_q)
                     }
                     else if (isEnumConst(_q1)) {
                         gas_ins("movl", var.name(), "%eax");
-                        gas_ins("addl", "$" + std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())), "%eax");
+                        gas_ins("addl",
+                                "$" + std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())),
+                                "%eax");
                     }
                     else if (isLocVar(_q1)) {
                         Node _loc = searchLocvar(_q1);
@@ -458,16 +484,20 @@ void Generate::getReg(std::vector<std::string> &_q)
                         gas_ins("addl", _loc._reg, "%eax");
                     }
                     else {
-                        error("error.");
+                        log_e("error.");
                     }
                 }
                 else if (var.getType().getType() == ARRAY) {
                     Type _ty = var.getType();
 
                     if (isNumber(_q1))
-                        gas_ins("leal", var.name() + "+" + std::to_string(_ty.size_ * atoi(_q1.c_str())), "%eax");
+                        gas_ins("leal", var.name() + "+" + std::to_string(_ty.size_ * atoi(_q1.c_str())),
+                                "%eax");
                     else if (isEnumConst(_q1))
-                        gas_ins("leal", var.name() + "+" + std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())), "%eax");
+                        gas_ins("leal",
+                                var.name() + "+" +
+                                    std::to_string(_ty.size_ * atoi(parser->searchEnum(_q1).c_str())),
+                                "%eax");
                     else if (isLocVar(_q1)) {
                         Node _loc = searchLocvar(_q1);
                         getReg("%ecx");
@@ -491,7 +521,6 @@ void Generate::getReg(std::vector<std::string> &_q)
                         gas_ins("addl", "%edx", "%eax");
                     }
                 }
-
             }
         }
 
@@ -557,8 +586,10 @@ void Generate::getReg(std::vector<std::string> &_q)
     else if (_q_0_is("+f")) {
         int _save = 0, _t;
 
-        _t = gas_flo_load(_q1, false); if(_t > _save ) _save = _t;
-        _t = gas_flo_load(_q2, false); if(_t > _save ) _save = _t;
+        _t = gas_flo_load(_q1, false);
+        if (_t > _save) _save = _t;
+        _t = gas_flo_load(_q2, false);
+        if (_t > _save) _save = _t;
         gas_tab("faddp");
 
         finit = false;
@@ -567,8 +598,10 @@ void Generate::getReg(std::vector<std::string> &_q)
     else if (_q_0_is("-f")) {
         int _save = 0, _t;
 
-        _t = gas_flo_load(_q1, false); if(_t > _save ) _save = _t;
-        _t = gas_flo_load(_q2, true); if(_t > _save ) _save = _t;
+        _t = gas_flo_load(_q1, false);
+        if (_t > _save) _save = _t;
+        _t = gas_flo_load(_q2, true);
+        if (_t > _save) _save = _t;
 
         gas_tab("fsubp");
 
@@ -578,8 +611,10 @@ void Generate::getReg(std::vector<std::string> &_q)
     else if (_q_0_is("*f")) {
         int _save = 0, _t;
 
-        _t = gas_flo_load(_q1, false); if(_t > _save ) _save = _t;
-        _t = gas_flo_load(_q2, false); if(_t > _save ) _save = _t;
+        _t = gas_flo_load(_q1, false);
+        if (_t > _save) _save = _t;
+        _t = gas_flo_load(_q2, false);
+        if (_t > _save) _save = _t;
         gas_tab("fmulp");
 
         finit = false;
@@ -588,21 +623,23 @@ void Generate::getReg(std::vector<std::string> &_q)
     else if (_q_0_is("/f")) {
         int _save = 0, _t;
 
-        _t = gas_flo_load(_q1, false); if(_t > _save ) _save = _t;
-        _t = gas_flo_load(_q2, true); if(_t > _save ) _save = _t;
+        _t = gas_flo_load(_q1, false);
+        if (_t > _save) _save = _t;
+        _t = gas_flo_load(_q2, true);
+        if (_t > _save) _save = _t;
         gas_tab("fdivp");
 
         finit = false;
         temp_save(_q3, _save);
     }
     else if (_q_0_is("+U")) {
-        error("Not support operator.");
+        log_e("Not support operator.");
     }
     else if (_q_0_is("-U")) {
-        error("Not support operator.");
+        log_e("Not support operator.");
     }
     else {
-        error("Not support operator.");
+        log_e("Not support operator.");
     }
 }
 #undef _q_0_is
@@ -611,9 +648,9 @@ void Generate::getReg(std::vector<std::string> &_q)
 #undef _q3
 
 /**
-* @berif ++/--
-*/
-void Generate::genIncDec(const std::string &_obj, const std::string &op)
+ * @berif ++/--
+ */
+void Generate::genIncDec(const std::string& _obj, const std::string& op)
 {
     std::string _des = getEmptyReg();
 
@@ -657,7 +694,7 @@ void Generate::genIncDec(const std::string &_obj, const std::string &op)
     }
 }
 
-void Generate::genMulOrModAsm(std::vector<std::string> &_q)
+void Generate::genMulOrModAsm(std::vector<std::string>& _q)
 {
     Type _save, _t;
     std::string _save_reg;
@@ -669,8 +706,9 @@ void Generate::genMulOrModAsm(std::vector<std::string> &_q)
     getReg("%eax");
     getReg("%edx");
 
-    _t = gas_load(_q.at(2), "%eax"); _save.type < _t.type ? _save = _t : true;
-    gas_tab("cltd");                 // edx + eax , ->64bits
+    _t = gas_load(_q.at(2), "%eax");
+    _save.type < _t.type ? _save = _t : true;
+    gas_tab("cltd"); // edx + eax , ->64bits
 
     if (isNumber(_q.at(1))) {
         getReg("%ecx");
